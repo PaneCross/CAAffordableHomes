@@ -173,11 +173,10 @@
 })();
 
 /* ---------------------------------------------------------
-   SECTION: Page Transition — fade out on navigate, fade in on load
+   SECTION: Page Transition — store nav position before navigating
+   (enter animation is CSS only; no leave animation to avoid white flash)
    --------------------------------------------------------- */
 (function () {
-  const LEAVE_MS = 220;
-
   function isInternal(href) {
     if (!href) return false;
     if (href.startsWith('#')) return false;
@@ -200,11 +199,7 @@
         sessionStorage.setItem('prevNavHref', currentActive.getAttribute('href'));
       }
 
-      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      document.body.classList.add('is-leaving');
-      setTimeout(function () {
-        window.location.href = href;
-      }, reducedMotion ? 0 : LEAVE_MS);
+      window.location.href = href;
     });
   });
 })();
