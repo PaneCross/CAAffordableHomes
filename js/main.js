@@ -171,3 +171,91 @@
     }
   }
 })();
+
+/* ---------------------------------------------------------
+   SECTION: Page Transition — fade out on navigate, fade in on load
+   --------------------------------------------------------- */
+(function () {
+  const LEAVE_MS = 220;
+
+  function isInternal(href) {
+    if (!href) return false;
+    if (href.startsWith('#')) return false;
+    if (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('//')) return false;
+    if (href.startsWith('mailto:') || href.startsWith('tel:')) return false;
+    return true;
+  }
+
+  document.querySelectorAll('a[href]').forEach(function (link) {
+    const href = link.getAttribute('href');
+    if (!isInternal(href)) return;
+    if (link.getAttribute('target') === '_blank') return;
+
+    link.addEventListener('click', function (e) {
+      e.preventDefault();
+
+      // Store the current active nav link so the next page can slide from here
+      const currentActive = document.querySelector('.nav-links a.active');
+      if (currentActive) {
+        sessionStorage.setItem('prevNavHref', currentActive.getAttribute('href'));
+      }
+
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      document.body.classList.add('is-leaving');
+      setTimeout(function () {
+        window.location.href = href;
+      }, reducedMotion ? 0 : LEAVE_MS);
+    });
+  });
+})();
+
+/* ---------------------------------------------------------
+   SECTION: Nav Indicator — sliding active-page underline bar
+   --------------------------------------------------------- */
+(function () {
+  const navInner = document.querySelector('.nav-inner');
+  const navLinksEl = document.querySelector('.nav-links');
+  if (!navInner || !navLinksEl) return;
+
+  // Only runs on desktop where nav-links are visible
+  if (window.innerWidth < 900) return;
+
+  const activeLink = navLinksEl.querySelector('a.active');
+  if (!activeLink) return;
+
+  const indicator = document.createElement('div');
+  indicator.className = 'nav-indicator';
+  navInner.appendChild(indicator);
+
+  function setPos(link) {
+    const navRect = navInner.getBoundingClientRect();
+    const linkRect = link.getBoundingClientRect();
+    const pl = parseFloat(getComputedStyle(link).paddingLeft);
+    const pr = parseFloat(getComputedStyle(link).paddingRight);
+    indicator.style.left = (linkRect.left - navRect.left + pl) + 'px';
+    indicator.style.width = (linkRect.width - pl - pr) + 'px';
+  }
+
+  const SLIDE_TRANSITION = 'left 0.4s cubic-bezier(0.4, 0, 0.2, 1), width 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+  const prevHref = sessionStorage.getItem('prevNavHref');
+  sessionStorage.removeItem('prevNavHref');
+
+  const prevLink = prevHref ? navLinksEl.querySelector('a[href="' + prevHref + '"]') : null;
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (prevLink && prevLink !== activeLink && !reducedMotion) {
+    // Place indicator at previous page's position instantly, then slide to current
+    indicator.style.transition = 'none';
+    setPos(prevLink);
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        indicator.style.transition = SLIDE_TRANSITION;
+        setPos(activeLink);
+      });
+    });
+  } else {
+    // No previous context — just place without animation
+    indicator.style.transition = 'none';
+    setPos(activeLink);
+  }
+})();

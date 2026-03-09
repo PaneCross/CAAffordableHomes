@@ -62,12 +62,27 @@ html {
   font-size: 16px;
 }
 
+@keyframes page-enter {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes page-leave {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
 body {
   font-family: var(--font-body);
   color: var(--color-text-body);
   background: var(--color-white);
   line-height: 1.7;
   -webkit-font-smoothing: antialiased;
+  animation: page-enter 0.35s ease both;
+}
+
+body.is-leaving {
+  animation: page-leave 0.22s ease forwards;
 }
 
 img {
@@ -332,6 +347,7 @@ header {
 }
 
 .nav-inner {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -364,6 +380,18 @@ header {
 
 .nav-logo:hover {
   color: var(--color-text-dark);
+}
+
+@media (min-width: 900px) {
+  .nav-logo {
+    font-size: 1.65rem;
+  }
+}
+
+@media (min-width: 1200px) {
+  .nav-logo {
+    font-size: 1.9rem;
+  }
 }
 
 /* Desktop Links */
@@ -401,15 +429,15 @@ header {
   color: var(--color-sage-btn);
 }
 
-.nav-links a.active::after {
-  content: '';
+/* Sliding active indicator — positioned by main.js */
+.nav-indicator {
   position: absolute;
-  bottom: -2px;
-  left: 0.75rem;
-  right: 0.75rem;
+  bottom: 0;
   height: 2px;
   background: var(--color-accent);
   border-radius: 2px;
+  pointer-events: none;
+  /* transition applied dynamically by JS */
 }
 
 /* CTA button in nav */
