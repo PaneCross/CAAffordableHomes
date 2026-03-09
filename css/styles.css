@@ -64,7 +64,7 @@ html {
 
 @keyframes page-enter {
   from {
-    opacity: 0;
+    opacity: 0.4;
     transform: translateY(14px);
   }
   to {
@@ -348,7 +348,6 @@ header {
 }
 
 .nav-inner {
-  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -397,6 +396,7 @@ header {
 
 /* Desktop Links */
 .nav-links {
+  position: relative;
   display: none;
   align-items: center;
   gap: 0.25rem;
@@ -433,7 +433,7 @@ header {
 /* Sliding active indicator — positioned by main.js */
 .nav-indicator {
   position: absolute;
-  bottom: 0;
+  bottom: -2px;
   height: 2px;
   background: var(--color-accent);
   border-radius: 2px;

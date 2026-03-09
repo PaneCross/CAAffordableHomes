@@ -220,10 +220,10 @@
 
   const indicator = document.createElement('div');
   indicator.className = 'nav-indicator';
-  navInner.appendChild(indicator);
+  navLinksEl.appendChild(indicator);
 
   function setPos(link) {
-    const navRect = navInner.getBoundingClientRect();
+    const navRect = navLinksEl.getBoundingClientRect();
     const linkRect = link.getBoundingClientRect();
     const pl = parseFloat(getComputedStyle(link).paddingLeft);
     const pr = parseFloat(getComputedStyle(link).paddingRight);
