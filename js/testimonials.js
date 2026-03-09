@@ -139,9 +139,9 @@ function initCarousel(container, items) {
   var dotsEl    = container.querySelector('.carousel-dots');
   var carousel  = container.querySelector('.testimonials-carousel');
 
-  var currentIndex = 0;
-  var autoTimer    = null;
-  var isHovering   = false;
+  var currentPage = 0;
+  var autoTimer   = null;
+  var isHovering  = false;
 
   function getVisible() {
     if (window.innerWidth >= 900) return Math.min(4, items.length);
@@ -149,18 +149,27 @@ function initCarousel(container, items) {
     return 1;
   }
 
+  function getPageCount() {
+    return Math.ceil(items.length / getVisible());
+  }
+
+  /* Start index for a page — last page is clamped so it always shows
+     a full row of cards rather than leaving empty slots. */
+  function pageStartIndex(page) {
+    var visible = getVisible();
+    return Math.min(page * visible, items.length - visible);
+  }
+
   function setSlideWidths() {
     var visible = getVisible();
-    var slides = track.querySelectorAll('.carousel-slide');
-    slides.forEach(function (slide) {
+    track.querySelectorAll('.carousel-slide').forEach(function (slide) {
       slide.style.flex = '0 0 ' + (100 / visible) + '%';
     });
   }
 
   function buildDots() {
     dotsEl.innerHTML = '';
-    var visible = getVisible();
-    var pages = Math.ceil(items.length / visible);
+    var pages = getPageCount();
     for (var i = 0; i < pages; i++) {
       var dot = document.createElement('button');
       dot.className = 'carousel-dot';
@@ -172,21 +181,19 @@ function initCarousel(container, items) {
   }
 
   function updateDots() {
-    var visible = getVisible();
-    var activePage = Math.floor(currentIndex / visible);
     dotsEl.querySelectorAll('.carousel-dot').forEach(function (dot, i) {
-      dot.classList.toggle('is-active', i === activePage);
-      dot.setAttribute('aria-selected', i === activePage ? 'true' : 'false');
+      dot.classList.toggle('is-active', i === currentPage);
+      dot.setAttribute('aria-selected', i === currentPage ? 'true' : 'false');
     });
   }
 
-  function goTo(index) {
+  function goToPage(page) {
+    var pages = getPageCount();
+    if (page >= pages) page = 0;
+    if (page < 0)      page = pages - 1;
+    currentPage = page;
     var visible = getVisible();
-    var maxIndex = items.length - visible;
-    if (index > maxIndex) index = 0;
-    if (index < 0) index = maxIndex;
-    currentIndex = index;
-    var pct = (100 / visible) * currentIndex;
+    var pct = (100 / visible) * pageStartIndex(page);
     track.style.transform = 'translateX(-' + pct + '%)';
     updateDots();
   }
@@ -194,28 +201,25 @@ function initCarousel(container, items) {
   function setup() {
     setSlideWidths();
     buildDots();
-    /* Re-clamp index after resize */
-    var visible = getVisible();
-    if (currentIndex > items.length - visible) currentIndex = 0;
-    goTo(currentIndex);
+    if (currentPage >= getPageCount()) currentPage = 0;
+    goToPage(currentPage);
   }
 
   /* Dot navigation */
   dotsEl.addEventListener('click', function (e) {
     var dot = e.target.closest('.carousel-dot');
     if (!dot) return;
-    var visible = getVisible();
-    goTo(parseInt(dot.getAttribute('data-page'), 10) * visible);
+    goToPage(parseInt(dot.getAttribute('data-page'), 10));
   });
 
-  prevBtn.addEventListener('click', function () { goTo(currentIndex - getVisible()); });
-  nextBtn.addEventListener('click', function () { goTo(currentIndex + getVisible()); });
+  prevBtn.addEventListener('click', function () { goToPage(currentPage - 1); });
+  nextBtn.addEventListener('click', function () { goToPage(currentPage + 1); });
 
   /* Auto-advance every 5 s, pause on hover */
   function startAuto() {
     clearInterval(autoTimer);
     autoTimer = setInterval(function () {
-      if (!isHovering) goTo(currentIndex + getVisible());
+      if (!isHovering) goToPage(currentPage + 1);
     }, 5000);
   }
 
