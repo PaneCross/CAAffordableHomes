@@ -15,7 +15,7 @@
 // This is the ONLY line you (or your web developer) need to
 // change to connect your Google Sheet to this website.
 // ─────────────────────────────────────────────────────────
-const SHEET_CSV_URL = 'PASTE_YOUR_GOOGLE_SHEET_CSV_URL_HERE';
+const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSLIxTKpwY7klY87Ac612ZDTJJg8AxTD35MPPjLATKp5qoAenw7j4SEhT4S9KnMrEP5cjbvwNEYu1Nb/pub?gid=0&single=true&output=csv';
 
 // ─────────────────────────────────────────────────────────
 // Developer warning if URL has not been configured

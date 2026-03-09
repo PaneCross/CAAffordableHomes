@@ -10,7 +10,7 @@
    Paste the published CSV URL from your Google Sheet here.
    Leave as '' to always use the static sample testimonials below.
    --------------------------------------------------------- */
-var TESTIMONIALS_CSV_URL = '';
+var TESTIMONIALS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSLIxTKpwY7klY87Ac612ZDTJJg8AxTD35MPPjLATKp5qoAenw7j4SEhT4S9KnMrEP5cjbvwNEYu1Nb/pub?gid=1033476955&single=true&output=csv';
 
 /* ---------------------------------------------------------
    STATIC FALLBACK TESTIMONIALS
