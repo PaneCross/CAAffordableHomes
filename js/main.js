@@ -205,6 +205,48 @@
 })();
 
 /* ---------------------------------------------------------
+   SECTION: Phone Number Auto-Formatter
+   Formats tel inputs to (xxx) xxx-xxxx as the user types
+   and caps input at 10 digits.
+   --------------------------------------------------------- */
+(function () {
+  function formatPhone(value) {
+    var digits = value.replace(/\D/g, '').slice(0, 10);
+    if (digits.length === 0) return '';
+    if (digits.length <= 3) return '(' + digits;
+    if (digits.length <= 6) return '(' + digits.slice(0, 3) + ') ' + digits.slice(3);
+    return '(' + digits.slice(0, 3) + ') ' + digits.slice(3, 6) + '-' + digits.slice(6);
+  }
+
+  document.querySelectorAll('input[type="tel"]').forEach(function (input) {
+    input.addEventListener('input', function () {
+      var cursor = input.selectionStart;
+      var prevLen = input.value.length;
+      input.value = formatPhone(input.value);
+      // Adjust cursor position after reformatting
+      var diff = input.value.length - prevLen;
+      input.setSelectionRange(cursor + diff, cursor + diff);
+    });
+
+    input.addEventListener('keydown', function (e) {
+      // Allow: backspace, delete, tab, escape, arrow keys, home, end
+      var allowed = [8, 9, 27, 46, 35, 36, 37, 38, 39, 40];
+      if (allowed.indexOf(e.keyCode) !== -1) return;
+      // Allow: Ctrl/Cmd+A, C, V, X
+      if ((e.ctrlKey || e.metaKey) && [65, 67, 86, 88].indexOf(e.keyCode) !== -1) return;
+      // Block non-digit keys when already at 10 digits
+      var digits = input.value.replace(/\D/g, '');
+      if (digits.length >= 10 && (e.keyCode < 48 || e.keyCode > 57) && (e.keyCode < 96 || e.keyCode > 105)) {
+        // still need to allow digit keys to replace selection
+        var start = input.selectionStart;
+        var end = input.selectionEnd;
+        if (start === end) { e.preventDefault(); }
+      }
+    });
+  });
+})();
+
+/* ---------------------------------------------------------
    SECTION: Nav Indicator — sliding active-page underline bar
    --------------------------------------------------------- */
 (function () {
