@@ -204,6 +204,7 @@
               novalidate
             >
               <input type="hidden" name="_subject" value="New Builder / Partner Inquiry">
+              <input type="hidden" name="_next" value="">
 
               <div class="form-group">
                 <label class="form-label" for="partner-name">Your Name</label>
@@ -389,5 +390,11 @@
   </footer>
 
   <script src="js/main.js"></script>
+  <script>
+    /* Set thank-you redirect dynamically so it works on any domain */
+    document.querySelectorAll('input[name="_next"]').forEach(function (el) {
+      el.value = window.location.origin + '/thankyou.html';
+    });
+  </script>
 </body>
 </html>
