@@ -393,11 +393,13 @@
   <script>
   /* ---------------------------------------------------------
      Contact Forms: AJAX submission + in-place success state
-     + localStorage guard against repeat submissions
+     + 2-hour cooldown per form to prevent spam submissions
      --------------------------------------------------------- */
   (function () {
 
-    /* Success panel HTML — shown after a successful submission */
+    var COOLDOWN_MS = 2 * 60 * 60 * 1000; /* 2 hours */
+
+    /* Success panel — shown while cooldown is active */
     function successHTML(message) {
       return '<div style="text-align:center;padding:3rem 1rem;">'
         + '<i class="fa-solid fa-circle-check" style="font-size:3rem;color:var(--color-sage);margin-bottom:1.25rem;display:block;" aria-hidden="true"></i>'
@@ -419,16 +421,26 @@
       form.appendChild(el);
     }
 
-    /* Wire up a form for AJAX + dedup */
+    /* Returns ms remaining in cooldown, or 0 if expired / never submitted */
+    function cooldownRemaining(storageKey) {
+      var ts = localStorage.getItem(storageKey);
+      if (!ts) return 0;
+      var remaining = COOLDOWN_MS - (Date.now() - parseInt(ts, 10));
+      return remaining > 0 ? remaining : 0;
+    }
+
     function initForm(panelId, storageKey, successMsg) {
       var panel = document.getElementById(panelId);
       if (!panel) return;
 
-      /* Already submitted — show success immediately, skip the form */
-      if (localStorage.getItem(storageKey)) {
+      /* Still within cooldown window — show success state, hide form */
+      if (cooldownRemaining(storageKey) > 0) {
         panel.innerHTML = successHTML(successMsg);
         return;
       }
+
+      /* Cooldown expired — clear stale timestamp so form shows fresh */
+      localStorage.removeItem(storageKey);
 
       var form = panel.querySelector('form');
       if (!form) return;
@@ -436,7 +448,13 @@
       form.addEventListener('submit', function (e) {
         e.preventDefault();
 
-        /* Let the browser run its own HTML5 validation first */
+        /* Guard against tab sitting open past the cooldown check above */
+        if (cooldownRemaining(storageKey) > 0) {
+          showError(form, 'You\u2019ve already submitted recently. Please wait a couple of hours before submitting again.');
+          return;
+        }
+
+        /* Browser HTML5 validation */
         if (!form.checkValidity()) {
           form.reportValidity();
           return;
@@ -455,7 +473,8 @@
         .then(function (res) { return res.json(); })
         .then(function (data) {
           if (data.ok) {
-            localStorage.setItem(storageKey, 'true');
+            /* Store submission timestamp — cooldown starts now */
+            localStorage.setItem(storageKey, Date.now().toString());
             panel.innerHTML = successHTML(successMsg);
           } else {
             btn.disabled = false;
@@ -469,7 +488,7 @@
         .catch(function () {
           btn.disabled = false;
           btn.innerHTML = originalHTML;
-          showError(form, 'Unable to send — please check your connection and try again.');
+          showError(form, 'Unable to send \u2014 please check your connection and try again.');
         });
       });
     }
