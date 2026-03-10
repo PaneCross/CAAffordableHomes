@@ -222,10 +222,17 @@
                      role="group" aria-labelledby="regions-label"></div>
               </div>
 
-              <div class="form-group" style="margin-top: 1.25rem;">
-                <label class="form-label" for="notify-name">Full Name</label>
-                <input type="text" id="notify-name" name="name" class="form-control"
-                       placeholder="Jane Smith" required autocomplete="name">
+              <div class="form-row" style="margin-top: 1.25rem;">
+                <div class="form-group">
+                  <label class="form-label" for="notify-first-name">First Name</label>
+                  <input type="text" id="notify-first-name" class="form-control"
+                         placeholder="Jane" required autocomplete="given-name">
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="notify-last-name">Last Name</label>
+                  <input type="text" id="notify-last-name" class="form-control"
+                         placeholder="Smith" required autocomplete="family-name">
+                </div>
               </div>
 
               <div class="form-group">
@@ -459,10 +466,11 @@
       btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Signing up\u2026';
 
       var params = new URLSearchParams({
-        name:    document.getElementById('notify-name').value.trim(),
-        email:   document.getElementById('notify-email').value.trim(),
-        phone:   document.getElementById('notify-phone').value.trim(),
-        regions: selected.join(',')
+        first_name: document.getElementById('notify-first-name').value.trim(),
+        last_name:  document.getElementById('notify-last-name').value.trim(),
+        email:      document.getElementById('notify-email').value.trim(),
+        phone:      document.getElementById('notify-phone').value.trim(),
+        regions:    selected.join(',')
       });
 
       /* GET request — simple request, no preflight CORS issues */

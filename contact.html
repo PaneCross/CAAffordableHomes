@@ -96,17 +96,31 @@
             >
               <input type="hidden" name="_subject" value="New Buyer Pre-Screening Request">
 
-              <div class="form-group">
-                <label class="form-label" for="buyer-name">Full Name</label>
-                <input
-                  type="text"
-                  id="buyer-name"
-                  name="name"
-                  class="form-control"
-                  placeholder="Jane Smith"
-                  required
-                  autocomplete="name"
-                >
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="buyer-first-name">First Name</label>
+                  <input
+                    type="text"
+                    id="buyer-first-name"
+                    name="first_name"
+                    class="form-control"
+                    placeholder="Jane"
+                    required
+                    autocomplete="given-name"
+                  >
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="buyer-last-name">Last Name</label>
+                  <input
+                    type="text"
+                    id="buyer-last-name"
+                    name="last_name"
+                    class="form-control"
+                    placeholder="Smith"
+                    required
+                    autocomplete="family-name"
+                  >
+                </div>
               </div>
 
               <div class="form-group">
@@ -518,9 +532,10 @@
         var optinCb = form.querySelector('#notify-optin');
         if (!optinCb || !optinCb.checked) return;
 
-        var email = (form.querySelector('[name="email"]') || {}).value || '';
-        var name  = (form.querySelector('[name="name"]')  || {}).value || '';
-        var phone = (form.querySelector('[name="phone"]') || {}).value || '';
+        var email     = (form.querySelector('[name="email"]')      || {}).value || '';
+        var firstName = (form.querySelector('[name="first_name"]') || {}).value || '';
+        var lastName  = (form.querySelector('[name="last_name"]')  || {}).value || '';
+        var phone     = (form.querySelector('[name="phone"]')      || {}).value || '';
 
         var regionKeys = [];
         form.querySelectorAll('#contact-region-picker input[type="checkbox"]:checked')
@@ -529,10 +544,11 @@
         if (!email.trim() || regionKeys.length === 0) return;
 
         var url = SCRIPT_URL
-          + '?email='   + encodeURIComponent(email.trim())
-          + '&name='    + encodeURIComponent(name.trim())
-          + '&phone='   + encodeURIComponent(phone.trim())
-          + '&regions=' + encodeURIComponent(regionKeys.join(','));
+          + '?email='      + encodeURIComponent(email.trim())
+          + '&first_name=' + encodeURIComponent(firstName.trim())
+          + '&last_name='  + encodeURIComponent(lastName.trim())
+          + '&phone='      + encodeURIComponent(phone.trim())
+          + '&regions='    + encodeURIComponent(regionKeys.join(','));
 
         fetch(url, { mode: 'no-cors' }).catch(function () {});
       }
