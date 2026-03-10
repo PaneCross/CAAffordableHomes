@@ -205,7 +205,6 @@
               novalidate
             >
               <input type="hidden" name="_subject" value="New Builder / Partner Inquiry">
-              <input type="hidden" name="_next" value="">
 
               <div class="form-group">
                 <label class="form-label" for="partner-name">Your Name</label>
@@ -392,10 +391,102 @@
 
   <script src="js/main.js"></script>
   <script>
-    /* Set thank-you redirect dynamically so it works on any domain */
-    document.querySelectorAll('input[name="_next"]').forEach(function (el) {
-      el.value = window.location.origin + '/thankyou.html';
-    });
+  /* ---------------------------------------------------------
+     Contact Forms: AJAX submission + in-place success state
+     + localStorage guard against repeat submissions
+     --------------------------------------------------------- */
+  (function () {
+
+    /* Success panel HTML — shown after a successful submission */
+    function successHTML(message) {
+      return '<div style="text-align:center;padding:3rem 1rem;">'
+        + '<i class="fa-solid fa-circle-check" style="font-size:3rem;color:var(--color-sage);margin-bottom:1.25rem;display:block;" aria-hidden="true"></i>'
+        + '<span class="section-label">Submission Received</span>'
+        + '<h2 style="margin:0.5rem 0 1rem;">Thank You!</h2>'
+        + '<p style="max-width:360px;margin:0 auto;">' + message + '</p>'
+        + '</div>';
+    }
+
+    /* Inline error helper */
+    function showError(form, message) {
+      var existing = form.querySelector('.form-ajax-error');
+      if (existing) existing.remove();
+      var el = document.createElement('p');
+      el.className = 'form-ajax-error';
+      el.setAttribute('role', 'alert');
+      el.style.cssText = 'color:#b91c1c;text-align:center;margin-top:0.75rem;font-size:0.9rem;';
+      el.textContent = message;
+      form.appendChild(el);
+    }
+
+    /* Wire up a form for AJAX + dedup */
+    function initForm(panelId, storageKey, successMsg) {
+      var panel = document.getElementById(panelId);
+      if (!panel) return;
+
+      /* Already submitted — show success immediately, skip the form */
+      if (localStorage.getItem(storageKey)) {
+        panel.innerHTML = successHTML(successMsg);
+        return;
+      }
+
+      var form = panel.querySelector('form');
+      if (!form) return;
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        /* Let the browser run its own HTML5 validation first */
+        if (!form.checkValidity()) {
+          form.reportValidity();
+          return;
+        }
+
+        var btn = form.querySelector('button[type="submit"]');
+        var originalHTML = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Sending\u2026';
+
+        fetch(form.action, {
+          method: 'POST',
+          headers: { 'Accept': 'application/json' },
+          body: new FormData(form)
+        })
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          if (data.ok) {
+            localStorage.setItem(storageKey, 'true');
+            panel.innerHTML = successHTML(successMsg);
+          } else {
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+            var errMsg = (data.errors && data.errors.length)
+              ? data.errors.map(function (err) { return err.message; }).join(' ')
+              : 'Something went wrong. Please try again.';
+            showError(form, errMsg);
+          }
+        })
+        .catch(function () {
+          btn.disabled = false;
+          btn.innerHTML = originalHTML;
+          showError(form, 'Unable to send — please check your connection and try again.');
+        });
+      });
+    }
+
+    initForm(
+      'buyer-form',
+      'caah_buyer_submitted',
+      'We\u2019ve received your pre-screening request and will be in touch within 1\u20132 business days.'
+    );
+
+    initForm(
+      'partner-form',
+      'caah_partner_submitted',
+      'We\u2019ve received your inquiry and will follow up within 1\u20132 business days to discuss your needs.'
+    );
+
+  })();
   </script>
 </body>
 </html>
