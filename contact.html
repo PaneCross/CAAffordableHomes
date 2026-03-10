@@ -151,14 +151,13 @@
               </div>
 
               <div class="form-group">
-                <label class="form-label" for="area-of-interest">Area / City of Interest</label>
-                <input
-                  type="text"
-                  id="area-of-interest"
-                  name="area_of_interest"
-                  class="form-control"
-                  placeholder="e.g., Sacramento, Fresno, or a specific property name"
-                >
+                <label class="form-label">Area(s) of Interest
+                  <span class="optional">(optional — select all that apply)</span>
+                </label>
+                <div id="contact-region-picker" class="region-picker" role="group" aria-label="Select areas of interest">
+                  <!-- JS-populated checkboxes -->
+                </div>
+                <input type="hidden" id="area-of-interest" name="area_of_interest">
               </div>
 
               <div class="form-group">
@@ -505,6 +504,54 @@
       'We\u2019ve received your inquiry and will follow up within 1\u20132 business days to discuss your needs.'
     );
 
+  })();
+
+  /* ---------------------------------------------------------
+     Contact Region Picker — build checkboxes + sync hidden field
+     --------------------------------------------------------- */
+  (function () {
+    var REGIONS = [
+      { key: 'north-county-coastal', label: 'North County Coastal' },
+      { key: 'north-county-inland',  label: 'North County Inland'  },
+      { key: 'central-san-diego',    label: 'Central San Diego'    },
+      { key: 'east-county',          label: 'East County'          },
+      { key: 'downtown-metro',       label: 'Downtown / Metro'     },
+      { key: 'south-bay',            label: 'South Bay'            }
+    ];
+
+    var picker = document.getElementById('contact-region-picker');
+    var hidden = document.getElementById('area-of-interest');
+    if (!picker || !hidden) return;
+
+    REGIONS.forEach(function (r) {
+      var lbl = document.createElement('label');
+      lbl.className = 'region-label';
+
+      var cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.value = r.key;
+      cb.style.accentColor = 'var(--color-sage)';
+      cb.addEventListener('change', sync);
+
+      lbl.appendChild(cb);
+      lbl.appendChild(document.createTextNode('\u00a0' + r.label));
+      picker.appendChild(lbl);
+    });
+
+    function sync() {
+      var selected = [];
+      REGIONS.forEach(function (r, i) {
+        var cb = picker.querySelectorAll('input[type="checkbox"]')[i];
+        var lbl = picker.querySelectorAll('.region-label')[i];
+        if (cb && cb.checked) {
+          selected.push(r.label);
+          lbl.classList.add('is-selected');
+        } else {
+          lbl.classList.remove('is-selected');
+        }
+      });
+      hidden.value = selected.join(', ');
+    }
   })();
   </script>
 </body>
