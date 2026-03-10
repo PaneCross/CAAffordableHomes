@@ -507,7 +507,6 @@ header {
 
 /* Mobile menu */
 .nav-mobile {
-  display: none;
   position: absolute;
   top: var(--nav-height);
   left: 0;
@@ -517,10 +516,18 @@ header {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
   padding: 1rem 20px 1.5rem;
   z-index: 999;
+  /* Smooth reveal */
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: max-height 0.35s ease, opacity 0.25s ease;
 }
 
 .nav-mobile.is-open {
-  display: block;
+  max-height: 500px;
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .nav-mobile ul {
@@ -880,22 +887,21 @@ header {
 }
 
 .serve-column ul li {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.6rem;
+  position: relative;
+  padding-left: 1rem;
   font-size: 0.95rem;
   color: var(--color-text-body);
 }
 
 .serve-column ul li::before {
   content: '';
-  display: block;
+  position: absolute;
+  left: 0;
+  top: 0.55rem;
   width: 6px;
   height: 6px;
   border-radius: 50%;
   background: var(--color-sage);
-  margin-top: 0.55rem;
-  flex-shrink: 0;
 }
 
 .disclaimer-block {
