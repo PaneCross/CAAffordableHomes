@@ -1781,6 +1781,149 @@ textarea.form-control {
 }
 
 /* ---------------------------------------------------------
+   SECTION: Notify Me — Region Map + Picker
+   --------------------------------------------------------- */
+.notify-intro {
+  max-width: 680px;
+  margin-bottom: 2.5rem;
+}
+
+.notify-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 3rem;
+  align-items: start;
+}
+
+@media (max-width: 820px) {
+  .notify-layout {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+}
+
+/* Map column */
+.notify-map-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.map-hint {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  text-align: center;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.map-cities-note {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  text-align: center;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.sd-map {
+  width: 100%;
+  max-width: 260px;
+}
+
+/* SVG region groups */
+.map-region-group rect {
+  fill: #e2e6e0;
+  stroke: #fff;
+  stroke-width: 3;
+  cursor: pointer;
+  transition: fill 0.18s ease;
+}
+
+.map-region-group:hover rect,
+.map-region-group:focus rect {
+  fill: #c4cdc1;
+  outline: none;
+}
+
+.map-region-group.is-selected rect {
+  fill: var(--color-sage);
+}
+
+.map-region-group text,
+.map-region-group tspan {
+  font-family: var(--font-body);
+  font-size: 10px;
+  fill: #4a5447;
+  pointer-events: none;
+  transition: fill 0.18s ease;
+}
+
+.map-region-group.is-selected text,
+.map-region-group.is-selected tspan {
+  fill: #fff;
+}
+
+.map-region-group:focus-visible rect {
+  outline: 2px solid var(--color-sage);
+  outline-offset: 2px;
+}
+
+/* Region checkboxes */
+.region-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.region-label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+  padding: 0.45rem 0.75rem;
+  border-radius: 6px;
+  border: 1.5px solid var(--color-border-light);
+  background: var(--color-white);
+  transition: border-color 0.18s ease, background 0.18s ease;
+  font-size: 0.875rem;
+  user-select: none;
+}
+
+.region-label:hover {
+  border-color: var(--color-sage);
+  background: #f1f3f0;
+}
+
+.region-label.is-selected {
+  border-color: var(--color-sage);
+  background: #ecefea;
+  font-weight: 500;
+}
+
+.region-label input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--color-sage);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Mobile: center the map */
+@media (max-width: 820px) {
+  .notify-map-col {
+    order: -1;
+  }
+  .sd-map {
+    max-width: 280px;
+  }
+}
+
+/* ---------------------------------------------------------
    SECTION: Animations
    --------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
