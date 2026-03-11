@@ -716,11 +716,25 @@ header {
   .benefit-cards {
     grid-template-columns: repeat(2, 1fr);
   }
+  /* Center lone last card when it sits alone on a row */
+  .benefit-card:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+    max-width: 50%;
+    margin-left: auto;
+    margin-right: auto;
+  }
 }
 
 @media (min-width: 900px) {
   .benefit-cards {
     grid-template-columns: repeat(3, 1fr);
+  }
+  /* Reset — all 3 fill their own column at desktop */
+  .benefit-card:last-child:nth-child(odd) {
+    grid-column: auto;
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
   }
 }
 
