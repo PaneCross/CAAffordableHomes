@@ -209,7 +209,7 @@ function createPropertyCard(listing) {
       ${description ? '<p class="property-card__description">' + escapeHTML(description) + '</p>' : ''}
       <div class="property-card__footer">
         <a href="${ctaHref}" class="btn btn-primary">
-          Learn More / Pre-Screen
+          Learn More
           <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
         </a>
       </div>

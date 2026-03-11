@@ -647,7 +647,36 @@ header {
   .feature-grid--4 {
     grid-template-columns: repeat(4, 1fr);
   }
+
+  /* 5-card grid: 2 columns at tablet, lone 5th card centered */
+  .feature-grid--5 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .feature-grid--5 .feature-card:nth-child(5) {
+    grid-column: 1 / -1;
+    max-width: 50%;
+    margin-left: auto;
+    margin-right: auto;
+  }
 }
+
+@media (min-width: 900px) {
+  /* 5-card grid: 6-column trick gives 3 on top row, 2 centered on bottom row */
+  .feature-grid--5 {
+    grid-template-columns: repeat(6, 1fr);
+  }
+  .feature-grid--5 .feature-card {
+    grid-column: span 2;
+  }
+  .feature-grid--5 .feature-card:nth-child(4) {
+    grid-column: 2 / 4;
+  }
+  .feature-grid--5 .feature-card:nth-child(5) {
+    grid-column: 4 / 6;
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
+  }
 
 @media (min-width: 900px) {
   .feature-grid {

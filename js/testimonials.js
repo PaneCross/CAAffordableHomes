@@ -253,15 +253,18 @@ function renderTestimonials(items) {
 
 /* ---------------------------------------------------------
    INIT
+   The testimonials section starts hidden in the HTML.
+   It is revealed only when at least one active row is found
+   in the Google Sheet. If the sheet is empty or unreachable,
+   the section stays hidden — no placeholder content is shown.
    --------------------------------------------------------- */
 (function () {
-  if (!document.getElementById('testimonials-container')) return;
+  var container = document.getElementById('testimonials-container');
+  var section   = document.getElementById('testimonials-section');
+  if (!container) return;
 
-  /* No CSV URL — use static samples immediately */
-  if (!TESTIMONIALS_CSV_URL) {
-    renderTestimonials(STATIC_TESTIMONIALS);
-    return;
-  }
+  /* No CSV URL configured — keep section hidden */
+  if (!TESTIMONIALS_CSV_URL) return;
 
   /* Fetch from Google Sheets */
   fetch(TESTIMONIALS_CSV_URL)
@@ -280,9 +283,12 @@ function renderTestimonials(items) {
         })
         .filter(function (t) { return t.quote; });
 
-      renderTestimonials(active.length ? active : STATIC_TESTIMONIALS);
+      /* Only show the section when there is real content */
+      if (active.length === 0) return;
+      if (section) section.style.display = '';
+      renderTestimonials(active);
     })
     .catch(function () {
-      renderTestimonials(STATIC_TESTIMONIALS);
+      /* On network error keep the section hidden — fail silently */
     });
 })();
