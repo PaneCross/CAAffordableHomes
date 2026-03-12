@@ -1989,3 +1989,317 @@ textarea.form-control {
     scroll-behavior: auto !important;
   }
 }
+
+/* ---------------------------------------------------------
+   SECTION: Phase 2 — Interest List Questionnaire
+   --------------------------------------------------------- */
+
+/* Document-ready callout */
+.il-callout {
+  background: rgba(107, 116, 105, 0.08);
+  border-left: 3px solid var(--color-sage);
+  border-radius: 0 var(--radius-card) var(--radius-card) 0;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+.il-callout h3 {
+  font-size: 1rem;
+  font-family: var(--font-body);
+  font-weight: 600;
+  color: var(--color-text-dark);
+  margin-bottom: 0.65rem;
+}
+.il-callout ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+  margin-bottom: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.il-callout ul li {
+  font-size: 0.875rem;
+  color: var(--color-text-body);
+}
+.il-callout__time {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin-bottom: 1.25rem;
+  font-style: italic;
+}
+.il-callout__time i {
+  color: var(--color-sage);
+  margin-right: 0.3rem;
+}
+
+/* Progress indicator */
+.il-progress {
+  margin-bottom: 1.75rem;
+}
+.il-progress__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-sage);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+.il-progress__track {
+  height: 4px;
+  background: var(--color-border-light);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+}
+.il-progress__fill {
+  height: 100%;
+  background: var(--color-sage);
+  border-radius: 99px;
+  transition: width 0.35s ease;
+}
+.il-steps {
+  display: flex;
+  justify-content: space-between;
+}
+.il-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  flex: 1;
+}
+.il-step__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-border-light);
+  border: 2px solid var(--color-border-light);
+  transition: background 0.25s, border-color 0.25s;
+}
+.il-step.is-active .il-step__dot,
+.il-step.is-done .il-step__dot {
+  background: var(--color-sage);
+  border-color: var(--color-sage);
+}
+.il-step__label {
+  font-size: 0.68rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  text-align: center;
+  line-height: 1.2;
+}
+.il-step.is-active .il-step__label {
+  color: var(--color-sage);
+  font-weight: 600;
+}
+
+/* Section heading */
+.il-section-title {
+  font-family: var(--font-heading);
+  font-size: 1.3rem;
+  color: var(--color-text-dark);
+  padding-bottom: 0.6rem;
+  border-bottom: 2px solid var(--color-border-light);
+  margin-bottom: 1.25rem;
+}
+.il-section-intro {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  margin-bottom: 1.25rem;
+  font-style: italic;
+}
+
+/* Styled radio/checkbox pill labels */
+.il-radio-group {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.il-radio-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.9rem;
+  border: 1.5px solid var(--color-border-light);
+  border-radius: var(--radius-btn);
+  cursor: pointer;
+  font-size: 0.875rem;
+  background: var(--color-white);
+  transition: border-color 0.18s, background 0.18s;
+  user-select: none;
+}
+.il-radio-label:hover {
+  border-color: var(--color-sage);
+  background: #f1f3f0;
+}
+.il-radio-label input[type="radio"],
+.il-radio-label input[type="checkbox"] {
+  accent-color: var(--color-sage);
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.il-radio-label:has(input:checked) {
+  border-color: var(--color-sage);
+  background: #ecefea;
+  font-weight: 500;
+}
+
+/* Conditional sub-fields */
+.il-conditional {
+  display: none;
+  padding: 0.85rem 1rem;
+  border-left: 2px solid var(--color-sage);
+  margin-top: 0.6rem;
+  margin-bottom: 0.25rem;
+  background: rgba(107, 116, 105, 0.05);
+  border-radius: 0 var(--radius-card) var(--radius-card) 0;
+}
+.il-conditional.is-visible {
+  display: block;
+}
+
+/* Repeating block (income members, employment entries) */
+.il-repeating-block {
+  border: 1.5px solid var(--color-border-light);
+  border-radius: var(--radius-card);
+  padding: 1.25rem;
+  margin-bottom: 0.85rem;
+  background: #fafafa;
+}
+.il-repeating-block__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.il-remove-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  transition: color 0.2s, background 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: var(--font-body);
+}
+.il-remove-btn:hover {
+  color: #b91c1c;
+  background: rgba(185, 28, 28, 0.07);
+}
+.il-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-sage-btn);
+  background: none;
+  border: 1.5px dashed var(--color-sage);
+  border-radius: var(--radius-btn);
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: background 0.18s;
+  margin-bottom: 1rem;
+  font-family: var(--font-body);
+}
+.il-add-btn:hover {
+  background: rgba(107, 116, 105, 0.08);
+}
+
+/* Form navigation (Back / Next / Submit) */
+.il-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--color-border-light);
+}
+.il-nav .btn {
+  min-width: 120px;
+  justify-content: center;
+}
+
+/* Listing interest checkboxes */
+.il-listing-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 1.25rem;
+}
+.il-listing-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.55rem 0.85rem;
+  border: 1.5px solid var(--color-border-light);
+  border-radius: var(--radius-btn);
+  cursor: pointer;
+  font-size: 0.875rem;
+  background: var(--color-white);
+  transition: border-color 0.18s, background 0.18s;
+  user-select: none;
+}
+.il-listing-label:hover {
+  border-color: var(--color-sage);
+  background: #f1f3f0;
+}
+.il-listing-label:has(input:checked) {
+  border-color: var(--color-sage);
+  background: #ecefea;
+  font-weight: 500;
+}
+.il-listing-label input[type="checkbox"] {
+  accent-color: var(--color-sage);
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+
+/* Inline info note (sage-bordered) */
+.il-note {
+  background: rgba(107, 116, 105, 0.08);
+  border-left: 3px solid var(--color-sage);
+  border-radius: 0 var(--radius-card) var(--radius-card) 0;
+  padding: 0.7rem 1rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin-bottom: 1.25rem;
+  font-style: normal;
+}
+.il-note i {
+  color: var(--color-sage);
+  margin-right: 0.35rem;
+}
+
+/* Dollar prefix input wrapper */
+.il-dollar-wrap {
+  position: relative;
+}
+.il-dollar-wrap::before {
+  content: '$';
+  position: absolute;
+  left: 0.875rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  font-size: 0.925rem;
+  pointer-events: none;
+}
+.il-dollar-wrap .form-control {
+  padding-left: 1.75rem;
+}

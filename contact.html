@@ -77,131 +77,694 @@
 
         <div class="contact-forms-grid">
 
-          <!-- Form 1: Buyer Pre-Screening -->
+          <!-- Form 1: Interest List Questionnaire -->
           <div class="contact-form-panel" id="buyer-form">
             <span class="section-label">For Homebuyers</span>
             <h2>Join the Interest List</h2>
-            <p class="panel-subtitle">
-              Sign up below to join our free Interest List. No credit check. No documents. No obligation.
-            </p>
+            <p class="panel-subtitle">Complete the questionnaire below. We'll match you to listings as they become available. No credit check. No obligation.</p>
 
-            <!-- FORMSPREE: Replace the action URL below with your Formspree endpoint for the buyer form -->
-            <!-- To set up: Go to formspree.io, sign in, create a form, and copy the endpoint URL -->
-            <!-- Example: action="https://formspree.io/f/YOUR_BUYER_FORM_ID" -->
+            <!-- Step 0: Document callout (shown first) -->
+            <div id="il-callout" class="il-callout">
+              <h3>Before you begin, have these documents ready:</h3>
+              <ul>
+                <li>Most recent tax returns (2023 &amp; 2024)</li>
+                <li>Recent pay stubs for all household members</li>
+                <li>Current bank statements</li>
+                <li>A list of all monthly debt obligations</li>
+              </ul>
+              <p class="il-callout__time"><i class="fa-regular fa-clock" aria-hidden="true"></i>Estimated completion time: 20–30 minutes with documents in hand.</p>
+              <button type="button" class="btn btn-primary" id="il-begin-btn">
+                Begin Questionnaire <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+              </button>
+            </div>
+
+            <!-- Progress bar (hidden until Begin) -->
+            <div id="il-progress" class="il-progress" hidden>
+              <p class="il-progress__label" id="il-progress-label">Section 1 of 4 — General Information</p>
+              <div class="il-progress__track">
+                <div class="il-progress__fill" id="il-bar-fill" style="width:25%"></div>
+              </div>
+              <div class="il-steps">
+                <div class="il-step is-active" id="il-step-1"><div class="il-step__dot"></div><span class="il-step__label">General</span></div>
+                <div class="il-step" id="il-step-2"><div class="il-step__dot"></div><span class="il-step__label">Income</span></div>
+                <div class="il-step" id="il-step-3"><div class="il-step__dot"></div><span class="il-step__label">Employment</span></div>
+                <div class="il-step" id="il-step-4"><div class="il-step__dot"></div><span class="il-step__label">Financial</span></div>
+              </div>
+            </div>
+
+            <!-- The multi-section form (hidden until Begin) -->
+            <!-- Phase 3 will replace the Formspree action with the Apps Script endpoint -->
             <form
+              id="il-form"
               action="https://formspree.io/f/mojkjgkd"
               method="POST"
-              aria-label="Interest List sign-up form"
+              aria-label="Interest List questionnaire"
               novalidate
+              hidden
             >
-              <input type="hidden" name="_subject" value="New Interest List Sign-Up">
+              <input type="hidden" name="_subject" value="New Interest List Application">
 
-              <div class="form-row">
+              <!-- ==================== SECTION I: General Information ==================== -->
+              <div class="form-section" id="il-section-1">
+                <h3 class="il-section-title">Section I — General Information</h3>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label" for="il-first-name">First Name</label>
+                    <input type="text" id="il-first-name" name="first_name" class="form-control" placeholder="Jane" required autocomplete="given-name">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="il-last-name">Last Name</label>
+                    <input type="text" id="il-last-name" name="last_name" class="form-control" placeholder="Smith" required autocomplete="family-name">
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label" for="il-phone">Phone Number</label>
+                    <input type="tel" id="il-phone" name="phone" class="form-control" placeholder="(555) 000-0000" required autocomplete="tel">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="il-email">Email Address</label>
+                    <input type="email" id="il-email" name="email" class="form-control" placeholder="jane@example.com" required autocomplete="email">
+                  </div>
+                </div>
+
                 <div class="form-group">
-                  <label class="form-label" for="buyer-first-name">First Name</label>
-                  <input
-                    type="text"
-                    id="buyer-first-name"
-                    name="first_name"
-                    class="form-control"
-                    placeholder="Jane"
-                    required
-                    autocomplete="given-name"
-                  >
+                  <label class="form-label">Have you or a co-borrower/spouse owned real estate in the last 3 years?</label>
+                  <div class="il-radio-group">
+                    <label class="il-radio-label"><input type="radio" name="owned_real_estate" value="Yes" required> Yes</label>
+                    <label class="il-radio-label"><input type="radio" name="owned_real_estate" value="No"> No</label>
+                  </div>
                 </div>
+
                 <div class="form-group">
-                  <label class="form-label" for="buyer-last-name">Last Name</label>
-                  <input
-                    type="text"
-                    id="buyer-last-name"
-                    name="last_name"
-                    class="form-control"
-                    placeholder="Smith"
-                    required
-                    autocomplete="family-name"
-                  >
+                  <label class="form-label" for="il-household-size">Household size (people living in the home)</label>
+                  <select id="il-household-size" name="household_size" class="form-control" required>
+                    <option value="" disabled selected>Select household size</option>
+                    <option>1</option><option>2</option><option>3</option><option>4</option>
+                    <option>5</option><option>6</option><option>7</option><option>8</option>
+                    <option>9</option><option>10+</option>
+                  </select>
                 </div>
-              </div>
 
-              <div class="form-group">
-                <label class="form-label" for="buyer-email">Email Address</label>
-                <input
-                  type="email"
-                  id="buyer-email"
-                  name="email"
-                  class="form-control"
-                  placeholder="jane@example.com"
-                  required
-                  autocomplete="email"
-                >
-              </div>
-
-              <div class="form-group">
-                <label class="form-label" for="buyer-phone">
-                  Phone Number
-                  <span class="optional">(optional)</span>
-                </label>
-                <input
-                  type="tel"
-                  id="buyer-phone"
-                  name="phone"
-                  class="form-control"
-                  placeholder="(555) 000-0000"
-                  autocomplete="tel"
-                >
-              </div>
-
-              <div class="form-group">
-                <label class="form-label" for="buyer-household">Household Size</label>
-                <select id="buyer-household" name="household_size" class="form-control" required>
-                  <option value="" disabled selected>Select household size</option>
-                  <option value="1">1 person</option>
-                  <option value="2">2 people</option>
-                  <option value="3">3 people</option>
-                  <option value="4">4 people</option>
-                  <option value="5">5 people</option>
-                  <option value="6+">6 or more people</option>
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Area(s) of Interest
-                  <span class="optional">(optional — select all that apply)</span>
-                </label>
-                <div id="contact-region-picker" class="region-picker" role="group" aria-label="Select areas of interest">
-                  <!-- JS-populated checkboxes -->
+                <div class="form-group">
+                  <label class="form-label">Have all household members lived together for the last 12 months?</label>
+                  <div class="il-radio-group">
+                    <label class="il-radio-label"><input type="radio" name="lived_together_12mo" value="Yes" required> Yes</label>
+                    <label class="il-radio-label"><input type="radio" name="lived_together_12mo" value="No"> No</label>
+                  </div>
                 </div>
-                <input type="hidden" id="area-of-interest" name="area_of_interest">
+
+                <div class="form-group">
+                  <label class="form-label">Do all household members currently live in San Diego County?</label>
+                  <div class="il-radio-group">
+                    <label class="il-radio-label"><input type="radio" name="live_in_sd_county" value="Yes" required> Yes</label>
+                    <label class="il-radio-label"><input type="radio" name="live_in_sd_county" value="No"> No</label>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="il-credit-score">Estimated credit score (you and co-borrower)</label>
+                  <select id="il-credit-score" name="credit_score_range" class="form-control" required>
+                    <option value="" disabled selected>Select range</option>
+                    <option>Below 580</option>
+                    <option>580–619</option>
+                    <option>620–659</option>
+                    <option>660–699</option>
+                    <option>700–739</option>
+                    <option>740+</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="il-monthly-rent">Current monthly rent amount</label>
+                  <div class="il-dollar-wrap">
+                    <input type="number" id="il-monthly-rent" name="monthly_rent" class="form-control" placeholder="0" min="0" required>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Is any rent subsidized?</label>
+                  <div class="il-radio-group">
+                    <label class="il-radio-label">
+                      <input type="radio" name="rent_subsidized" value="Yes" required
+                        data-shows="il-cond-rent-subsidy" data-show-when="Yes"> Yes
+                    </label>
+                    <label class="il-radio-label">
+                      <input type="radio" name="rent_subsidized" value="No"
+                        data-shows="il-cond-rent-subsidy" data-show-when="Yes"> No
+                    </label>
+                  </div>
+                  <div class="il-conditional" id="il-cond-rent-subsidy">
+                    <label class="form-label" for="il-rent-subsidy-amount">Amount you pay per month</label>
+                    <div class="il-dollar-wrap">
+                      <input type="number" id="il-rent-subsidy-amount" name="rent_subsidy_amount" class="form-control" placeholder="0" min="0" data-req>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Have you and co-borrower worked AND lived in San Diego County for the last 2 years?</label>
+                  <div class="il-radio-group">
+                    <label class="il-radio-label"><input type="radio" name="worked_lived_sd_2yr" value="Yes" required> Yes</label>
+                    <label class="il-radio-label"><input type="radio" name="worked_lived_sd_2yr" value="No"> No</label>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Have you or a co-borrower ever purchased through the San Diego Housing Commission Affordable Home Purchase Program?</label>
+                  <div class="il-radio-group">
+                    <label class="il-radio-label"><input type="radio" name="sdhc_prior_purchase" value="Yes" required> Yes</label>
+                    <label class="il-radio-label"><input type="radio" name="sdhc_prior_purchase" value="No"> No</label>
+                  </div>
+                </div>
+              </div><!-- /section-1 -->
+
+              <!-- ==================== SECTION II: Income ==================== -->
+              <div class="form-section" id="il-section-2" hidden>
+                <h3 class="il-section-title">Section II — Income</h3>
+                <p class="il-section-intro">Please provide income information for ALL household members over 18, even if they will not be on the loan documents.</p>
+
+                <!-- Repeating income member blocks -->
+                <div id="il-income-members">
+                  <div class="il-repeating-block" id="il-income-block-1">
+                    <div class="il-repeating-block__header">
+                      <span>Household Member 1</span>
+                    </div>
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label class="form-label" for="il-inc1-name">First Name</label>
+                        <input type="text" id="il-inc1-name" name="income_1_name" class="form-control" placeholder="Jane" required>
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label" for="il-inc1-rel">Relationship to Applicant</label>
+                        <select id="il-inc1-rel" name="income_1_relationship" class="form-control" required>
+                          <option value="" disabled selected>Select</option>
+                          <option>Self</option><option>Spouse or Partner</option><option>Child</option><option>Parent</option><option>Other</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" for="il-inc1-amount">Annual Income</label>
+                      <div class="il-dollar-wrap">
+                        <input type="number" id="il-inc1-amount" name="income_1_annual" class="form-control" placeholder="0" min="0" required>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <button type="button" class="il-add-btn" id="il-add-income">
+                  <i class="fa-solid fa-plus" aria-hidden="true"></i> Add Another Household Member
+                </button>
+
+                <!-- Tax year income -->
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label" for="il-income-2023">2023 Total Income <span class="optional">(1040 first page)</span></label>
+                    <div class="il-dollar-wrap">
+                      <input type="number" id="il-income-2023" name="income_2023_total" class="form-control" placeholder="0" min="0" required>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="il-sch-c-2023">2023 Schedule C Line 31 <span class="optional">(1099, if any)</span></label>
+                    <div class="il-dollar-wrap">
+                      <input type="number" id="il-sch-c-2023" name="income_2023_sched_c" class="form-control" placeholder="0" min="0">
+                    </div>
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label" for="il-income-2024">2024 Total Income <span class="optional">(1040 first page)</span></label>
+                    <div class="il-dollar-wrap">
+                      <input type="number" id="il-income-2024" name="income_2024_total" class="form-control" placeholder="0" min="0" required>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="il-sch-c-2024">2024 Schedule C Line 31 <span class="optional">(1099, if any)</span></label>
+                    <div class="il-dollar-wrap">
+                      <input type="number" id="il-sch-c-2024" name="income_2024_sched_c" class="form-control" placeholder="0" min="0">
+                    </div>
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label" for="il-income-2025">2025 Total Income <span class="optional">(if filed)</span></label>
+                    <div class="il-dollar-wrap">
+                      <input type="number" id="il-income-2025" name="income_2025_total" class="form-control" placeholder="0" min="0">
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="il-sch-c-2025">2025 Schedule C Line 31 <span class="optional">(if any)</span></label>
+                    <div class="il-dollar-wrap">
+                      <input type="number" id="il-sch-c-2025" name="income_2025_sched_c" class="form-control" placeholder="0" min="0">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Non-taxable income -->
+                <div class="form-group">
+                  <label class="form-label">Does anyone in the household receive non-taxable income? <span class="optional">(Social Security, pension, disability, VA, child support, housing allowance, etc.)</span></label>
+                  <div class="il-radio-group">
+                    <label class="il-radio-label">
+                      <input type="radio" name="non_taxable_income" value="Yes" required
+                        data-shows="il-cond-nontax" data-show-when="Yes"> Yes
+                    </label>
+                    <label class="il-radio-label">
+                      <input type="radio" name="non_taxable_income" value="No"
+                        data-shows="il-cond-nontax" data-show-when="Yes"> No
+                    </label>
+                  </div>
+                  <div class="il-conditional" id="il-cond-nontax">
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label class="form-label" for="il-nontax-who">Who receives it</label>
+                        <input type="text" id="il-nontax-who" name="non_taxable_who" class="form-control" placeholder="Name" data-req>
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label" for="il-nontax-source">Source of income</label>
+                        <input type="text" id="il-nontax-source" name="non_taxable_source" class="form-control" placeholder="e.g. Social Security" data-req>
+                      </div>
+                    </div>
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label class="form-label" for="il-nontax-amount">Amount per month</label>
+                        <div class="il-dollar-wrap">
+                          <input type="number" id="il-nontax-amount" name="non_taxable_amount" class="form-control" placeholder="0" min="0" data-req>
+                        </div>
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label">Is there an end date?</label>
+                        <div class="il-radio-group" style="margin-top:0.4rem">
+                          <label class="il-radio-label">
+                            <input type="radio" name="non_taxable_end_date_yn" value="Yes"
+                              data-shows="il-cond-nontax-enddate" data-show-when="Yes"> Yes
+                          </label>
+                          <label class="il-radio-label">
+                            <input type="radio" name="non_taxable_end_date_yn" value="No"
+                              data-shows="il-cond-nontax-enddate" data-show-when="Yes"> No
+                          </label>
+                        </div>
+                        <div class="il-conditional" id="il-cond-nontax-enddate">
+                          <label class="form-label" for="il-nontax-enddate" style="margin-top:0.5rem">End date</label>
+                          <input type="date" id="il-nontax-enddate" name="non_taxable_end_date" class="form-control" data-req>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div><!-- /section-2 -->
+
+              <!-- ==================== SECTION III: Employment ==================== -->
+              <div class="form-section" id="il-section-3" hidden>
+                <h3 class="il-section-title">Section III — Employment</h3>
+                <p class="il-section-intro">Please list a 2-year employment history for all household members 18 and older, including those not on the loan documents.</p>
+
+                <div id="il-employment-blocks">
+                  <!-- Employment block 1 -->
+                  <div class="il-repeating-block" id="il-emp-block-1">
+                    <div class="il-repeating-block__header"><span>Employment Entry 1</span></div>
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label class="form-label" for="il-emp1-name">First name of employee</label>
+                        <input type="text" id="il-emp1-name" name="emp_1_name" class="form-control" placeholder="Jane" required>
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label" for="il-emp1-rel">Relationship to applicant</label>
+                        <select id="il-emp1-rel" name="emp_1_relationship" class="form-control" required>
+                          <option value="" disabled selected>Select</option>
+                          <option>Self</option><option>Spouse or Partner</option><option>Child</option><option>Parent</option><option>Other</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" for="il-emp1-employer">Employer name</label>
+                      <input type="text" id="il-emp1-employer" name="emp_1_employer" class="form-control" placeholder="Company name" required>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Current or Previous?</label>
+                      <div class="il-radio-group">
+                        <label class="il-radio-label">
+                          <input type="radio" name="emp_1_status" value="Current" required
+                            data-shows="il-emp1-cond-previous" data-show-when="Previous"> Current
+                        </label>
+                        <label class="il-radio-label">
+                          <input type="radio" name="emp_1_status" value="Previous"
+                            data-shows="il-emp1-cond-previous" data-show-when="Previous"> Previous
+                        </label>
+                      </div>
+                      <div class="il-conditional" id="il-emp1-cond-previous">
+                        <div class="form-row">
+                          <div class="form-group">
+                            <label class="form-label" for="il-emp1-end">End date</label>
+                            <input type="month" id="il-emp1-end" name="emp_1_end_date" class="form-control" data-req>
+                          </div>
+                          <div class="form-group">
+                            <label class="form-label">Same line of work as current employment?</label>
+                            <div class="il-radio-group" style="margin-top:0.4rem">
+                              <label class="il-radio-label"><input type="radio" name="emp_1_same_line" value="Yes"> Yes</label>
+                              <label class="il-radio-label"><input type="radio" name="emp_1_same_line" value="No"> No</label>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" for="il-emp1-start">Start date</label>
+                      <input type="month" id="il-emp1-start" name="emp_1_start_date" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Any breaks in this employment?</label>
+                      <div class="il-radio-group">
+                        <label class="il-radio-label">
+                          <input type="radio" name="emp_1_breaks" value="Yes" required
+                            data-shows="il-emp1-cond-breaks" data-show-when="Yes"> Yes
+                        </label>
+                        <label class="il-radio-label">
+                          <input type="radio" name="emp_1_breaks" value="No"
+                            data-shows="il-emp1-cond-breaks" data-show-when="Yes"> No
+                        </label>
+                      </div>
+                      <div class="il-conditional" id="il-emp1-cond-breaks">
+                        <label class="form-label" for="il-emp1-breaks-desc">Describe dates of breaks</label>
+                        <input type="text" id="il-emp1-breaks-desc" name="emp_1_breaks_desc" class="form-control" placeholder="e.g. Mar 2022 – Jun 2022" data-req>
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Income type</label>
+                      <div class="il-radio-group">
+                        <label class="il-radio-label">
+                          <input type="radio" name="emp_1_income_type" value="W-2" required
+                            data-shows="il-emp1-cond-salaried" data-show-when="W-2"> W-2 (Salaried)
+                        </label>
+                        <label class="il-radio-label">
+                          <input type="radio" name="emp_1_income_type" value="1099"
+                            data-shows="il-emp1-cond-salaried" data-show-when="W-2"> 1099 / Hourly
+                        </label>
+                      </div>
+                      <div class="il-conditional" id="il-emp1-cond-salaried">
+                        <label class="form-label" for="il-emp1-salary">Annual salary</label>
+                        <div class="il-dollar-wrap">
+                          <input type="number" id="il-emp1-salary" name="emp_1_annual_salary" class="form-control" placeholder="0" min="0" data-req>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label class="form-label" for="il-emp1-ytd">Year-to-date gross income on current paycheck</label>
+                        <div class="il-dollar-wrap">
+                          <input type="number" id="il-emp1-ytd" name="emp_1_ytd_gross" class="form-control" placeholder="0" min="0" required>
+                        </div>
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label" for="il-emp1-pay-date">Current paycheck pay period end date</label>
+                        <input type="date" id="il-emp1-pay-date" name="emp_1_pay_period_end" class="form-control" required>
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" for="il-emp1-w2-2025">Largest income shown on 2025 W-2 <span class="optional">(optional)</span></label>
+                      <div class="il-dollar-wrap">
+                        <input type="number" id="il-emp1-w2-2025" name="emp_1_w2_2025" class="form-control" placeholder="0" min="0">
+                      </div>
+                    </div>
+                  </div><!-- /emp-block-1 -->
+
+                  <!-- Employment block 2 -->
+                  <div class="il-repeating-block" id="il-emp-block-2">
+                    <div class="il-repeating-block__header">
+                      <span>Employment Entry 2</span>
+                      <button type="button" class="il-remove-btn" data-remove="il-emp-block-2">
+                        <i class="fa-solid fa-xmark" aria-hidden="true"></i> Remove
+                      </button>
+                    </div>
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label class="form-label" for="il-emp2-name">First name of employee</label>
+                        <input type="text" id="il-emp2-name" name="emp_2_name" class="form-control" placeholder="Jane">
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label" for="il-emp2-rel">Relationship to applicant</label>
+                        <select id="il-emp2-rel" name="emp_2_relationship" class="form-control">
+                          <option value="" disabled selected>Select</option>
+                          <option>Self</option><option>Spouse or Partner</option><option>Child</option><option>Parent</option><option>Other</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" for="il-emp2-employer">Employer name</label>
+                      <input type="text" id="il-emp2-employer" name="emp_2_employer" class="form-control" placeholder="Company name">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Current or Previous?</label>
+                      <div class="il-radio-group">
+                        <label class="il-radio-label">
+                          <input type="radio" name="emp_2_status" value="Current"
+                            data-shows="il-emp2-cond-previous" data-show-when="Previous"> Current
+                        </label>
+                        <label class="il-radio-label">
+                          <input type="radio" name="emp_2_status" value="Previous"
+                            data-shows="il-emp2-cond-previous" data-show-when="Previous"> Previous
+                        </label>
+                      </div>
+                      <div class="il-conditional" id="il-emp2-cond-previous">
+                        <div class="form-row">
+                          <div class="form-group">
+                            <label class="form-label" for="il-emp2-end">End date</label>
+                            <input type="month" id="il-emp2-end" name="emp_2_end_date" class="form-control" data-req>
+                          </div>
+                          <div class="form-group">
+                            <label class="form-label">Same line of work as current?</label>
+                            <div class="il-radio-group" style="margin-top:0.4rem">
+                              <label class="il-radio-label"><input type="radio" name="emp_2_same_line" value="Yes"> Yes</label>
+                              <label class="il-radio-label"><input type="radio" name="emp_2_same_line" value="No"> No</label>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" for="il-emp2-start">Start date</label>
+                      <input type="month" id="il-emp2-start" name="emp_2_start_date" class="form-control">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Any breaks in this employment?</label>
+                      <div class="il-radio-group">
+                        <label class="il-radio-label">
+                          <input type="radio" name="emp_2_breaks" value="Yes"
+                            data-shows="il-emp2-cond-breaks" data-show-when="Yes"> Yes
+                        </label>
+                        <label class="il-radio-label">
+                          <input type="radio" name="emp_2_breaks" value="No"
+                            data-shows="il-emp2-cond-breaks" data-show-when="Yes"> No
+                        </label>
+                      </div>
+                      <div class="il-conditional" id="il-emp2-cond-breaks">
+                        <label class="form-label" for="il-emp2-breaks-desc">Describe dates of breaks</label>
+                        <input type="text" id="il-emp2-breaks-desc" name="emp_2_breaks_desc" class="form-control" placeholder="e.g. Mar 2022 – Jun 2022" data-req>
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Income type</label>
+                      <div class="il-radio-group">
+                        <label class="il-radio-label">
+                          <input type="radio" name="emp_2_income_type" value="W-2"
+                            data-shows="il-emp2-cond-salaried" data-show-when="W-2"> W-2 (Salaried)
+                        </label>
+                        <label class="il-radio-label">
+                          <input type="radio" name="emp_2_income_type" value="1099"
+                            data-shows="il-emp2-cond-salaried" data-show-when="W-2"> 1099 / Hourly
+                        </label>
+                      </div>
+                      <div class="il-conditional" id="il-emp2-cond-salaried">
+                        <label class="form-label" for="il-emp2-salary">Annual salary</label>
+                        <div class="il-dollar-wrap">
+                          <input type="number" id="il-emp2-salary" name="emp_2_annual_salary" class="form-control" placeholder="0" min="0" data-req>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label class="form-label" for="il-emp2-ytd">Year-to-date gross income</label>
+                        <div class="il-dollar-wrap">
+                          <input type="number" id="il-emp2-ytd" name="emp_2_ytd_gross" class="form-control" placeholder="0" min="0">
+                        </div>
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label" for="il-emp2-pay-date">Pay period end date</label>
+                        <input type="date" id="il-emp2-pay-date" name="emp_2_pay_period_end" class="form-control">
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" for="il-emp2-w2-2025">Largest income on 2025 W-2 <span class="optional">(optional)</span></label>
+                      <div class="il-dollar-wrap">
+                        <input type="number" id="il-emp2-w2-2025" name="emp_2_w2_2025" class="form-control" placeholder="0" min="0">
+                      </div>
+                    </div>
+                  </div><!-- /emp-block-2 -->
+                </div><!-- /il-employment-blocks -->
+
+                <button type="button" class="il-add-btn" id="il-add-employment">
+                  <i class="fa-solid fa-plus" aria-hidden="true"></i> Add Another Employment Entry
+                </button>
+              </div><!-- /section-3 -->
+
+              <!-- ==================== SECTION IV: Financial & Disclosures ==================== -->
+              <div class="form-section" id="il-section-4" hidden>
+                <h3 class="il-section-title">Section IV — Financial &amp; Disclosures</h3>
+
+                <div class="form-group">
+                  <label class="form-label" for="il-monthly-debt">Total minimum monthly debt payments <span class="optional">(credit cards, auto loans, personal loans, student loans only — not rent, utilities, or phone)</span></label>
+                  <div class="il-dollar-wrap">
+                    <input type="number" id="il-monthly-debt" name="monthly_debt_payments" class="form-control" placeholder="0" min="0" required>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Prior or current foreclosure or short sale?</label>
+                  <div class="il-radio-group">
+                    <label class="il-radio-label">
+                      <input type="radio" name="foreclosure" value="Yes" required
+                        data-shows="il-cond-foreclosure" data-show-when="Yes"> Yes
+                    </label>
+                    <label class="il-radio-label">
+                      <input type="radio" name="foreclosure" value="No"
+                        data-shows="il-cond-foreclosure" data-show-when="Yes"> No
+                    </label>
+                  </div>
+                  <div class="il-conditional" id="il-cond-foreclosure">
+                    <label class="form-label" for="il-foreclosure-date">Sale date</label>
+                    <input type="date" id="il-foreclosure-date" name="foreclosure_date" class="form-control" data-req>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Prior or current bankruptcy?</label>
+                  <div class="il-radio-group">
+                    <label class="il-radio-label">
+                      <input type="radio" name="bankruptcy" value="Yes" required
+                        data-shows="il-cond-bankruptcy" data-show-when="Yes"> Yes
+                    </label>
+                    <label class="il-radio-label">
+                      <input type="radio" name="bankruptcy" value="No"
+                        data-shows="il-cond-bankruptcy" data-show-when="Yes"> No
+                    </label>
+                  </div>
+                  <div class="il-conditional" id="il-cond-bankruptcy">
+                    <label class="form-label" for="il-bankruptcy-date">Discharge date</label>
+                    <input type="date" id="il-bankruptcy-date" name="bankruptcy_discharge_date" class="form-control" data-req>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Outstanding judgments, garnishments, or involuntary liens?</label>
+                  <div class="il-radio-group">
+                    <label class="il-radio-label">
+                      <input type="radio" name="judgments" value="Yes" required
+                        data-shows="il-cond-judgments" data-show-when="Yes"> Yes
+                    </label>
+                    <label class="il-radio-label">
+                      <input type="radio" name="judgments" value="No"
+                        data-shows="il-cond-judgments" data-show-when="Yes"> No
+                    </label>
+                  </div>
+                  <div class="il-conditional" id="il-cond-judgments">
+                    <label class="form-label" for="il-judgments-desc">Please describe</label>
+                    <textarea id="il-judgments-desc" name="judgments_description" class="form-control" rows="3" data-req></textarea>
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label">Are you and co-borrower a US Citizen?</label>
+                    <div class="il-radio-group" style="margin-top:0.4rem">
+                      <label class="il-radio-label"><input type="radio" name="us_citizen" value="Yes" required> Yes</label>
+                      <label class="il-radio-label"><input type="radio" name="us_citizen" value="No"> No</label>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Are you and co-borrower a Permanent Resident (green card)?</label>
+                    <div class="il-radio-group" style="margin-top:0.4rem">
+                      <label class="il-radio-label"><input type="radio" name="permanent_resident" value="Yes" required> Yes</label>
+                      <label class="il-radio-label"><input type="radio" name="permanent_resident" value="No"> No</label>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label" for="il-asset-checking">Checking account total</label>
+                    <div class="il-dollar-wrap">
+                      <input type="number" id="il-asset-checking" name="asset_checking" class="form-control" placeholder="0" min="0" required>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="il-asset-savings">Savings account total</label>
+                    <div class="il-dollar-wrap">
+                      <input type="number" id="il-asset-savings" name="asset_savings" class="form-control" placeholder="0" min="0" required>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label" for="il-asset-401k">401k / employer retirement <span class="optional">(optional)</span></label>
+                    <div class="il-dollar-wrap">
+                      <input type="number" id="il-asset-401k" name="asset_401k" class="form-control" placeholder="0" min="0">
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="il-asset-other">Other assets <span class="optional">(optional)</span></label>
+                    <div class="il-dollar-wrap">
+                      <input type="number" id="il-asset-other" name="asset_other" class="form-control" placeholder="0" min="0">
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="il-loan-signers">All persons who will sign on loan documents</label>
+                  <textarea id="il-loan-signers" name="loan_signers" class="form-control" rows="3" placeholder="Full name(s) of everyone signing on the loan" required></textarea>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="il-household-members">All household members and their relationship to you</label>
+                  <textarea id="il-household-members" name="household_members" class="form-control" rows="3" placeholder="e.g. John Smith – Spouse, Emma Smith – Child" required></textarea>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="il-additional-info">Additional information or explanations <span class="optional">(optional)</span></label>
+                  <textarea id="il-additional-info" name="additional_info" class="form-control" rows="4" placeholder="Use this space for any context that would help us assess your profile — employment changes, income changes, breaks in employment, etc."></textarea>
+                </div>
+
+                <!-- Listing interest -->
+                <div class="form-group">
+                  <label class="form-label">Which current listings are you interested in? <span class="optional">(Select all that apply, or choose the last option.)</span></label>
+                  <div class="il-listing-checks" id="il-listing-container">
+                    <!-- JS populates listing checkboxes here -->
+                    <label class="il-listing-label">
+                      <input type="checkbox" name="listing_interest" value="None — interested in future listings"> None of these, but I'm interested in future listings
+                    </label>
+                  </div>
+                  <input type="hidden" id="il-listings-hidden" name="listing_interest_summary">
+                </div>
+
+                <!-- Pre-submit note -->
+                <div class="il-note">
+                  <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                  Submitting this form adds you to our interest list only. It does not initiate pre-screening for any property. You will be contacted when a listing becomes available that may match your profile.
+                </div>
+
+                <button type="submit" id="il-submit-btn" class="btn btn-primary" style="width:100%;justify-content:center;padding:0.85rem;" hidden>
+                  Join the Interest List <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                </button>
+              </div><!-- /section-4 -->
+
+              <!-- Navigation buttons -->
+              <div class="il-nav" id="il-nav">
+                <button type="button" id="il-back-btn" class="btn btn-secondary" hidden>
+                  <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back
+                </button>
+                <button type="button" id="il-next-btn" class="btn btn-primary">
+                  Next: Income <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                </button>
               </div>
-
-              <div class="form-group">
-                <label class="form-label" for="message">
-                  Message
-                  <span class="optional">(optional)</span>
-                </label>
-                <textarea
-                  id="message"
-                  name="message"
-                  class="form-control"
-                  placeholder="Tell us a bit about your situation — estimated income, current debts, any questions you have. The more you share, the more helpful we can be."
-                  rows="5"
-                ></textarea>
-              </div>
-
-              <p class="form-note" style="background:rgba(107,122,94,0.09); border-left:3px solid var(--color-sage); border-radius:4px; padding:0.6rem 0.75rem; text-align:left; margin-bottom:0.85rem;">
-                <i class="fa-solid fa-circle-info" aria-hidden="true" style="color:var(--color-sage); margin-right:0.35rem;"></i>
-                For home ownership inquiries only — we do not advertise rental properties.
-              </p>
-
-              <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 0.85rem;">
-                <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
-                Join the Interest List
-              </button>
-
-              <p class="form-note" style="margin-top: 0.75rem; text-align: center;">
-                <i class="fa-solid fa-lock" aria-hidden="true"></i>
-                Your information is never shared or sold. Joining the interest list is informational only — no credit check.
-              </p>
             </form>
           </div>
 
@@ -508,12 +1071,6 @@
     }
 
     initForm(
-      'buyer-form',
-      'caah_buyer_submitted',
-      'We\u2019ve received your information and will be in touch soon.<br><br>Need to update your information? Email us directly at <a href="mailto:info@CAAffordableHomes.com">info@CAAffordableHomes.com</a>.'
-    );
-
-    initForm(
       'partner-form',
       'caah_partner_submitted',
       'We\u2019ve received your inquiry. We\u2019ll be in touch to discuss your needs.'
@@ -522,51 +1079,353 @@
   })();
 
   /* ---------------------------------------------------------
-     Contact Region Picker — build checkboxes + sync hidden field
+     Interest List Questionnaire — Multi-step wizard
      --------------------------------------------------------- */
   (function () {
-    var REGIONS = [
-      { key: 'north-county-coastal', label: 'North County Coastal' },
-      { key: 'north-county-inland',  label: 'North County Inland'  },
-      { key: 'central-san-diego',    label: 'Central San Diego'    },
-      { key: 'east-county',          label: 'East County'          },
-      { key: 'downtown-metro',       label: 'Downtown / Metro'     },
-      { key: 'south-bay',            label: 'South Bay'            }
+
+    var STORAGE_KEY  = 'caah_il_draft';
+    var COOLDOWN_KEY = 'caah_buyer_submitted';
+    var COOLDOWN_MS  = 2 * 60 * 1000; /* DEV: 2 min — set to 30 * 24 * 60 * 60 * 1000 at launch */
+
+    /* Static listings — Phase 4 will replace with live Sheet data */
+    var LISTINGS = [
+      '123 Maple St \u2013 Escondido (Coming Soon)',
+      '456 Oak Ave \u2013 Chula Vista (Available)'
     ];
 
-    var picker = document.getElementById('contact-region-picker');
-    var hidden = document.getElementById('area-of-interest');
-    if (!picker || !hidden) return;
+    var SECTION_NAMES = ['General Information', 'Income', 'Employment', 'Financial & Disclosures'];
+    var currentSection = 1;
+    var totalSections  = 4;
+    var empBlockCount  = 2;
+    var incBlockCount  = 1;
 
-    REGIONS.forEach(function (r) {
-      var lbl = document.createElement('label');
-      lbl.className = 'region-label';
+    /* DOM refs */
+    var panel     = document.getElementById('buyer-form');
+    var callout   = document.getElementById('il-callout');
+    var progress  = document.getElementById('il-progress');
+    var form      = document.getElementById('il-form');
+    var beginBtn  = document.getElementById('il-begin-btn');
+    var backBtn   = document.getElementById('il-back-btn');
+    var nextBtn   = document.getElementById('il-next-btn');
+    var submitBtn = document.getElementById('il-submit-btn');
 
-      var cb = document.createElement('input');
-      cb.type = 'checkbox';
-      cb.value = r.key;
-      cb.style.accentColor = 'var(--color-sage)';
-      cb.addEventListener('change', sync);
+    if (!panel || !callout || !form) return;
 
-      lbl.appendChild(cb);
-      lbl.appendChild(document.createTextNode('\u00a0' + r.label));
-      picker.appendChild(lbl);
+    /* Still in cooldown — replace panel with success state immediately */
+    var ts = localStorage.getItem(COOLDOWN_KEY);
+    if (ts && (COOLDOWN_MS - (Date.now() - parseInt(ts, 10))) > 0) {
+      panel.innerHTML = successHTML();
+      return;
+    }
+
+    /* Build listing checkboxes before the "None" option */
+    buildListings();
+
+    /* Restore any saved draft values */
+    restoreFromStorage();
+
+    /* Wire up conditional field show/hide */
+    initConditionals(form);
+
+    /* ---- Event listeners ---- */
+
+    beginBtn.addEventListener('click', function () {
+      callout.hidden  = true;
+      progress.hidden = false;
+      form.hidden     = false;
+      updateProgress();
+      updateNav();
     });
 
-    function sync() {
-      var selected = [];
-      REGIONS.forEach(function (r, i) {
-        var cb = picker.querySelectorAll('input[type="checkbox"]')[i];
-        var lbl = picker.querySelectorAll('.region-label')[i];
-        if (cb && cb.checked) {
-          selected.push(r.label);
-          lbl.classList.add('is-selected');
-        } else {
-          lbl.classList.remove('is-selected');
-        }
-      });
-      hidden.value = selected.join(', ');
+    backBtn.addEventListener('click', function () {
+      if (currentSection > 1) {
+        saveToStorage();
+        goToSection(currentSection - 1);
+      }
+    });
+
+    nextBtn.addEventListener('click', function () {
+      if (!validateCurrentSection()) return;
+      saveToStorage();
+      goToSection(currentSection + 1);
+    });
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (!validateCurrentSection()) return;
+      submitForm();
+    });
+
+    /* Remove buttons on employment blocks */
+    document.getElementById('il-employment-blocks').addEventListener('click', function (e) {
+      var btn = e.target.closest('.il-remove-btn');
+      if (!btn) return;
+      var blockId = btn.dataset.remove;
+      var block = document.getElementById(blockId);
+      if (block) block.remove();
+    });
+
+    /* Add income member block */
+    document.getElementById('il-add-income').addEventListener('click', function () {
+      incBlockCount++;
+      var container = document.getElementById('il-income-members');
+      var n = incBlockCount;
+      var div = document.createElement('div');
+      div.className = 'il-repeating-block';
+      div.id = 'il-income-block-' + n;
+      div.innerHTML =
+        '<div class="il-repeating-block__header">'
+        + '<span>Household Member ' + n + '</span>'
+        + '<button type="button" class="il-remove-btn" data-remove="il-income-block-' + n + '">'
+        + '<i class="fa-solid fa-xmark" aria-hidden="true"></i> Remove</button></div>'
+        + '<div class="form-row">'
+        + '<div class="form-group"><label class="form-label">First Name</label>'
+        + '<input type="text" name="income_' + n + '_name" class="form-control" placeholder="Name"></div>'
+        + '<div class="form-group"><label class="form-label">Relationship to Applicant</label>'
+        + '<select name="income_' + n + '_relationship" class="form-control">'
+        + '<option value="" disabled selected>Select</option>'
+        + '<option>Self</option><option>Spouse or Partner</option><option>Child</option><option>Parent</option><option>Other</option>'
+        + '</select></div></div>'
+        + '<div class="form-group"><label class="form-label">Annual Income</label>'
+        + '<div class="il-dollar-wrap"><input type="number" name="income_' + n + '_annual" class="form-control" placeholder="0" min="0"></div></div>';
+      container.appendChild(div);
+      div.querySelector('.il-remove-btn').addEventListener('click', function () { div.remove(); });
+    });
+
+    /* Add employment block */
+    document.getElementById('il-add-employment').addEventListener('click', function () {
+      empBlockCount++;
+      var container = document.getElementById('il-employment-blocks');
+      var n = empBlockCount;
+      var div = document.createElement('div');
+      div.className = 'il-repeating-block';
+      div.id = 'il-emp-block-' + n;
+      div.innerHTML =
+        '<div class="il-repeating-block__header">'
+        + '<span>Employment Entry ' + n + '</span>'
+        + '<button type="button" class="il-remove-btn" data-remove="il-emp-block-' + n + '">'
+        + '<i class="fa-solid fa-xmark" aria-hidden="true"></i> Remove</button></div>'
+        + '<div class="form-row">'
+        + '<div class="form-group"><label class="form-label">First name of employee</label>'
+        + '<input type="text" name="emp_' + n + '_name" class="form-control" placeholder="Name"></div>'
+        + '<div class="form-group"><label class="form-label">Relationship to applicant</label>'
+        + '<select name="emp_' + n + '_relationship" class="form-control">'
+        + '<option value="" disabled selected>Select</option>'
+        + '<option>Self</option><option>Spouse or Partner</option><option>Child</option><option>Parent</option><option>Other</option>'
+        + '</select></div></div>'
+        + '<div class="form-group"><label class="form-label">Employer name</label>'
+        + '<input type="text" name="emp_' + n + '_employer" class="form-control" placeholder="Company name"></div>'
+        + '<div class="form-group"><label class="form-label">Current or Previous?</label>'
+        + '<div class="il-radio-group">'
+        + '<label class="il-radio-label"><input type="radio" name="emp_' + n + '_status" value="Current"> Current</label>'
+        + '<label class="il-radio-label"><input type="radio" name="emp_' + n + '_status" value="Previous"> Previous</label>'
+        + '</div></div>'
+        + '<div class="form-row">'
+        + '<div class="form-group"><label class="form-label">Start date</label>'
+        + '<input type="month" name="emp_' + n + '_start_date" class="form-control"></div>'
+        + '<div class="form-group"><label class="form-label">End date <span class="optional">(if previous)</span></label>'
+        + '<input type="month" name="emp_' + n + '_end_date" class="form-control"></div></div>'
+        + '<div class="form-group"><label class="form-label">Income type</label>'
+        + '<div class="il-radio-group">'
+        + '<label class="il-radio-label"><input type="radio" name="emp_' + n + '_income_type" value="W-2"> W-2 (Salaried)</label>'
+        + '<label class="il-radio-label"><input type="radio" name="emp_' + n + '_income_type" value="1099"> 1099 / Hourly</label>'
+        + '</div></div>'
+        + '<div class="form-row">'
+        + '<div class="form-group"><label class="form-label">YTD gross income</label>'
+        + '<div class="il-dollar-wrap"><input type="number" name="emp_' + n + '_ytd_gross" class="form-control" placeholder="0" min="0"></div></div>'
+        + '<div class="form-group"><label class="form-label">Pay period end date</label>'
+        + '<input type="date" name="emp_' + n + '_pay_period_end" class="form-control"></div></div>';
+      container.appendChild(div);
+      div.querySelector('.il-remove-btn').addEventListener('click', function () { div.remove(); });
+    });
+
+    /* Listing checkbox sync */
+    form.addEventListener('change', function (e) {
+      if (e.target.name === 'listing_interest') syncListings();
+    });
+
+    /* ---- Helper functions ---- */
+
+    function goToSection(n) {
+      document.getElementById('il-section-' + currentSection).hidden = true;
+      currentSection = n;
+      document.getElementById('il-section-' + currentSection).hidden = false;
+      updateProgress();
+      updateNav();
+      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+
+    function updateProgress() {
+      var pct = (currentSection / totalSections) * 100;
+      document.getElementById('il-bar-fill').style.width = pct + '%';
+      document.getElementById('il-progress-label').textContent =
+        'Section ' + currentSection + ' of ' + totalSections + ' \u2014 ' + SECTION_NAMES[currentSection - 1];
+      for (var i = 1; i <= totalSections; i++) {
+        var step = document.getElementById('il-step-' + i);
+        if (!step) continue;
+        step.classList.toggle('is-active', i === currentSection);
+        step.classList.toggle('is-done',   i < currentSection);
+      }
+    }
+
+    function updateNav() {
+      backBtn.hidden   = (currentSection === 1);
+      nextBtn.hidden   = (currentSection === totalSections);
+      submitBtn.hidden = (currentSection !== totalSections);
+      if (currentSection < totalSections) {
+        nextBtn.innerHTML = 'Next: ' + SECTION_NAMES[currentSection] + ' <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>';
+      }
+    }
+
+    function validateCurrentSection() {
+      var section = document.getElementById('il-section-' + currentSection);
+      var inputs = section.querySelectorAll('input[required]:not([disabled]), select[required]:not([disabled]), textarea[required]:not([disabled])');
+      var firstInvalid = null;
+      inputs.forEach(function (inp) {
+        if (!inp.offsetParent) return; /* skip hidden elements */
+        if (!inp.checkValidity() && !firstInvalid) firstInvalid = inp;
+      });
+      if (firstInvalid) { firstInvalid.reportValidity(); return false; }
+      return true;
+    }
+
+    function saveToStorage() {
+      try {
+        var data = {};
+        form.querySelectorAll('input:not([type="hidden"]), select, textarea').forEach(function (inp) {
+          if (!inp.name) return;
+          if (inp.type === 'radio' || inp.type === 'checkbox') {
+            if (inp.checked) data[inp.name + '__' + inp.value] = '1';
+          } else {
+            data[inp.name] = inp.value;
+          }
+        });
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      } catch (e) {}
+    }
+
+    function restoreFromStorage() {
+      try {
+        var raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        var data = JSON.parse(raw);
+        form.querySelectorAll('input:not([type="hidden"]), select, textarea').forEach(function (inp) {
+          if (!inp.name) return;
+          if (inp.type === 'radio' || inp.type === 'checkbox') {
+            if (data[inp.name + '__' + inp.value] === '1') inp.checked = true;
+          } else if (data[inp.name] !== undefined) {
+            inp.value = data[inp.name];
+          }
+        });
+        initConditionals(form); /* re-evaluate show/hide after restore */
+      } catch (e) {}
+    }
+
+    function initConditionals(root) {
+      root.querySelectorAll('[data-shows]').forEach(function (ctrl) {
+        var targetId  = ctrl.dataset.shows;
+        var showWhen  = ctrl.dataset.showWhen;
+        var target    = document.getElementById(targetId);
+        if (!target) return;
+
+        function evaluate() {
+          /* Collect all inputs with the same data-shows pointing to the same target */
+          var group = root.querySelectorAll('[data-shows="' + targetId + '"]');
+          var show  = false;
+          group.forEach(function (c) {
+            if ((c.type === 'radio' || c.type === 'checkbox') && c.checked && c.value === c.dataset.showWhen) show = true;
+            if (c.tagName === 'SELECT' && c.value === c.dataset.showWhen) show = true;
+          });
+          target.classList.toggle('is-visible', show);
+          target.querySelectorAll('[data-req]').forEach(function (f) { f.required = show; });
+        }
+
+        ctrl.addEventListener('change', evaluate);
+        evaluate();
+      });
+    }
+
+    function buildListings() {
+      var container = document.getElementById('il-listing-container');
+      if (!container) return;
+      var noneLabel = container.querySelector('label:last-child');
+      LISTINGS.forEach(function (listing) {
+        var lbl = document.createElement('label');
+        lbl.className = 'il-listing-label';
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.name = 'listing_interest';
+        cb.value = listing;
+        lbl.appendChild(cb);
+        lbl.appendChild(document.createTextNode('\u00a0' + listing));
+        container.insertBefore(lbl, noneLabel);
+      });
+    }
+
+    function syncListings() {
+      var vals = [];
+      form.querySelectorAll('input[name="listing_interest"]:checked').forEach(function (cb) {
+        vals.push(cb.value);
+      });
+      var hidden = document.getElementById('il-listings-hidden');
+      if (hidden) hidden.value = vals.join('; ');
+    }
+
+    function submitForm() {
+      var orig = submitBtn.innerHTML;
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Submitting\u2026';
+
+      syncListings();
+
+      fetch(form.action, {
+        method: 'POST',
+        headers: { 'Accept': 'application/json' },
+        body: new FormData(form)
+      })
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        if (data.ok) {
+          localStorage.setItem(COOLDOWN_KEY, Date.now().toString());
+          localStorage.removeItem(STORAGE_KEY);
+          panel.innerHTML = successHTML();
+        } else {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = orig;
+          showError(form, data.errors);
+        }
+      })
+      .catch(function () {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = orig;
+        showError(form, null);
+      });
+    }
+
+    function successHTML() {
+      return '<div style="text-align:center;padding:3rem 1rem;">'
+        + '<i class="fa-solid fa-circle-check" style="font-size:3rem;color:var(--color-sage);margin-bottom:1.25rem;display:block;" aria-hidden="true"></i>'
+        + '<span class="section-label">Submission Received</span>'
+        + '<h2 style="margin:0.5rem 0 1rem;">You\'re on the Interest List.</h2>'
+        + '<p style="max-width:380px;margin:0 auto;">We\'ll reach out when a listing becomes available that may match your profile.</p>'
+        + '<p style="max-width:380px;margin:0.75rem auto 0;font-size:0.875rem;color:#777;">To update your information at any time, email <a href="mailto:info@CAAffordableHomes.com">info@CAAffordableHomes.com</a>.</p>'
+        + '</div>';
+    }
+
+    function showError(frm, errors) {
+      var existing = frm.querySelector('.form-ajax-error');
+      if (existing) existing.remove();
+      var msg = (errors && errors.length)
+        ? errors.map(function (e) { return e.message; }).join(' ')
+        : 'Something went wrong. Please check your connection and try again.';
+      var el = document.createElement('p');
+      el.className = 'form-ajax-error';
+      el.setAttribute('role', 'alert');
+      el.style.cssText = 'color:#b91c1c;text-align:center;margin-top:0.75rem;font-size:0.9rem;';
+      el.textContent = msg;
+      frm.appendChild(el);
+    }
+
   })();
   </script>
 </body>
