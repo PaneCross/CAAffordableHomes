@@ -19,7 +19,7 @@ var TESTIMONIALS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSLI
    --------------------------------------------------------- */
 var STATIC_TESTIMONIALS = [
   {
-    quote: "Before finding this site, I didn't think I qualified for anything. The pre-screening process was simple, and I finally understood what I could realistically afford. It gave me confidence to move forward.",
+    quote: "Before finding this site, I didn't think I qualified for anything. The interest list process was simple, and I finally understood what I could realistically afford. It gave me confidence to move forward.",
     attribution: 'First-Time Buyer'
   },
   {

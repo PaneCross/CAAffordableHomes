@@ -163,7 +163,7 @@ function createPropertyCard(listing) {
   const amiRange    = listing['AMI Range']       || '';
   const programType = listing['Program Type']    || '';
 
-  // Build the "Learn More / Pre-Screen" URL (links to contact page with property pre-filled)
+  // Build the "Learn More" URL (links to contact page with property pre-filled)
   const encodedName = encodeURIComponent(name);
   const ctaHref = 'contact.html?property=' + encodedName;
 

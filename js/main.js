@@ -139,7 +139,7 @@
 
 /* ---------------------------------------------------------
    SECTION: Pre-fill Contact Form from URL Params
-   Allows "Learn More / Pre-Screen" property card links to
+   Allows "Learn More" property card links to
    pre-populate the subject/property field on contact.html
    --------------------------------------------------------- */
 (function () {

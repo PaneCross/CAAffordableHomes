@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Browse available affordable homes in California. All properties are pre-screened for affordability programs. Start a free pre-screening — no credit check, no obligation.">
+  <meta name="description" content="Browse available affordable homes in California. All properties are reviewed for affordability programs. Join our free Interest List — no credit check, no obligation.">
   <title>Available Homes — CA Affordable Homes</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
 
@@ -35,7 +35,7 @@
           <li><a href="faq.html">FAQ</a></li>
           <li><a href="contact.html">Contact</a></li>
         </ul>
-        <a href="contact.html" class="btn btn-primary nav-cta">Start Pre-Screening</a>
+        <a href="contact.html" class="btn btn-primary nav-cta">Join the Interest List</a>
         <button
           id="nav-hamburger"
           class="nav-hamburger"
@@ -55,7 +55,7 @@
           <li><a href="faq.html">FAQ</a></li>
           <li><a href="contact.html">Contact</a></li>
         </ul>
-        <a href="contact.html" class="btn btn-primary">Start Pre-Screening</a>
+        <a href="contact.html" class="btn btn-primary">Join the Interest List</a>
       </div>
     </nav>
   </header>
@@ -67,7 +67,7 @@
       <div class="container">
         <span class="section-label">Current Inventory</span>
         <h1 id="page-title">Available Properties</h1>
-        <p>Listings are updated regularly. All properties are pre-screened for affordability programs. See something you like? Start a free pre-screening — no credit check, no obligation.</p>
+        <p>Listings are updated regularly. All properties are reviewed for affordability programs. See something you like? Join our Interest List — no credit check, no obligation.</p>
       </div>
     </section>
 
@@ -108,8 +108,8 @@
           </div>
           <div class="feature-card" style="text-align: center;">
             <div style="display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 50%; background: rgba(255,255,255,0.18); color: #f5f5f5; font-weight: 700; font-size: 1.1rem; margin: 0 auto 1rem; border: 2px solid rgba(255,255,255,0.45);">2</div>
-            <h3>Start Pre-Screening</h3>
-            <p>Click "Learn More / Pre-Screen" on any listing to submit a free, no-obligation pre-screening request.</p>
+            <h3>Join the Interest List</h3>
+            <p>Click "Learn More" on any listing or use the contact form to join our free, no-obligation Interest List.</p>
           </div>
           <div class="feature-card" style="text-align: center;">
             <div style="display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 50%; background: rgba(255,255,255,0.18); color: #f5f5f5; font-weight: 700; font-size: 1.1rem; margin: 0 auto 1rem; border: 2px solid rgba(255,255,255,0.45);">3</div>
@@ -120,154 +120,6 @@
       </div>
     </section>
 
-    <!-- SECTION: Interest List Sign-Up -->
-    <section class="section interest-form-section" id="notify-me" aria-labelledby="notify-heading">
-      <div class="container">
-
-        <div class="notify-intro">
-          <span class="section-label">Stay Informed</span>
-          <h2 id="notify-heading">Get Notified When New Homes Are Listed</h2>
-          <hr class="accent-rule">
-          <p>New affordable homes are added regularly — and some move quickly. Select the San Diego areas you care about and we'll email you the moment a matching property is listed.</p>
-        </div>
-
-        <div class="notify-layout">
-
-          <!-- Left: interactive SVG map of San Diego regions -->
-          <div class="notify-map-col">
-            <p class="map-hint">
-              <i class="fa-solid fa-hand-pointer" aria-hidden="true"></i>
-              Click a region to select it
-            </p>
-            <!-- viewBox: 300 wide × 360 tall, 3 rows of 2 regions each -->
-            <svg class="sd-map" viewBox="0 0 300 360" xmlns="http://www.w3.org/2000/svg"
-                 role="img" aria-label="San Diego County region map — click to select areas">
-
-              <!-- Row 1 ─ North regions (y 0–155) -->
-              <g class="map-region-group" data-region="north-county-coastal"
-                 tabindex="0" role="button" aria-pressed="false" aria-label="North County Coastal">
-                <rect x="0" y="0" width="86" height="155" rx="6"/>
-                <text x="43" y="70" text-anchor="middle">
-                  <tspan x="43">North County</tspan>
-                  <tspan x="43" dy="14">Coastal</tspan>
-                </text>
-              </g>
-
-              <g class="map-region-group" data-region="north-county-inland"
-                 tabindex="0" role="button" aria-pressed="false" aria-label="North County Inland">
-                <rect x="92" y="0" width="208" height="155" rx="6"/>
-                <text x="196" y="70" text-anchor="middle">
-                  <tspan x="196">North County</tspan>
-                  <tspan x="196" dy="14">Inland</tspan>
-                </text>
-              </g>
-
-              <!-- Row 2 ─ Middle regions (y 161–271) -->
-              <g class="map-region-group" data-region="central-san-diego"
-                 tabindex="0" role="button" aria-pressed="false" aria-label="Central San Diego">
-                <rect x="0" y="161" width="86" height="110" rx="6"/>
-                <text x="43" y="209" text-anchor="middle">
-                  <tspan x="43">Central</tspan>
-                  <tspan x="43" dy="14">San Diego</tspan>
-                </text>
-              </g>
-
-              <g class="map-region-group" data-region="east-county"
-                 tabindex="0" role="button" aria-pressed="false" aria-label="East County">
-                <rect x="92" y="161" width="208" height="110" rx="6"/>
-                <text x="196" y="220" text-anchor="middle">
-                  <tspan x="196">East County</tspan>
-                </text>
-              </g>
-
-              <!-- Row 3 ─ South regions (y 277–360) -->
-              <g class="map-region-group" data-region="downtown-metro"
-                 tabindex="0" role="button" aria-pressed="false" aria-label="Downtown and Metro">
-                <rect x="0" y="277" width="86" height="83" rx="6"/>
-                <text x="43" y="311" text-anchor="middle">
-                  <tspan x="43">Downtown</tspan>
-                  <tspan x="43" dy="13">/ Metro</tspan>
-                </text>
-              </g>
-
-              <g class="map-region-group" data-region="south-bay"
-                 tabindex="0" role="button" aria-pressed="false" aria-label="South Bay">
-                <rect x="92" y="277" width="208" height="83" rx="6"/>
-                <text x="196" y="322" text-anchor="middle">
-                  <tspan x="196">South Bay</tspan>
-                </text>
-              </g>
-
-            </svg>
-            <p class="map-cities-note">
-              <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
-              Select all areas that interest you
-            </p>
-          </div>
-
-          <!-- Right: form with region checkboxes + personal info -->
-          <div id="notify-form-panel">
-            <form id="notify-form" novalidate aria-label="Listing notification sign-up form">
-
-              <div class="form-group">
-                <span class="form-label" id="regions-label">
-                  Areas of Interest
-                  <span style="color: #b91c1c;" aria-hidden="true">*</span>
-                </span>
-                <p style="font-size: 0.8rem; color: var(--color-text-muted); margin: 0.2rem 0 0.65rem;">
-                  Select at least one — synced with the map
-                </p>
-                <!-- Checkboxes populated by JS, synced to SVG map -->
-                <div id="region-picker" class="region-picker"
-                     role="group" aria-labelledby="regions-label"></div>
-              </div>
-
-              <div class="form-row" style="margin-top: 1.25rem;">
-                <div class="form-group">
-                  <label class="form-label" for="notify-first-name">First Name</label>
-                  <input type="text" id="notify-first-name" class="form-control"
-                         placeholder="Jane" required autocomplete="given-name">
-                </div>
-                <div class="form-group">
-                  <label class="form-label" for="notify-last-name">Last Name</label>
-                  <input type="text" id="notify-last-name" class="form-control"
-                         placeholder="Smith" required autocomplete="family-name">
-                </div>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label" for="notify-email">Email Address</label>
-                <input type="email" id="notify-email" name="email" class="form-control"
-                       placeholder="jane@example.com" required autocomplete="email">
-              </div>
-
-              <div class="form-group">
-                <label class="form-label" for="notify-phone">
-                  Phone Number
-                  <span class="optional">(optional)</span>
-                </label>
-                <input type="tel" id="notify-phone" name="phone" class="form-control"
-                       placeholder="(555) 000-0000" autocomplete="tel">
-              </div>
-
-              <button type="submit" class="btn btn-primary"
-                      style="width: 100%; justify-content: center;">
-                <i class="fa-solid fa-bell" aria-hidden="true"></i>
-                Notify Me of New Listings
-              </button>
-
-              <p class="form-note" style="margin-top: 0.75rem; text-align: center;">
-                <i class="fa-solid fa-lock" aria-hidden="true"></i>
-                Free to join. We only reach out when a match is found. Unsubscribe any time.
-              </p>
-
-            </form>
-          </div><!-- end #notify-form-panel -->
-
-        </div><!-- end .notify-layout -->
-
-      </div>
-    </section>
 
   </main>
 
@@ -304,7 +156,7 @@
         <div class="footer-col">
           <h4>Get Started</h4>
           <ul class="footer-nav-links" role="list">
-            <li><a href="contact.html">Free Pre-Screening</a></li>
+            <li><a href="contact.html">Join the Interest List</a></li>
             <li><a href="homes.html">View Listings</a></li>
             <li><a href="services.html">Our Services</a></li>
             <li><a href="contact.html#partner-form">Partner With Us</a></li>
@@ -314,178 +166,12 @@
       </div>
       <div class="footer-bottom">
         <p>&copy; 2025 CA Affordable Homes. All rights reserved.</p>
-        <p>We are not a lender. Pre-screening is informational only.</p>
+        <p>We are not a lender. Joining the interest list is informational only.</p>
       </div>
     </div>
   </footer>
 
   <script src="js/main.js"></script>
   <script src="js/listings.js"></script>
-  <script>
-  /* ---------------------------------------------------------
-     Notify Me — Region picker + SVG map sync + AJAX submit
-     --------------------------------------------------------- */
-  (function () {
-
-    /* ── STEP 1: Paste your Apps Script Web App URL here after deploying ── */
-    var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw0MOVFTvtDia4k_bcGVtgcwb-7EhWczMzSdLpaesRDUqV4ZmUpJ6CU75B09ee9tXHO/exec';
-
-    var COOLDOWN_MS = 2 * 60 * 60 * 1000; /* 2 hours */
-    var STORAGE_KEY = 'caah_notify_submitted';
-
-    /* Region definitions — keys must match data-region on SVG groups */
-    var REGIONS = [
-      { key: 'north-county-coastal', label: 'North County Coastal' },
-      { key: 'north-county-inland',  label: 'North County Inland'  },
-      { key: 'central-san-diego',    label: 'Central San Diego'    },
-      { key: 'east-county',          label: 'East County'          },
-      { key: 'downtown-metro',       label: 'Downtown / Metro'     },
-      { key: 'south-bay',            label: 'South Bay'            }
-    ];
-
-    /* ── Success + error helpers ── */
-    function successHTML() {
-      return '<div style="text-align:center;padding:3rem 1rem;">'
-        + '<i class="fa-solid fa-circle-check" style="font-size:3rem;color:var(--color-sage);margin-bottom:1.25rem;display:block;" aria-hidden="true"></i>'
-        + '<span class="section-label">You\'re on the list!</span>'
-        + '<h2 style="margin:0.5rem 0 1rem;">Sign-Up Received</h2>'
-        + '<p style="max-width:380px;margin:0 auto;">We\'ll email you as soon as a property matching your selected areas becomes available. No spam \u2014 only real listings.</p>'
-        + '</div>';
-    }
-
-    function showError(form, msg) {
-      var existing = form.querySelector('.form-ajax-error');
-      if (existing) existing.remove();
-      var el = document.createElement('p');
-      el.className = 'form-ajax-error';
-      el.setAttribute('role', 'alert');
-      el.style.cssText = 'color:#b91c1c;text-align:center;margin-top:0.75rem;font-size:0.9rem;';
-      el.textContent = msg;
-      form.appendChild(el);
-    }
-
-    function cooldownRemaining() {
-      var ts = localStorage.getItem(STORAGE_KEY);
-      if (!ts) return 0;
-      var remaining = COOLDOWN_MS - (Date.now() - parseInt(ts, 10));
-      return remaining > 0 ? remaining : 0;
-    }
-
-    /* ── Cooldown check on page load ── */
-    var panel = document.getElementById('notify-form-panel');
-    if (!panel) return;
-
-    if (cooldownRemaining() > 0) {
-      panel.innerHTML = successHTML();
-      return;
-    }
-    localStorage.removeItem(STORAGE_KEY);
-
-    /* ── Build region checkboxes ── */
-    var picker = document.getElementById('region-picker');
-    if (picker) {
-      REGIONS.forEach(function (r) {
-        var lbl = document.createElement('label');
-        lbl.className = 'region-label';
-        lbl.dataset.region = r.key;
-        lbl.innerHTML = '<input type="checkbox" value="' + r.key + '" aria-label="' + r.label + '">'
-          + '<span>' + r.label + '</span>';
-        picker.appendChild(lbl);
-      });
-    }
-
-    /* ── Sync selections between checkboxes and SVG map ── */
-    function syncUI() {
-      var checkboxes = document.querySelectorAll('#region-picker input[type="checkbox"]');
-      checkboxes.forEach(function (cb) {
-        var key = cb.value;
-        var lbl = cb.closest('label');
-        var grp = document.querySelector('.map-region-group[data-region="' + key + '"]');
-        var selected = cb.checked;
-        if (lbl) lbl.classList.toggle('is-selected', selected);
-        if (grp) {
-          grp.classList.toggle('is-selected', selected);
-          grp.setAttribute('aria-pressed', String(selected));
-        }
-      });
-    }
-
-    /* Checkbox → map */
-    if (picker) {
-      picker.addEventListener('change', syncUI);
-    }
-
-    /* Map → checkbox */
-    document.querySelectorAll('.map-region-group').forEach(function (grp) {
-      function toggle() {
-        var cb = document.querySelector('#region-picker input[value="' + grp.dataset.region + '"]');
-        if (cb) { cb.checked = !cb.checked; syncUI(); }
-      }
-      grp.addEventListener('click', toggle);
-      grp.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
-      });
-    });
-
-    /* ── Form submission ── */
-    var form = document.getElementById('notify-form');
-    if (!form) return;
-
-    form.addEventListener('submit', function (e) {
-      e.preventDefault();
-
-      if (cooldownRemaining() > 0) {
-        showError(form, 'You\u2019ve already signed up recently. Please wait a couple of hours before signing up again.');
-        return;
-      }
-
-      /* Validate: at least one region selected */
-      var selected = Array.from(document.querySelectorAll('#region-picker input:checked'))
-        .map(function (cb) { return cb.value; });
-      if (selected.length === 0) {
-        showError(form, 'Please select at least one area of interest on the map or checklist.');
-        return;
-      }
-
-      /* Standard HTML5 validation for name + email */
-      if (!form.checkValidity()) {
-        form.reportValidity();
-        return;
-      }
-
-      /* Not configured yet */
-      if (SCRIPT_URL === 'PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE') {
-        showError(form, 'Notification sign-up is not yet active. Please check back soon or email us directly.');
-        return;
-      }
-
-      var btn = form.querySelector('button[type="submit"]');
-      var originalHTML = btn.innerHTML;
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Signing up\u2026';
-
-      var params = new URLSearchParams({
-        first_name: document.getElementById('notify-first-name').value.trim(),
-        last_name:  document.getElementById('notify-last-name').value.trim(),
-        email:      document.getElementById('notify-email').value.trim(),
-        phone:      document.getElementById('notify-phone').value.trim(),
-        regions:    selected.join(',')
-      });
-
-      /* GET request — simple request, no preflight CORS issues */
-      fetch(SCRIPT_URL + '?' + params.toString(), { method: 'GET', mode: 'no-cors' })
-        .then(function () {
-          localStorage.setItem(STORAGE_KEY, Date.now().toString());
-          panel.innerHTML = successHTML();
-        })
-        .catch(function () {
-          btn.disabled = false;
-          btn.innerHTML = originalHTML;
-          showError(form, 'Unable to sign up \u2014 please check your connection and try again.');
-        });
-    });
-
-  })();
-  </script>
 </body>
 </html>
