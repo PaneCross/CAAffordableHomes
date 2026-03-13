@@ -1211,13 +1211,29 @@
       submitForm();
     });
 
+    /* Renumber header labels to match current DOM position */
+    function renumberIncomeBlocks() {
+      var blocks = document.getElementById('il-income-members').querySelectorAll('.il-repeating-block');
+      blocks.forEach(function (block, i) {
+        var span = block.querySelector('.il-repeating-block__header span');
+        if (span) span.textContent = 'Household Member ' + (i + 1);
+      });
+    }
+    function renumberEmpBlocks() {
+      var blocks = document.getElementById('il-employment-blocks').querySelectorAll('.il-repeating-block');
+      blocks.forEach(function (block, i) {
+        var span = block.querySelector('.il-repeating-block__header span');
+        if (span) span.textContent = 'Employment Entry ' + (i + 1);
+      });
+    }
+
     /* Remove buttons on employment blocks */
     document.getElementById('il-employment-blocks').addEventListener('click', function (e) {
       var btn = e.target.closest('.il-remove-btn');
       if (!btn) return;
       var blockId = btn.dataset.remove;
       var block = document.getElementById(blockId);
-      if (block) block.remove();
+      if (block) { block.remove(); renumberEmpBlocks(); updateEmpCapUI(); }
     });
 
     /* Add income member block (max 6) */
@@ -1254,8 +1270,10 @@
       container.appendChild(div);
       div.querySelector('.il-remove-btn').addEventListener('click', function () {
         div.remove();
+        renumberIncomeBlocks();
         updateIncomeCapUI();
       });
+      renumberIncomeBlocks();
       updateIncomeCapUI();
     });
 
@@ -1325,9 +1343,11 @@
       container.appendChild(div);
       div.querySelector('.il-remove-btn').addEventListener('click', function () {
         div.remove();
+        renumberEmpBlocks();
         updateEmpCapUI();
       });
       initConditionals(div);
+      renumberEmpBlocks();
       updateEmpCapUI();
     });
 
