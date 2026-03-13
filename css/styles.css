@@ -2557,3 +2557,18 @@ body.modal-open { overflow: hidden; }
   .lm-title   { font-size: 1.3rem; }
   .lm-actions { flex-direction: column; }
 }
+
+/* MLS external listing link */
+.lm-mls-link {
+  font-size: 0.9rem;
+  color: var(--color-text);
+  margin: 0 0 1.5rem;
+  padding: 0.85rem 1rem;
+  background: var(--color-cream);
+  border-left: 3px solid var(--color-sage);
+  border-radius: 0 var(--radius-card) var(--radius-card) 0;
+}
+.lm-mls-link a {
+  color: var(--color-sage);
+  word-break: break-all;
+}

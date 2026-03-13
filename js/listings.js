@@ -337,8 +337,16 @@ function buildMLSContent(l) {
   var badgeClass = status.trim().toLowerCase() === 'available'
     ? 'status-badge--available' : 'status-badge--coming-soon';
 
-  var photos   = getPhotos(l);
-  var descHTML = buildDescSections(l);
+  var photos      = getPhotos(l);
+  var descHTML    = buildDescSections(l);
+  var mlsUrl      = (l['mls_listing_url'] || '').trim();
+  var mlsLinkHTML = mlsUrl
+    ? '<p class="lm-mls-link">For more information, visit the full listing at: ' +
+        '<a href="' + escapeHTML(mlsUrl) + '" target="_blank" rel="noopener noreferrer">' +
+          escapeHTML(mlsUrl) +
+        '</a>' +
+      '</p>'
+    : '';
 
   return (
     '<div class="lm-header">' +
@@ -350,6 +358,7 @@ function buildMLSContent(l) {
     '</div>' +
     buildCarouselHTML(photos, name) +
     descHTML +
+    mlsLinkHTML +
     '<div class="lm-mls-contact">' +
       '<h3 class="lm-mls-contact__heading">Contact About This Property</h3>' +
       '<form id="lm-mls-form" novalidate>' +
