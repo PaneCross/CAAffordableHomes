@@ -185,16 +185,20 @@ var REGION_NAMES = {
 };
 
 /* ==========================================================
-   doPost — Interest List questionnaire submission
-   Called by the contact.html Interest List wizard via JSON POST.
-   Writes one row to the "Interest List" sheet, deduplicates by
-   email (updates existing active rows; inserts new ones), then
-   sends a confirmation email to the applicant and a summary
-   notification to the internal team.
+   doPost — routes by form_type:
+     "interest_list" (default) — Interest List questionnaire
+     "mls_contact"             — MLS property inquiry from homes.html modal
    ========================================================== */
 function doPost(e) {
   try {
-    var data  = JSON.parse(e.postData.contents);
+    var data     = JSON.parse(e.postData.contents);
+    var formType = (data.form_type || 'interest_list').trim().toLowerCase();
+
+    if (formType === 'mls_contact') {
+      return handleMLSContact(data);
+    }
+
+    /* ── Interest List flow ── */
     var email = (data.email || '').trim().toLowerCase();
 
     if (!email) {
@@ -250,6 +254,52 @@ function doPost(e) {
     Logger.log('doPost error: ' + err.message);
     return jsonResponse({ ok: false, error: err.message });
   }
+}
+
+/* ==========================================================
+   handleMLSContact — MLS property inquiry from homes.html modal
+   Emails the inquiry to the internal team and returns { ok: true }.
+   No sheet row is written for MLS inquiries.
+   ========================================================== */
+function handleMLSContact(data) {
+  var propName = (data.property_name || 'Unknown Property').trim();
+  var name     = (data.name    || '').trim();
+  var email    = (data.email   || '').trim();
+  var phone    = (data.phone   || '').trim();
+  var message  = (data.message || '').trim();
+
+  if (!email) {
+    return jsonResponse({ ok: false, error: 'Email is required' });
+  }
+
+  var subject =
+    '[MLS Inquiry] ' + propName + ' \u2014 ' + (name || 'Anonymous') + ' <' + email + '>';
+
+  var body =
+    'MLS Property Inquiry\n\n'
+    + 'Property: ' + propName + '\n'
+    + '---\n'
+    + 'Name:    ' + name    + '\n'
+    + 'Email:   ' + email   + '\n'
+    + 'Phone:   ' + (phone  || '(not provided)') + '\n'
+    + '---\n'
+    + 'Message:\n' + (message || '(no message provided)') + '\n\n'
+    + 'Reply directly to: ' + email;
+
+  try {
+    MailApp.sendEmail({
+      to:      'tj@nostos.tech',
+      subject: subject,
+      body:    body,
+      name:    FROM_NAME,
+      replyTo: email
+    });
+    Logger.log('MLS inquiry sent for: ' + propName + ' from ' + email);
+  } catch (err) {
+    Logger.log('MLS inquiry email failed: ' + err.message);
+  }
+
+  return jsonResponse({ ok: true });
 }
 
 /* ── Build a flat array aligned to IL_COLUMNS for one submission ── */
