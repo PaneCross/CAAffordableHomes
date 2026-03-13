@@ -2369,6 +2369,12 @@ body.modal-open { overflow: hidden; }
 .lm-header {
   margin-bottom: 1.25rem;
 }
+/* Reset status badge from absolute (card overlay) to inline flow inside modal */
+.lm-header .status-badge {
+  position: static;
+  display: inline-block;
+  margin-top: 0.5rem;
+}
 .lm-title {
   font-family: 'Cormorant Garamond', serif;
   font-size: 1.65rem;

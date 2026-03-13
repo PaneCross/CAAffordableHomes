@@ -308,7 +308,7 @@ function buildAffordableContent(l) {
       '<h2 class="lm-title" id="lm-title">' + escapeHTML(name) + '</h2>' +
       (address ? '<p class="lm-address">' + escapeHTML(address) + '</p>' : '') +
       (price   ? '<p class="lm-price">'   + escapeHTML(price)   + '</p>' : '') +
-      '<span class="status-badge ' + badgeClass + '" style="margin-top:0.5rem;display:inline-block;">' + escapeHTML(status) + '</span>' +
+      '<span class="status-badge ' + badgeClass + '">' + escapeHTML(status) + '</span>' +
     '</div>' +
     buildCarouselHTML(photos, name) +
     descHTML +
@@ -346,7 +346,7 @@ function buildMLSContent(l) {
       '<h2 class="lm-title" id="lm-title">' + escapeHTML(name) + '</h2>' +
       (address ? '<p class="lm-address">' + escapeHTML(address) + '</p>' : '') +
       (price   ? '<p class="lm-price">'   + escapeHTML(price)   + '</p>' : '') +
-      '<span class="status-badge ' + badgeClass + '" style="margin-top:0.5rem;display:inline-block;">' + escapeHTML(status) + '</span>' +
+      '<span class="status-badge ' + badgeClass + '">' + escapeHTML(status) + '</span>' +
     '</div>' +
     buildCarouselHTML(photos, name) +
     descHTML +
