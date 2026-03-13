@@ -19,6 +19,32 @@
       - Column headers are written by the script. Do not rename or reorder them.
       - Set status values manually: "new" (default) → "reviewing" → "matched" → "expired".
 
+   5c. REQUIREMENTS TAB — create manually before running matching:
+      - Add a new tab named exactly: Requirements
+      - Row 1 must have these exact column headers in this order:
+        listing_id, listing_name, active, ami_percent,
+        min_household_size, max_household_size,
+        max_income_1person, max_income_2person, max_income_3person,
+        max_income_4person, max_income_5person, max_income_6person,
+        min_income, min_credit_score, max_dti_percent, max_monthly_debt,
+        first_time_buyer_required, no_ownership_years,
+        sd_county_residency_required, sd_residency_months,
+        household_together_months, sdhc_prior_purchase_allowed,
+        foreclosure_allowed, foreclosure_min_years,
+        bankruptcy_allowed, bankruptcy_min_years,
+        judgments_allowed, citizenship_required,
+        permanent_resident_acceptable, min_assets, max_assets,
+        min_down_payment_pct, max_down_payment_pct,
+        min_employment_months, program_notes
+      - Fill in only the fields that apply to each listing. Leave others blank.
+      - Set "active" to YES for any listing you want included in matching.
+
+   5d. MATCH RESULTS TAB — created automatically on first match run.
+      - Do not rename or delete it.
+      - Columns: listing_id, listing_name, applicant_email, applicant_name,
+                 applicant_phone, match_status (Pass/Close/Fail),
+                 failed_fields, run_at
+
    6. DEPLOY / UPDATE:
       - If first time: Click Deploy → New deployment → Web App
         Execute as: Me | Who has access: Anyone → Deploy → Authorize
@@ -26,17 +52,30 @@
         Set Version to "New version" → Deploy
         The Web App URL stays the same — no need to update homes.html or contact.html
 
-   7. SET UP THE EDIT TRIGGER (if not already done):
-      - In the Apps Script editor, click the clock icon (Triggers) on the left
+   7. SET UP TRIGGERS (do this once in the Triggers panel):
+
+      TRIGGER A — Re-run matching when Requirements sheet is edited:
+      - In Apps Script editor, click the clock icon (Triggers) on the left sidebar
       - Click "+ Add Trigger" (bottom right)
-      - Choose function: onListingChange
+      - Choose function: onRequirementsEdit
       - Event source: From spreadsheet
       - Event type: On edit
       - Click Save
 
-   That's it! Subscriber sign-ups will appear in the "Subscribers" tab, and
-   notification emails (with personalized greetings and an Unsubscribe button)
-   will fire whenever you add or edit a listing's City field.
+      TRIGGER B — Run full matching every morning at 7 AM:
+      - Click "+ Add Trigger" again
+      - Choose function: runMatchingForAllListings
+      - Event source: Time-driven
+      - Time based trigger type: Day timer
+      - Time of day: 6am to 7am
+      - Click Save
+
+      TRIGGER C — Notify subscribers when a listing City is updated:
+      - Click "+ Add Trigger" again
+      - Choose function: onListingChange
+      - Event source: From spreadsheet
+      - Event type: On edit
+      - Click Save
 
    ========================================================== */
 
@@ -48,6 +87,12 @@ var SITE_URL        = 'https://caaffordablehomes.com/homes.html'; /* update when
 var SCRIPT_URL      = 'https://script.google.com/macros/s/AKfycbw0MOVFTvtDia4k_bcGVtgcwb-7EhWczMzSdLpaesRDUqV4ZmUpJ6CU75B09ee9tXHO/exec';
 var FROM_NAME       = 'CA Affordable Homes Team';
 var REPLY_TO        = 'Info@CAAffordableHomes.com';
+
+/* ── Matching configuration ── */
+var REQUIREMENTS_SHEET  = 'Requirements';
+var MATCH_RESULTS_SHEET = 'Match Results';
+var CLOSE_THRESHOLD     = 2;  /* applicants with <= this many failed fields are "Close" */
+var NOTIFY_EMAIL        = 'tj@nostos.tech'; /* switch to Kacee's address at Phase 8 launch */
 
 /* ── Subscriber sheet column positions (1-based) ──
    A: Email | B: First Name | C: Last Name | D: Phone | E: Regions | F: Date Subscribed */
@@ -136,6 +181,59 @@ var IL_COL = (function () {
   for (var i = 0; i < IL_COLUMNS.length; i++) map[IL_COLUMNS[i]] = i + 1;
   return map;
 }());
+
+/* ── Requirements sheet columns ──
+   One row per listing. All fields optional except listing_id and active.
+   Leave a cell blank to skip that check for this listing.              */
+var REQ_COLUMNS = [
+  'listing_id',                    /* A — must match Property Name in Listings tab */
+  'listing_name',                  /* B — display name used in emails */
+  'active',                        /* C — YES to include in daily matching */
+  'ami_percent',                   /* D — e.g. "80%" — reference only, not used in matching */
+  'min_household_size',            /* E — minimum household size */
+  'max_household_size',            /* F — maximum household size */
+  'max_income_1person',            /* G — max annual household income for 1-person household */
+  'max_income_2person',            /* H */
+  'max_income_3person',            /* I */
+  'max_income_4person',            /* J */
+  'max_income_5person',            /* K */
+  'max_income_6person',            /* L */
+  'min_income',                    /* M — minimum household income (some programs require this) */
+  'min_credit_score',              /* N — default 640 per all programs */
+  'max_dti_percent',               /* O — debt-to-income %, default 45 */
+  'max_monthly_debt',              /* P — alternative absolute dollar cap on monthly debt */
+  'first_time_buyer_required',     /* Q — YES/NO — cannot have owned in last X years */
+  'no_ownership_years',            /* R — years since last ownership, default 3 */
+  'sd_county_residency_required',  /* S — YES/NO */
+  'sd_residency_months',           /* T — months required, default 24 */
+  'household_together_months',     /* U — how long household must have lived together, default 12 */
+  'sdhc_prior_purchase_allowed',   /* V — YES/NO — prior SDHC program participation */
+  'foreclosure_allowed',           /* W — YES/NO */
+  'foreclosure_min_years',         /* X — years since foreclosure/short sale required */
+  'bankruptcy_allowed',            /* Y — YES/NO */
+  'bankruptcy_min_years',          /* Z — years since discharge required */
+  'judgments_allowed',             /* AA — YES/NO — outstanding judgments/garnishments/liens */
+  'citizenship_required',          /* AB — YES/NO */
+  'permanent_resident_acceptable', /* AC — YES/NO — green card accepted if citizenship required */
+  'min_assets',                    /* AD — minimum total assets */
+  'max_assets',                    /* AE — maximum total assets */
+  'min_down_payment_pct',          /* AF — minimum down payment % */
+  'max_down_payment_pct',          /* AG — maximum down payment % */
+  'min_employment_months',         /* AH — minimum continuous employment months */
+  'program_notes'                  /* AI — free text, Kacee reference only, not used in matching */
+];
+
+var REQ_COL = (function () {
+  var map = {};
+  for (var i = 0; i < REQ_COLUMNS.length; i++) map[REQ_COLUMNS[i]] = i + 1;
+  return map;
+}());
+
+/* ── Match Results sheet columns ── */
+var MR_COLUMNS = [
+  'listing_id', 'listing_name', 'applicant_email', 'applicant_name',
+  'applicant_phone', 'match_status', 'failed_fields', 'run_at'
+];
 
 /* ── Region → Cities mapping ──
    Add or edit city names here at any time.
@@ -288,7 +386,7 @@ function handleMLSContact(data) {
 
   try {
     MailApp.sendEmail({
-      to:      'tj@nostos.tech',
+      to:      NOTIFY_EMAIL,
       subject: subject,
       body:    body,
       name:    FROM_NAME,
@@ -426,13 +524,13 @@ function sendILNotification(data, updated) {
 
   try {
     MailApp.sendEmail({
-      to:      'tj@nostos.tech',
+      to:      NOTIFY_EMAIL,
       subject: subject,
       body:    body,
       name:    FROM_NAME,
       replyTo: REPLY_TO
     });
-    Logger.log('IL notification sent to tj@nostos.tech');
+    Logger.log('IL notification sent to ' + NOTIFY_EMAIL);
   } catch (err) {
     Logger.log('IL notification failed: ' + err.message);
   }
@@ -741,4 +839,562 @@ function testNotify() {
     'East County'
   );
   Logger.log('Test email sent to your account.');
+}
+
+/* ==========================================================
+   PHASE 5 — MATCHING ENGINE
+   ========================================================== */
+
+/* ==========================================================
+   runMatchingForAllListings
+   Main entry point — called by the daily 7 AM time trigger
+   or manually from the Apps Script editor (Run button).
+   ========================================================== */
+function runMatchingForAllListings() {
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+
+  var reqSheet = ss.getSheetByName(REQUIREMENTS_SHEET);
+  if (!reqSheet) {
+    Logger.log('Requirements sheet not found. Create it and add headers first (see setup step 5c).');
+    return;
+  }
+
+  var ilSheet = ss.getSheetByName(IL_SHEET);
+  if (!ilSheet || ilSheet.getLastRow() < 2) {
+    Logger.log('No applicants in Interest List yet.');
+    return;
+  }
+
+  var applicants = getActiveApplicants(ilSheet);
+  if (applicants.length === 0) {
+    Logger.log('No active applicants found (status must be new, reviewing, or active).');
+    return;
+  }
+
+  var reqLastRow = reqSheet.getLastRow();
+  if (reqLastRow < 2) {
+    Logger.log('No requirement rows found in Requirements sheet.');
+    return;
+  }
+
+  var reqData = reqSheet.getRange(2, 1, reqLastRow - 1, REQ_COLUMNS.length).getValues();
+  var listingsProcessed = 0;
+
+  for (var i = 0; i < reqData.length; i++) {
+    var req    = rowToReqObj(reqData[i]);
+    var active = (req['active'] || '').toString().trim().toLowerCase();
+    if (active !== 'yes') continue;
+
+    var results = matchApplicantsToListing(req, applicants);
+    writeMatchResults(ss, results);
+
+    var passes = results.filter(function (r) { return r.match_status === 'Pass'; });
+    var closes = results.filter(function (r) { return r.match_status === 'Close'; });
+    if (passes.length > 0 || closes.length > 0) {
+      sendMatchEmail(req['listing_name'] || req['listing_id'], passes, closes);
+    }
+
+    listingsProcessed++;
+  }
+
+  Logger.log('Matching complete. Listings: ' + listingsProcessed + ' | Applicants: ' + applicants.length);
+}
+
+/* ==========================================================
+   onRequirementsEdit — installable onEdit trigger
+   Re-runs matching only for the listing row that was edited.
+   Set up via Triggers panel (see setup step 7 / Trigger A).
+   ========================================================== */
+function onRequirementsEdit(e) {
+  if (!e || !e.range) return;
+  var sheet = e.range.getSheet();
+  if (sheet.getName() !== REQUIREMENTS_SHEET) return;
+
+  var row = e.range.getRow();
+  if (row === 1) return; /* header row — skip */
+
+  var ss       = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var reqSheet = ss.getSheetByName(REQUIREMENTS_SHEET);
+  var rowData  = reqSheet.getRange(row, 1, 1, REQ_COLUMNS.length).getValues()[0];
+  var req      = rowToReqObj(rowData);
+
+  var active = (req['active'] || '').toString().trim().toLowerCase();
+  if (active !== 'yes') return;
+
+  var ilSheet = ss.getSheetByName(IL_SHEET);
+  if (!ilSheet || ilSheet.getLastRow() < 2) return;
+
+  var applicants = getActiveApplicants(ilSheet);
+  if (applicants.length === 0) return;
+
+  var results = matchApplicantsToListing(req, applicants);
+  writeMatchResults(ss, results);
+
+  var passes = results.filter(function (r) { return r.match_status === 'Pass'; });
+  var closes = results.filter(function (r) { return r.match_status === 'Close'; });
+  if (passes.length > 0 || closes.length > 0) {
+    sendMatchEmail(req['listing_name'] || req['listing_id'], passes, closes);
+  }
+
+  Logger.log('Re-match on edit: ' + req['listing_id'] + ' | Pass: ' + passes.length + ' | Close: ' + closes.length);
+}
+
+/* ── Returns all Interest List rows with a non-expired, non-matched status ── */
+function getActiveApplicants(ilSheet) {
+  var lastRow = ilSheet.getLastRow();
+  if (lastRow < 2) return [];
+
+  var data       = ilSheet.getRange(2, 1, lastRow - 1, IL_COLUMNS.length).getValues();
+  var applicants = [];
+
+  for (var i = 0; i < data.length; i++) {
+    var obj    = rowToILObj(data[i]);
+    var status = (obj['status'] || '').toString().trim().toLowerCase();
+    if (status !== 'expired' && status !== 'matched') {
+      applicants.push(obj);
+    }
+  }
+  return applicants;
+}
+
+/* ── Run matching for one listing against all applicants ── */
+function matchApplicantsToListing(req, applicants) {
+  var results = [];
+  var now     = new Date();
+
+  for (var j = 0; j < applicants.length; j++) {
+    var ap     = applicants[j];
+    var result = evaluateApplicant(ap, req);
+    results.push({
+      listing_id:      req['listing_id'],
+      listing_name:    req['listing_name'],
+      applicant_email: (ap['email'] || '').toString().trim(),
+      applicant_name:  ((ap['first_name'] || '') + ' ' + (ap['last_name'] || '')).trim(),
+      applicant_phone: (ap['phone'] || '').toString().trim(),
+      match_status:    result.status,
+      failed_fields:   result.failedFields.join('; '),
+      run_at:          now
+    });
+  }
+  return results;
+}
+
+/* ==========================================================
+   evaluateApplicant
+   Checks every non-blank requirement field against the
+   applicant's Interest List data.
+   Returns { status: 'Pass'|'Close'|'Fail', failedFields: [] }
+   ========================================================== */
+function evaluateApplicant(ap, req) {
+  var failed = [];
+
+  /* 1 — Credit score
+     All programs: minimum 640. Per-listing override via min_credit_score. */
+  var minCredit = parseNum(req['min_credit_score'], 640);
+  var apCredit  = parseCreditScoreLowerBound(ap['credit_score_range']);
+  if (apCredit !== null && apCredit < minCredit) {
+    failed.push('Credit score (' + ap['credit_score_range'] + ', need ' + minCredit + '+)');
+  }
+
+  /* 2 — First-time buyer / no prior ownership in last N years
+     All programs: cannot have owned in last 3 years. */
+  var ftbRequired   = yesNo(req['first_time_buyer_required'], 'yes');
+  var ownershipYears = parseNum(req['no_ownership_years'], 3);
+  if (ftbRequired) {
+    var ownedRE = yesNo(ap['owned_real_estate']);
+    if (ownedRE) {
+      failed.push('Owned real estate in last ' + ownershipYears + ' years');
+    }
+  }
+
+  /* 3 — Household size */
+  var hhSize = parseNum(ap['household_size']);
+  var minHH  = parseNum(req['min_household_size']);
+  var maxHH  = parseNum(req['max_household_size']);
+  if (hhSize !== null) {
+    if (minHH !== null && hhSize < minHH) {
+      failed.push('Household size too small (' + hhSize + ', min ' + minHH + ')');
+    }
+    if (maxHH !== null && hhSize > maxHH) {
+      failed.push('Household size too large (' + hhSize + ', max ' + maxHH + ')');
+    }
+  }
+
+  /* 4 — Annual income vs. per-household-size maximum */
+  var annualIncome = getApplicantIncome(ap);
+  if (annualIncome !== null && hhSize !== null) {
+    var sizeKey  = 'max_income_' + Math.min(Math.max(Math.round(hhSize), 1), 6) + 'person';
+    var maxInc   = parseNum(req[sizeKey]);
+    var minInc   = parseNum(req['min_income']);
+    if (maxInc !== null && annualIncome > maxInc) {
+      failed.push('Income too high ($' + fmt(annualIncome) + ', max $' + fmt(maxInc) + ')');
+    }
+    if (minInc !== null && annualIncome < minInc) {
+      failed.push('Income too low ($' + fmt(annualIncome) + ', min $' + fmt(minInc) + ')');
+    }
+  }
+
+  /* 5 — Monthly debt and DTI
+     All programs: max DTI 45%. Per-listing override via max_dti_percent / max_monthly_debt. */
+  var monthlyDebt = parseNum(ap['monthly_debt_payments']);
+  if (monthlyDebt !== null) {
+    var maxDebt = parseNum(req['max_monthly_debt']);
+    if (maxDebt !== null && monthlyDebt > maxDebt) {
+      failed.push('Monthly debt too high ($' + fmt(monthlyDebt) + '/mo, max $' + fmt(maxDebt) + ')');
+    }
+    /* DTI check */
+    var maxDTI = parseNum(req['max_dti_percent'], 45);
+    if (maxDTI !== null && annualIncome !== null && annualIncome > 0) {
+      var dti = (monthlyDebt / (annualIncome / 12)) * 100;
+      if (dti > maxDTI) {
+        failed.push('DTI too high (' + Math.round(dti) + '%, max ' + maxDTI + '%)');
+      }
+    }
+  }
+
+  /* 6 — San Diego County residency / work history */
+  var sdRequired     = yesNo(req['sd_county_residency_required'], 'yes');
+  var sdMonthsReq    = parseNum(req['sd_residency_months'], 24);
+  if (sdRequired) {
+    if (sdMonthsReq >= 24) {
+      if (!yesNo(ap['worked_lived_sd_2yr'])) {
+        failed.push('SD County 2-year residency/work requirement not met');
+      }
+    } else {
+      if (!yesNo(ap['live_in_sd_county'])) {
+        failed.push('SD County residency required');
+      }
+    }
+  }
+
+  /* 7 — Household members living together */
+  var togetherMonths = parseNum(req['household_together_months'], 12);
+  if (togetherMonths >= 12) {
+    if (!yesNo(ap['lived_together_12mo'])) {
+      failed.push('Household not living together 12+ months');
+    }
+  }
+
+  /* 8 — SDHC prior purchase */
+  var sdhcAllowed = yesNo(req['sdhc_prior_purchase_allowed'], 'yes');
+  if (!sdhcAllowed && yesNo(ap['sdhc_prior_purchase'])) {
+    failed.push('Prior SDHC affordable program participation');
+  }
+
+  /* 9 — Foreclosure / short sale */
+  if (yesNo(ap['foreclosure'])) {
+    var fcAllowed  = yesNo(req['foreclosure_allowed'], 'yes');
+    if (!fcAllowed) {
+      failed.push('Prior foreclosure/short sale (not allowed by this program)');
+    } else {
+      var fcMinYrs = parseNum(req['foreclosure_min_years']);
+      if (fcMinYrs !== null) {
+        var fcYrs = yearsSinceValue(ap['foreclosure_date']);
+        if (fcYrs !== null && fcYrs < fcMinYrs) {
+          failed.push('Foreclosure too recent (' + Math.floor(fcYrs) + ' yrs ago, need ' + fcMinYrs + '+)');
+        }
+      }
+    }
+  }
+
+  /* 10 — Bankruptcy */
+  if (yesNo(ap['bankruptcy'])) {
+    var bkAllowed = yesNo(req['bankruptcy_allowed'], 'yes');
+    if (!bkAllowed) {
+      failed.push('Prior bankruptcy (not allowed by this program)');
+    } else {
+      var bkMinYrs = parseNum(req['bankruptcy_min_years']);
+      if (bkMinYrs !== null) {
+        var bkYrs = yearsSinceValue(ap['bankruptcy_discharge_date']);
+        if (bkYrs !== null && bkYrs < bkMinYrs) {
+          failed.push('Bankruptcy too recent (' + Math.floor(bkYrs) + ' yrs ago, need ' + bkMinYrs + '+)');
+        }
+      }
+    }
+  }
+
+  /* 11 — Judgments / garnishments / liens */
+  var judgeAllowed = yesNo(req['judgments_allowed'], 'yes');
+  if (!judgeAllowed && yesNo(ap['judgments'])) {
+    failed.push('Outstanding judgments/garnishments/liens');
+  }
+
+  /* 12 — Citizenship / permanent residency */
+  var citizenRequired = yesNo(req['citizenship_required'], 'yes');
+  if (citizenRequired) {
+    var isCitizen = yesNo(ap['us_citizen']);
+    var isPR      = yesNo(ap['permanent_resident']);
+    var prOK      = yesNo(req['permanent_resident_acceptable'], 'yes');
+    if (!isCitizen && !(prOK && isPR)) {
+      failed.push('US citizenship or permanent residency required');
+    }
+  }
+
+  /* 13 — Total assets */
+  var totalAssets = getApplicantTotalAssets(ap);
+  var minAssets   = parseNum(req['min_assets']);
+  var maxAssets   = parseNum(req['max_assets']);
+  if (totalAssets !== null) {
+    if (minAssets !== null && totalAssets < minAssets) {
+      failed.push('Assets too low ($' + fmt(totalAssets) + ', min $' + fmt(minAssets) + ')');
+    }
+    if (maxAssets !== null && totalAssets > maxAssets) {
+      failed.push('Assets too high ($' + fmt(totalAssets) + ', max $' + fmt(maxAssets) + ')');
+    }
+  }
+
+  var status = failed.length === 0 ? 'Pass'
+    : failed.length <= CLOSE_THRESHOLD ? 'Close'
+    : 'Fail';
+
+  return { status: status, failedFields: failed };
+}
+
+/* ==========================================================
+   writeMatchResults
+   Upserts match result rows into the Match Results tab.
+   Key = listing_id + applicant_email. Overwrites on re-run.
+   ========================================================== */
+function writeMatchResults(ss, results) {
+  if (!results || results.length === 0) return;
+
+  var sheet = ss.getSheetByName(MATCH_RESULTS_SHEET);
+  if (!sheet) {
+    sheet = ss.insertSheet(MATCH_RESULTS_SHEET);
+    sheet.getRange(1, 1, 1, MR_COLUMNS.length).setValues([MR_COLUMNS]);
+    sheet.setFrozenRows(1);
+  }
+
+  /* Build lookup of existing rows: "listing_id|email" → sheet row number */
+  var lastRow     = sheet.getLastRow();
+  var existingMap = {};
+  if (lastRow > 1) {
+    var existing = sheet.getRange(2, 1, lastRow - 1, MR_COLUMNS.length).getValues();
+    for (var i = 0; i < existing.length; i++) {
+      var key = (existing[i][0] || '').toString() + '|' + (existing[i][2] || '').toString().toLowerCase();
+      existingMap[key] = i + 2;
+    }
+  }
+
+  for (var j = 0; j < results.length; j++) {
+    var r      = results[j];
+    var rowKey = r.listing_id + '|' + (r.applicant_email || '').toLowerCase();
+    var rowArr = [
+      r.listing_id, r.listing_name, r.applicant_email, r.applicant_name,
+      r.applicant_phone, r.match_status, r.failed_fields, r.run_at
+    ];
+    if (existingMap[rowKey]) {
+      sheet.getRange(existingMap[rowKey], 1, 1, MR_COLUMNS.length).setValues([rowArr]);
+    } else {
+      sheet.appendRow(rowArr);
+    }
+  }
+}
+
+/* ==========================================================
+   sendMatchEmail
+   Sends a branded HTML summary of Pass + Close candidates
+   to NOTIFY_EMAIL after each listing match run.
+   ========================================================== */
+function sendMatchEmail(listingName, passes, closes) {
+  if (passes.length === 0 && closes.length === 0) return;
+
+  var subject = '[CA Affordable Homes] New candidates for ' + listingName;
+  var sheetUrl = 'https://docs.google.com/spreadsheets/d/' + SPREADSHEET_ID + '/edit';
+
+  /* Plain text */
+  var body = 'Matching results for: ' + listingName + '\n'
+    + 'Run: ' + new Date().toLocaleString() + '\n\n';
+  if (passes.length > 0) {
+    body += '=== PASS (' + passes.length + ') ===\n';
+    for (var pi = 0; pi < passes.length; pi++) {
+      body += passes[pi].applicant_name + ' | ' + passes[pi].applicant_phone + ' | ' + passes[pi].applicant_email + '\n';
+    }
+    body += '\n';
+  }
+  if (closes.length > 0) {
+    body += '=== CLOSE — ' + CLOSE_THRESHOLD + ' or fewer issues (' + closes.length + ') ===\n';
+    for (var ci = 0; ci < closes.length; ci++) {
+      body += closes[ci].applicant_name + ' | ' + closes[ci].applicant_phone + ' | ' + closes[ci].applicant_email + '\n';
+      body += '  Issues: ' + closes[ci].failed_fields + '\n';
+    }
+    body += '\n';
+  }
+  body += 'Full results: ' + sheetUrl;
+
+  /* HTML */
+  var html =
+    '<div style="font-family:Arial,sans-serif;max-width:700px;margin:0 auto;background:#fff;">'
+    + '<div style="background:#818b7e;padding:20px 28px;">'
+    +   '<p style="color:#fff;margin:0;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;opacity:0.85;">CA Affordable Homes — Matching Engine</p>'
+    +   '<h1 style="color:#fff;margin:6px 0 0;font-size:20px;font-weight:600;">New Candidates: ' + escapeHtml(listingName) + '</h1>'
+    + '</div>'
+    + '<div style="padding:28px;">';
+
+  if (passes.length > 0) {
+    html += '<h2 style="color:#2e7d50;font-size:16px;margin:0 0 12px;">&#10003; Pass (' + passes.length + ')</h2>'
+      + '<table style="width:100%;border-collapse:collapse;margin-bottom:24px;font-size:13px;">'
+      + '<tr style="background:#f0f7f3;">'
+      + '<th style="padding:8px 10px;text-align:left;">Name</th>'
+      + '<th style="padding:8px 10px;text-align:left;">Phone</th>'
+      + '<th style="padding:8px 10px;text-align:left;">Email</th>'
+      + '</tr>';
+    for (var p2 = 0; p2 < passes.length; p2++) {
+      html += '<tr style="border-bottom:1px solid #eee;">'
+        + '<td style="padding:8px 10px;">' + escapeHtml(passes[p2].applicant_name) + '</td>'
+        + '<td style="padding:8px 10px;">' + escapeHtml(passes[p2].applicant_phone) + '</td>'
+        + '<td style="padding:8px 10px;">' + escapeHtml(passes[p2].applicant_email) + '</td>'
+        + '</tr>';
+    }
+    html += '</table>';
+  }
+
+  if (closes.length > 0) {
+    html += '<h2 style="color:#b07d2e;font-size:16px;margin:0 0 12px;">&#9888; Close &mdash; ' + CLOSE_THRESHOLD + ' or fewer issues (' + closes.length + ')</h2>'
+      + '<table style="width:100%;border-collapse:collapse;margin-bottom:24px;font-size:13px;">'
+      + '<tr style="background:#fdf8f0;">'
+      + '<th style="padding:8px 10px;text-align:left;">Name</th>'
+      + '<th style="padding:8px 10px;text-align:left;">Phone</th>'
+      + '<th style="padding:8px 10px;text-align:left;">Email</th>'
+      + '<th style="padding:8px 10px;text-align:left;">Issues</th>'
+      + '</tr>';
+    for (var c2 = 0; c2 < closes.length; c2++) {
+      html += '<tr style="border-bottom:1px solid #eee;">'
+        + '<td style="padding:8px 10px;">' + escapeHtml(closes[c2].applicant_name) + '</td>'
+        + '<td style="padding:8px 10px;">' + escapeHtml(closes[c2].applicant_phone) + '</td>'
+        + '<td style="padding:8px 10px;">' + escapeHtml(closes[c2].applicant_email) + '</td>'
+        + '<td style="padding:8px 10px;color:#b07d2e;">' + escapeHtml(closes[c2].failed_fields) + '</td>'
+        + '</tr>';
+    }
+    html += '</table>';
+  }
+
+  html += '<a href="' + sheetUrl + '" style="display:inline-block;background:#818b7e;color:#fff;'
+    + 'padding:11px 24px;text-decoration:none;border-radius:6px;font-size:14px;font-weight:600;">'
+    + 'Open Google Sheets &rarr;</a>'
+    + '<hr style="border:none;border-top:1px solid #eee;margin:24px 0;">'
+    + '<p style="color:#999;font-size:12px;margin:0;">CA Affordable Homes &bull; Automated matching engine</p>'
+    + '</div></div>';
+
+  try {
+    MailApp.sendEmail({
+      to:       NOTIFY_EMAIL,
+      subject:  subject,
+      body:     body,
+      htmlBody: html,
+      name:     FROM_NAME,
+      replyTo:  REPLY_TO
+    });
+    Logger.log('Match email sent for: ' + listingName + ' | Pass: ' + passes.length + ' | Close: ' + closes.length);
+  } catch (err) {
+    Logger.log('Match email failed for ' + listingName + ': ' + err.message);
+  }
+}
+
+/* ==========================================================
+   testMatching — run this manually to test the matching engine
+   In Apps Script editor: select testMatching → click Run
+   ========================================================== */
+function testMatching() {
+  Logger.log('Starting test match run...');
+  runMatchingForAllListings();
+  Logger.log('Done. Check Match Results tab and your inbox.');
+}
+
+/* ── Shared utility functions ── */
+
+/* Convert a Requirements sheet data row to a keyed object */
+function rowToReqObj(row) {
+  var obj = {};
+  for (var i = 0; i < REQ_COLUMNS.length; i++) {
+    obj[REQ_COLUMNS[i]] = (row[i] !== undefined && row[i] !== null) ? row[i] : '';
+  }
+  return obj;
+}
+
+/* Convert an Interest List sheet data row to a keyed object */
+function rowToILObj(row) {
+  var obj = {};
+  for (var i = 0; i < IL_COLUMNS.length; i++) {
+    obj[IL_COLUMNS[i]] = (row[i] !== undefined && row[i] !== null) ? row[i] : '';
+  }
+  return obj;
+}
+
+/* Parse a number from a cell value; returns defaultVal if blank, null if no default */
+function parseNum(val, defaultVal) {
+  if (val === '' || val === null || val === undefined) {
+    return (defaultVal !== undefined) ? defaultVal : null;
+  }
+  var n = parseFloat(val.toString().replace(/[^0-9.\-]/g, ''));
+  return isNaN(n) ? (defaultVal !== undefined ? defaultVal : null) : n;
+}
+
+/* Interpret YES/NO cell values; defaultStr sets the assumed value when blank */
+function yesNo(val, defaultStr) {
+  var s = (val || '').toString().trim().toLowerCase();
+  if (s === '') s = (defaultStr || 'no').toLowerCase();
+  return s === 'yes' || s === 'true' || s === '1';
+}
+
+/* Parse the lower bound of a credit score range string */
+function parseCreditScoreLowerBound(rangeStr) {
+  if (!rangeStr) return null;
+  var s = rangeStr.toString().trim().toLowerCase();
+  if (s.indexOf('below') !== -1 || s.indexOf('under') !== -1) return 499;
+  var match = s.match(/(\d{3,4})/);
+  return match ? parseInt(match[1], 10) : null;
+}
+
+/* Get best annual income figure from an applicant row object */
+function getApplicantIncome(ap) {
+  /* Primary: sum income member annual fields */
+  var memberTotal    = 0;
+  var hasMemberData  = false;
+  for (var i = 1; i <= 6; i++) {
+    var amt = parseNum(ap['income_' + i + '_annual']);
+    if (amt !== null && amt > 0) { memberTotal += amt; hasMemberData = true; }
+  }
+  if (hasMemberData) return memberTotal;
+  /* Fallback: 2024 tax return total */
+  var t2024 = parseNum(ap['income_2024_total']);
+  if (t2024 !== null && t2024 > 0) return t2024;
+  /* Fallback: 2023 */
+  var t2023 = parseNum(ap['income_2023_total']);
+  if (t2023 !== null && t2023 > 0) return t2023;
+  return null;
+}
+
+/* Sum all asset fields for an applicant */
+function getApplicantTotalAssets(ap) {
+  var fields  = ['asset_checking', 'asset_savings', 'asset_401k', 'asset_other'];
+  var total   = 0;
+  var hasAny  = false;
+  for (var i = 0; i < fields.length; i++) {
+    var v = parseNum(ap[fields[i]]);
+    if (v !== null && v > 0) { total += v; hasAny = true; }
+  }
+  return hasAny ? total : null;
+}
+
+/* Calculate decimal years since a date value (string or Date) */
+function yearsSinceValue(val) {
+  if (!val) return null;
+  var d = (val instanceof Date) ? val : new Date(val.toString());
+  if (isNaN(d.getTime())) return null;
+  return (new Date() - d) / (365.25 * 24 * 60 * 60 * 1000);
+}
+
+/* Format a number as a comma-separated integer string */
+function fmt(n) {
+  return Math.round(n).toLocaleString();
+}
+
+/* Escape HTML special characters for safe email output */
+function escapeHtml(str) {
+  return (str || '').toString()
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
