@@ -66,6 +66,15 @@
       - Click Save
       (The daily trigger also auto-rebuilds the Dashboard after matching runs.)
 
+      TRIGGER C — Check expiry dates every morning at 8 AM:
+      - Click "+ Add Trigger" again
+      - Choose function: checkExpiryDates
+      - Event source: Time-driven
+      - Time based trigger type: Day timer
+      - Time of day: 7am to 8am
+      - Click Save
+      (Sends 11-month renewal reminder emails and marks 12-month-old rows as expired.)
+
   10. DASHBOARD TAB — created automatically by the script:
       - In Apps Script editor, select rebuildDashboard → click Run (do this once manually)
       - After that it rebuilds automatically every morning after matching (Trigger B above)
@@ -154,7 +163,9 @@ var IL_COLUMNS = [
   'us_citizen', 'permanent_resident',
   'asset_checking', 'asset_savings', 'asset_401k', 'asset_other',
   'loan_signers', 'household_members', 'additional_info',
-  'listing_interest_summary'
+  'listing_interest_summary',
+  /* Phase 7 — expiry lifecycle */
+  'renewal_reminder_sent'
 ];
 
 /* Build a field-name → 1-based column-number lookup at load time */
@@ -291,11 +302,12 @@ function doPost(e) {
       sheet.setFrozenRows(1);
     }
 
-    var now     = new Date();
-    var row     = buildILRow(data, now, 'new');
-    var updated = false;
+    var now        = new Date();
+    var row        = buildILRow(data, now, 'new');
+    var updated    = false;
+    var reEnrolled = false;
 
-    /* Deduplication: find existing active row with same email */
+    /* Deduplication: find any existing row (active or expired) with same email */
     var lastRow = sheet.getLastRow();
     if (lastRow > 1) {
       var emailVals = sheet.getRange(2, IL_COL['email'], lastRow - 1, 1).getValues();
@@ -303,14 +315,25 @@ function doPost(e) {
         var existingEmail = (emailVals[i][0] || '').toString().trim().toLowerCase();
         if (existingEmail === email) {
           var existingStatus = sheet.getRange(i + 2, IL_COL['status']).getValue();
-          if (existingStatus !== 'expired') {
-            row[IL_COL['submitted_at'] - 1] = sheet.getRange(i + 2, IL_COL['submitted_at']).getValue();
-            row[IL_COL['status']       - 1] = existingStatus;
-            row[IL_COL['updated_at']   - 1] = now;
+          if ((existingStatus || '').toString().trim().toLowerCase() === 'expired') {
+            /* Re-enrollment: reset clock, restore to active, clear reminder flag */
+            row[IL_COL['submitted_at']          - 1] = now;
+            row[IL_COL['status']               - 1] = 'active';
+            row[IL_COL['updated_at']           - 1] = now;
+            row[IL_COL['renewal_reminder_sent'] - 1] = '';
+            sheet.getRange(i + 2, 1, 1, row.length).setValues([row]);
+            reEnrolled = true;
+            updated    = true;
+          } else {
+            /* Regular update: preserve original submission date, status, and reminder flag */
+            row[IL_COL['submitted_at']          - 1] = sheet.getRange(i + 2, IL_COL['submitted_at']).getValue();
+            row[IL_COL['status']               - 1] = existingStatus;
+            row[IL_COL['updated_at']           - 1] = now;
+            row[IL_COL['renewal_reminder_sent'] - 1] = sheet.getRange(i + 2, IL_COL['renewal_reminder_sent']).getValue();
             sheet.getRange(i + 2, 1, 1, row.length).setValues([row]);
             updated = true;
-            break;
           }
+          break;
         }
       }
     }
@@ -320,7 +343,7 @@ function doPost(e) {
     }
 
     sendApplicantMatchEmail(data, ss);
-    sendILNotification(data, updated);
+    sendILNotification(data, updated, reEnrolled);
 
     return jsonResponse({ ok: true });
 
@@ -682,14 +705,17 @@ function extractListingName(label) {
 }
 
 /* ── Internal notification email to the team ── */
-function sendILNotification(data, updated) {
-  var fullName = ((data.first_name || '') + ' ' + (data.last_name || '')).trim();
-  var subject  = (updated ? '[UPDATED] ' : '[NEW] ')
-    + 'Interest List: ' + fullName + ' <' + (data.email || '') + '>';
+function sendILNotification(data, updated, reEnrolled) {
+  var fullName  = ((data.first_name || '') + ' ' + (data.last_name || '')).trim();
+  var prefix    = reEnrolled ? '[RE-ENROLLMENT] ' : (updated ? '[UPDATED] ' : '[NEW] ');
+  var actionStr = reEnrolled ? 'RE-ENROLLMENT (previously expired — profile reset & reactivated)'
+                : (updated   ? 'UPDATED (returning applicant)'
+                             : 'NEW');
+  var subject  = prefix + 'Interest List: ' + fullName + ' <' + (data.email || '') + '>';
 
   var body =
     'Interest List submission received.\n\n'
-    + 'Action:             ' + (updated ? 'UPDATED (returning applicant)' : 'NEW') + '\n'
+    + 'Action:             ' + actionStr + '\n'
     + '---\n'
     + 'Name:               ' + fullName + '\n'
     + 'Email:              ' + (data.email || '') + '\n'
@@ -730,6 +756,129 @@ function sendILNotification(data, updated) {
     Logger.log('IL notification sent to ' + NOTIFY_EMAIL);
   } catch (err) {
     Logger.log('IL notification failed: ' + err.message);
+  }
+}
+
+/* ==========================================================
+   checkExpiryDates
+   Runs daily via Trigger C (7–8 AM). Scans all "active" rows
+   in the Interest List:
+   - 11 months old + no reminder sent → sends renewal warning email
+   - 12+ months old → marks status = "expired"
+   ========================================================== */
+function checkExpiryDates() {
+  var ss    = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName(IL_SHEET);
+  if (!sheet || sheet.getLastRow() < 2) return;
+
+  var now      = new Date();
+  var eleven   = new Date(now); eleven.setMonth(eleven.getMonth() - 11);
+  var twelve   = new Date(now); twelve.setMonth(twelve.getMonth() - 12);
+
+  var lastRow  = sheet.getLastRow();
+  var data     = sheet.getRange(2, 1, lastRow - 1, IL_COLUMNS.length).getValues();
+  var warnings = 0;
+  var expired  = 0;
+
+  for (var i = 0; i < data.length; i++) {
+    var rowStatus    = (data[i][IL_COL['status']               - 1] || '').toString().trim().toLowerCase();
+    var submittedAt  =  data[i][IL_COL['submitted_at']          - 1];
+    var reminderSent = (data[i][IL_COL['renewal_reminder_sent'] - 1] || '').toString().trim();
+    var email        = (data[i][IL_COL['email']                 - 1] || '').toString().trim();
+    var firstName    = (data[i][IL_COL['first_name']            - 1] || '').toString().trim();
+
+    if (rowStatus !== 'active') continue;
+    if (!submittedAt || !(submittedAt instanceof Date)) continue;
+
+    /* 12-month expiry — must check before 11-month to avoid sending reminder to expired rows */
+    if (submittedAt <= twelve) {
+      sheet.getRange(i + 2, IL_COL['status']).setValue('expired');
+      sheet.getRange(i + 2, IL_COL['updated_at']).setValue(now);
+      Logger.log('Expired: ' + email + ' (submitted ' + submittedAt.toDateString() + ')');
+      expired++;
+      continue;
+    }
+
+    /* 11-month warning */
+    if (submittedAt <= eleven && !reminderSent) {
+      sendRenewalReminderEmail(email, firstName);
+      sheet.getRange(i + 2, IL_COL['renewal_reminder_sent']).setValue('true');
+      sheet.getRange(i + 2, IL_COL['updated_at']).setValue(now);
+      Logger.log('Renewal reminder sent: ' + email);
+      warnings++;
+    }
+  }
+
+  Logger.log('checkExpiryDates complete. Warnings sent: ' + warnings + ' | Rows expired: ' + expired);
+}
+
+/* ── 11-month renewal warning email to applicant ── */
+function sendRenewalReminderEmail(toEmail, firstName) {
+  if (!toEmail) return;
+
+  var greeting   = firstName ? 'Hi ' + firstName + ',' : 'Hi there,';
+  var subject    = 'Your CA Affordable Homes profile is expiring soon';
+  var contactUrl = 'https://caaffordablehomes.com/contact.html';
+
+  var body =
+    greeting + '\n\n'
+    + 'It\u2019s been almost a year since you joined the CA Affordable Homes Interest List \u2014 thank you for your patience!\n\n'
+    + 'To keep your profile active and ensure we\u2019re working with your most current information, '
+    + 'we\u2019d love for you to re-submit the Interest List questionnaire. Circumstances change, '
+    + 'and an updated profile helps us match you with the right listing when one becomes available.\n\n'
+    + 'Re-submit here: ' + contactUrl + '\n\n'
+    + 'If you no longer need assistance finding an affordable home, no action is needed \u2014 '
+    + 'your profile will be automatically removed from our active list in 30 days.\n\n'
+    + 'Questions? Reach us at Info@CAAffordableHomes.com\n\n'
+    + '\u2014 ' + FROM_NAME + '\n'
+    + 'We are not a lender. This is not an offer or guarantee of housing.';
+
+  var htmlBody =
+    '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#fff;">'
+    + '<div style="background:#818b7e;padding:22px 32px;">'
+    +   '<p style="color:#fff;margin:0;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;opacity:0.85;">CA Affordable Homes</p>'
+    +   '<h1 style="color:#fff;margin:6px 0 0;font-size:21px;font-weight:600;">Your Profile Is Expiring Soon</h1>'
+    + '</div>'
+    + '<div style="padding:32px;">'
+    +   '<p style="color:#333;margin-top:0;">' + escapeHtml(greeting) + '</p>'
+    +   '<p style="color:#333;">It&rsquo;s been almost a year since you joined the CA Affordable Homes Interest List &mdash; thank you for your patience!</p>'
+    +   '<div style="background:#f7f7f4;border-left:4px solid #818b7e;padding:18px 22px;margin:22px 0;border-radius:0 6px 6px 0;">'
+    +     '<p style="margin:0 0 10px;font-weight:600;color:#222;">Why we&rsquo;re reaching out</p>'
+    +     '<p style="margin:0;color:#444;font-size:14px;line-height:1.7;">'
+    +       'To keep your profile active and ensure we&rsquo;re working with your most current information, '
+    +       'we&rsquo;d love for you to re-submit the Interest List questionnaire. Circumstances change &mdash; '
+    +       'income, household size, employment &mdash; and an updated profile helps us match you with the right '
+    +       'listing when one becomes available.'
+    +     '</p>'
+    +   '</div>'
+    +   '<p style="text-align:center;margin:28px 0;">'
+    +     '<a href="' + contactUrl + '" style="display:inline-block;background:#818b7e;color:#fff;'
+    +     'padding:13px 32px;text-decoration:none;border-radius:6px;font-size:15px;font-weight:600;">'
+    +     'Update My Profile &rarr;</a>'
+    +   '</p>'
+    +   '<p style="color:#777;font-size:14px;">If you no longer need assistance finding an affordable home, no action is needed &mdash; '
+    +   'your profile will be automatically removed from our active list in <strong>30 days</strong>.</p>'
+    +   '<p style="color:#555;font-size:14px;">Questions? Email us at '
+    +   '<a href="mailto:Info@CAAffordableHomes.com" style="color:#818b7e;">Info@CAAffordableHomes.com</a>.</p>'
+    +   '<hr style="border:none;border-top:1px solid #eee;margin:24px 0;">'
+    +   '<p style="color:#999;font-size:12px;margin:0;">'
+    +     'CA Affordable Homes &bull; <a href="https://caaffordablehomes.com" style="color:#999;">caaffordablehomes.com</a><br>'
+    +     'We are not a lender. This is not an offer or guarantee of housing.'
+    +   '</p>'
+    + '</div></div>';
+
+  try {
+    MailApp.sendEmail({
+      to:       toEmail,
+      subject:  subject,
+      body:     body,
+      htmlBody: htmlBody,
+      name:     FROM_NAME,
+      replyTo:  REPLY_TO
+    });
+    Logger.log('Renewal reminder sent to: ' + toEmail);
+  } catch (err) {
+    Logger.log('Renewal reminder failed for ' + toEmail + ': ' + err.message);
   }
 }
 
