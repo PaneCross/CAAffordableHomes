@@ -454,17 +454,31 @@
                       <div class="il-radio-group">
                         <label class="il-radio-label">
                           <input type="radio" name="emp_1_income_type" value="W-2" required
-                            data-shows="il-emp1-cond-salaried" data-show-when="W-2"> W-2 (Salaried)
+                            data-shows="il-emp1-cond-salaried" data-show-when="W-2"> W-2
                         </label>
                         <label class="il-radio-label">
                           <input type="radio" name="emp_1_income_type" value="1099"
-                            data-shows="il-emp1-cond-salaried" data-show-when="W-2"> 1099 / Hourly
+                            data-shows="il-emp1-cond-hourly" data-show-when="1099"> 1099
                         </label>
                       </div>
                       <div class="il-conditional" id="il-emp1-cond-salaried">
                         <label class="form-label" for="il-emp1-salary">Annual salary</label>
                         <div class="il-dollar-wrap">
                           <input type="number" id="il-emp1-salary" name="emp_1_annual_salary" class="form-control" placeholder="0" min="0" data-req>
+                        </div>
+                      </div>
+                      <div class="il-conditional" id="il-emp1-cond-hourly">
+                        <div class="form-row">
+                          <div class="form-group">
+                            <label class="form-label" for="il-emp1-hourly-rate">Hourly rate</label>
+                            <div class="il-dollar-wrap">
+                              <input type="number" id="il-emp1-hourly-rate" name="emp_1_hourly_rate" class="form-control" placeholder="0.00" min="0" step="0.01" data-req>
+                            </div>
+                          </div>
+                          <div class="form-group">
+                            <label class="form-label" for="il-emp1-hours-week">Hours per week</label>
+                            <input type="number" id="il-emp1-hours-week" name="emp_1_hours_per_week" class="form-control" placeholder="40" min="0" max="168" data-req>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -567,17 +581,31 @@
                       <div class="il-radio-group">
                         <label class="il-radio-label">
                           <input type="radio" name="emp_2_income_type" value="W-2"
-                            data-shows="il-emp2-cond-salaried" data-show-when="W-2"> W-2 (Salaried)
+                            data-shows="il-emp2-cond-salaried" data-show-when="W-2"> W-2
                         </label>
                         <label class="il-radio-label">
                           <input type="radio" name="emp_2_income_type" value="1099"
-                            data-shows="il-emp2-cond-salaried" data-show-when="W-2"> 1099 / Hourly
+                            data-shows="il-emp2-cond-hourly" data-show-when="1099"> 1099
                         </label>
                       </div>
                       <div class="il-conditional" id="il-emp2-cond-salaried">
                         <label class="form-label" for="il-emp2-salary">Annual salary</label>
                         <div class="il-dollar-wrap">
                           <input type="number" id="il-emp2-salary" name="emp_2_annual_salary" class="form-control" placeholder="0" min="0" data-req>
+                        </div>
+                      </div>
+                      <div class="il-conditional" id="il-emp2-cond-hourly">
+                        <div class="form-row">
+                          <div class="form-group">
+                            <label class="form-label" for="il-emp2-hourly-rate">Hourly rate</label>
+                            <div class="il-dollar-wrap">
+                              <input type="number" id="il-emp2-hourly-rate" name="emp_2_hourly_rate" class="form-control" placeholder="0.00" min="0" step="0.01" data-req>
+                            </div>
+                          </div>
+                          <div class="form-group">
+                            <label class="form-label" for="il-emp2-hours-week">Hours per week</label>
+                            <input type="number" id="il-emp2-hours-week" name="emp_2_hours_per_week" class="form-control" placeholder="40" min="0" max="168" data-req>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1227,9 +1255,21 @@
         + '<input type="month" name="emp_' + n + '_end_date" class="form-control"></div></div>'
         + '<div class="form-group"><label class="form-label">Income type</label>'
         + '<div class="il-radio-group">'
-        + '<label class="il-radio-label"><input type="radio" name="emp_' + n + '_income_type" value="W-2"> W-2 (Salaried)</label>'
-        + '<label class="il-radio-label"><input type="radio" name="emp_' + n + '_income_type" value="1099"> 1099 / Hourly</label>'
-        + '</div></div>'
+        + '<label class="il-radio-label"><input type="radio" name="emp_' + n + '_income_type" value="W-2"'
+        + ' data-shows="il-emp' + n + '-cond-salaried" data-show-when="W-2"> W-2</label>'
+        + '<label class="il-radio-label"><input type="radio" name="emp_' + n + '_income_type" value="1099"'
+        + ' data-shows="il-emp' + n + '-cond-hourly" data-show-when="1099"> 1099</label>'
+        + '</div>'
+        + '<div class="il-conditional" id="il-emp' + n + '-cond-salaried">'
+        + '<label class="form-label">Annual salary</label>'
+        + '<div class="il-dollar-wrap"><input type="number" name="emp_' + n + '_annual_salary" class="form-control" placeholder="0" min="0" data-req></div></div>'
+        + '<div class="il-conditional" id="il-emp' + n + '-cond-hourly">'
+        + '<div class="form-row">'
+        + '<div class="form-group"><label class="form-label">Hourly rate</label>'
+        + '<div class="il-dollar-wrap"><input type="number" name="emp_' + n + '_hourly_rate" class="form-control" placeholder="0.00" min="0" step="0.01" data-req></div></div>'
+        + '<div class="form-group"><label class="form-label">Hours per week</label>'
+        + '<input type="number" name="emp_' + n + '_hours_per_week" class="form-control" placeholder="40" min="0" max="168" data-req></div>'
+        + '</div></div></div>'
         + '<div class="form-row">'
         + '<div class="form-group"><label class="form-label">YTD gross income</label>'
         + '<div class="il-dollar-wrap"><input type="number" name="emp_' + n + '_ytd_gross" class="form-control" placeholder="0" min="0"></div></div>'
@@ -1237,6 +1277,7 @@
         + '<input type="date" name="emp_' + n + '_pay_period_end" class="form-control"></div></div>';
       container.appendChild(div);
       div.querySelector('.il-remove-btn').addEventListener('click', function () { div.remove(); });
+      initConditionals(div);
     });
 
     /* Listing checkbox sync */
@@ -1322,17 +1363,23 @@
     }
 
     function initConditionals(root) {
+      /* Group controllers by their target ID */
+      var targetMap = {};
       root.querySelectorAll('[data-shows]').forEach(function (ctrl) {
-        var targetId  = ctrl.dataset.shows;
-        var showWhen  = ctrl.dataset.showWhen;
-        var target    = document.getElementById(targetId);
+        var targetId = ctrl.dataset.shows;
+        if (!targetMap[targetId]) targetMap[targetId] = [];
+        targetMap[targetId].push(ctrl);
+      });
+
+      Object.keys(targetMap).forEach(function (targetId) {
+        var target = root.querySelector ? root.ownerDocument.getElementById(targetId) : document.getElementById(targetId);
+        if (!target) target = document.getElementById(targetId);
         if (!target) return;
+        var controllers = targetMap[targetId];
 
         function evaluate() {
-          /* Collect all inputs with the same data-shows pointing to the same target */
-          var group = root.querySelectorAll('[data-shows="' + targetId + '"]');
-          var show  = false;
-          group.forEach(function (c) {
+          var show = false;
+          controllers.forEach(function (c) {
             if ((c.type === 'radio' || c.type === 'checkbox') && c.checked && c.value === c.dataset.showWhen) show = true;
             if (c.tagName === 'SELECT' && c.value === c.dataset.showWhen) show = true;
           });
@@ -1340,7 +1387,16 @@
           target.querySelectorAll('[data-req]').forEach(function (f) { f.required = show; });
         }
 
-        ctrl.addEventListener('change', evaluate);
+        controllers.forEach(function (ctrl) {
+          ctrl.addEventListener('change', evaluate);
+          /* Also wire radio siblings so mutual exclusion hides other conditionals */
+          if (ctrl.type === 'radio' && ctrl.name) {
+            root.querySelectorAll('input[type="radio"][name="' + ctrl.name + '"]').forEach(function (sib) {
+              if (sib !== ctrl) sib.addEventListener('change', evaluate);
+            });
+          }
+        });
+
         evaluate();
       });
     }
