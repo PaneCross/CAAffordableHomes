@@ -105,6 +105,7 @@ var IL_COLUMNS = [
   'income_5_name', 'income_5_relationship', 'income_5_annual',
   'income_6_name', 'income_6_relationship', 'income_6_annual',
   /* Tax-year income */
+  'income_2022_total', 'income_2022_sched_c',
   'income_2023_total', 'income_2023_sched_c',
   'income_2024_total', 'income_2024_sched_c',
   'income_2025_total', 'income_2025_sched_c',

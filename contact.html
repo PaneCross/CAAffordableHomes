@@ -91,7 +91,7 @@
             <div id="il-callout" class="il-callout">
               <h3>Before you begin, have these documents ready:</h3>
               <ul>
-                <li>Most recent tax returns (2023 &amp; 2024)</li>
+                <li>Tax returns for 2022, 2023, and 2024 (and 2025 if already filed)</li>
                 <li>Recent pay stubs for all household members</li>
                 <li>Current bank statements</li>
                 <li>A list of all monthly debt obligations</li>
@@ -280,8 +280,26 @@
                 <button type="button" class="il-add-btn" id="il-add-income">
                   <i class="fa-solid fa-plus" aria-hidden="true"></i> Add Another Household Member
                 </button>
+                <p class="il-note" id="il-income-max-note" style="display:none;">
+                  <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                  Maximum of 6 household members reached. Please list any additional members and their income in the <strong>Additional Information</strong> box at the end of the form.
+                </p>
 
                 <!-- Tax year income -->
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label" for="il-income-2022">2022 Total Income <span class="optional">(1040 first page)</span></label>
+                    <div class="il-dollar-wrap">
+                      <input type="number" id="il-income-2022" name="income_2022_total" class="form-control" placeholder="0" min="0">
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="il-sch-c-2022">2022 Schedule C Line 31 <span class="optional">(1099, if any)</span></label>
+                    <div class="il-dollar-wrap">
+                      <input type="number" id="il-sch-c-2022" name="income_2022_sched_c" class="form-control" placeholder="0" min="0">
+                    </div>
+                  </div>
+                </div>
                 <div class="form-row">
                   <div class="form-group">
                     <label class="form-label" for="il-income-2023">2023 Total Income <span class="optional">(1040 first page)</span></label>
@@ -637,6 +655,10 @@
                 <button type="button" class="il-add-btn" id="il-add-employment">
                   <i class="fa-solid fa-plus" aria-hidden="true"></i> Add Another Employment Entry
                 </button>
+                <p class="il-note" id="il-emp-max-note" style="display:none;">
+                  <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                  Maximum of 4 employment entries reached. Please describe any additional employment history in the <strong>Additional Information</strong> box at the end of the form.
+                </p>
               </div><!-- /section-3 -->
 
               <!-- ==================== SECTION IV: Financial & Disclosures ==================== -->
@@ -1198,8 +1220,16 @@
       if (block) block.remove();
     });
 
-    /* Add income member block */
-    document.getElementById('il-add-income').addEventListener('click', function () {
+    /* Add income member block (max 6) */
+    var incAddBtn  = document.getElementById('il-add-income');
+    var incMaxNote = document.getElementById('il-income-max-note');
+    function updateIncomeCapUI() {
+      var count = document.getElementById('il-income-members').querySelectorAll('.il-repeating-block').length;
+      var atMax = count >= 6;
+      incAddBtn.style.display  = atMax ? 'none' : '';
+      incMaxNote.style.display = atMax ? '' : 'none';
+    }
+    incAddBtn.addEventListener('click', function () {
       incBlockCount++;
       var container = document.getElementById('il-income-members');
       var n = incBlockCount;
@@ -1222,11 +1252,23 @@
         + '<div class="form-group"><label class="form-label">Annual Income</label>'
         + '<div class="il-dollar-wrap"><input type="number" name="income_' + n + '_annual" class="form-control" placeholder="0" min="0"></div></div>';
       container.appendChild(div);
-      div.querySelector('.il-remove-btn').addEventListener('click', function () { div.remove(); });
+      div.querySelector('.il-remove-btn').addEventListener('click', function () {
+        div.remove();
+        updateIncomeCapUI();
+      });
+      updateIncomeCapUI();
     });
 
-    /* Add employment block */
-    document.getElementById('il-add-employment').addEventListener('click', function () {
+    /* Add employment block (max 4) */
+    var empAddBtn  = document.getElementById('il-add-employment');
+    var empMaxNote = document.getElementById('il-emp-max-note');
+    function updateEmpCapUI() {
+      var count = document.getElementById('il-employment-blocks').querySelectorAll('.il-repeating-block').length;
+      var atMax = count >= 4;
+      empAddBtn.style.display  = atMax ? 'none' : '';
+      empMaxNote.style.display = atMax ? '' : 'none';
+    }
+    empAddBtn.addEventListener('click', function () {
       empBlockCount++;
       var container = document.getElementById('il-employment-blocks');
       var n = empBlockCount;
@@ -1281,8 +1323,12 @@
         + '<div class="form-group"><label class="form-label">Pay period end date</label>'
         + '<input type="date" name="emp_' + n + '_pay_period_end" class="form-control"></div></div>';
       container.appendChild(div);
-      div.querySelector('.il-remove-btn').addEventListener('click', function () { div.remove(); });
+      div.querySelector('.il-remove-btn').addEventListener('click', function () {
+        div.remove();
+        updateEmpCapUI();
+      });
       initConditionals(div);
+      updateEmpCapUI();
     });
 
     /* Listing checkbox sync */
