@@ -789,11 +789,15 @@
 
                 <!-- Listing interest -->
                 <div class="form-group">
-                  <label class="form-label">Which current listings are you interested in? <span class="optional">(Select all that apply, or choose the last option.)</span></label>
+                  <label class="form-label">Which current listings are you interested in?</label>
+                  <p class="il-note" style="margin-bottom:0.75rem;">
+                    <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                    Selecting any listing below also keeps you on the interest list for all future listings.
+                  </p>
                   <div class="il-listing-checks" id="il-listing-container">
                     <!-- JS populates listing checkboxes here -->
-                    <label class="il-listing-label">
-                      <input type="checkbox" name="listing_interest" value="None — interested in future listings"> None of these, but I'm interested in future listings
+                    <label class="il-listing-label" style="border-top:1px solid #e8e8e4;margin-top:0.5rem;padding-top:0.75rem;">
+                      <input type="checkbox" name="listing_interest" id="il-none-checkbox" value="None — future listings only"> Future listings only &mdash; I&rsquo;m not interested in any current listings
                     </label>
                   </div>
                   <input type="hidden" id="il-listings-hidden" name="listing_interest_summary">
@@ -1350,7 +1354,7 @@
 
     /* Listing checkbox sync */
     form.addEventListener('change', function (e) {
-      if (e.target.name === 'listing_interest') syncListings();
+      if (e.target.name === 'listing_interest') syncListings(e.target);
     });
 
     /* ---- Helper functions ---- */
@@ -1519,11 +1523,22 @@
         .catch(function () { /* silently skip — "None" option still available */ });
     }
 
-    function syncListings() {
+    function syncListings(changed) {
+      var noneBox = document.getElementById('il-none-checkbox');
+      var allBoxes = form.querySelectorAll('input[name="listing_interest"]');
+
+      if (changed && noneBox) {
+        if (changed === noneBox && noneBox.checked) {
+          /* "Future only" just checked — uncheck all specific listings */
+          allBoxes.forEach(function (cb) { if (cb !== noneBox) cb.checked = false; });
+        } else if (changed !== noneBox && changed.checked) {
+          /* A specific listing just checked — uncheck "Future only" */
+          noneBox.checked = false;
+        }
+      }
+
       var vals = [];
-      form.querySelectorAll('input[name="listing_interest"]:checked').forEach(function (cb) {
-        vals.push(cb.value);
-      });
+      allBoxes.forEach(function (cb) { if (cb.checked) vals.push(cb.value); });
       var hidden = document.getElementById('il-listings-hidden');
       if (hidden) hidden.value = vals.join('; ');
     }
