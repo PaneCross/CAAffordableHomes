@@ -1143,10 +1143,7 @@
     var SCRIPT_URL   = 'https://script.google.com/macros/s/AKfycbw0MOVFTvtDia4k_bcGVtgcwb-7EhWczMzSdLpaesRDUqV4ZmUpJ6CU75B09ee9tXHO/exec';
 
     /* Static listings — Phase 4 will replace with live Sheet data */
-    var LISTINGS = [
-      '123 Maple St \u2013 Escondido (Coming Soon)',
-      '456 Oak Ave \u2013 Chula Vista (Available)'
-    ];
+    var LISTINGS_CSV_URL = 'https://docs.google.com/spreadsheets/d/1YCdiFVSRTipvDD-Ylt7nv6Sq5coAG-Zjasnu9tIrmFw/export?format=csv&gid=0';
 
     var SECTION_NAMES = ['General Information', 'Income', 'Employment', 'Financial & Disclosures'];
     var currentSection = 1;
@@ -1472,21 +1469,54 @@
       });
     }
 
+    function parseCSVLine(line) {
+      var fields = [];
+      var cur = '';
+      var inQuote = false;
+      for (var i = 0; i < line.length; i++) {
+        var ch = line[i];
+        if (inQuote) {
+          if (ch === '"' && line[i + 1] === '"') { cur += '"'; i++; }
+          else if (ch === '"') { inQuote = false; }
+          else { cur += ch; }
+        } else {
+          if (ch === '"') { inQuote = true; }
+          else if (ch === ',') { fields.push(cur); cur = ''; }
+          else { cur += ch; }
+        }
+      }
+      fields.push(cur);
+      return fields;
+    }
+
     function buildListings() {
       var container = document.getElementById('il-listing-container');
       if (!container) return;
-      var noneLabel = container.querySelector('label:last-child');
-      LISTINGS.forEach(function (listing) {
-        var lbl = document.createElement('label');
-        lbl.className = 'il-listing-label';
-        var cb = document.createElement('input');
-        cb.type = 'checkbox';
-        cb.name = 'listing_interest';
-        cb.value = listing;
-        lbl.appendChild(cb);
-        lbl.appendChild(document.createTextNode('\u00a0' + listing));
-        container.insertBefore(lbl, noneLabel);
-      });
+      fetch(LISTINGS_CSV_URL)
+        .then(function (r) { return r.text(); })
+        .then(function (csv) {
+          var lines = csv.trim().split('\n');
+          var noneLabel = container.querySelector('label:last-child');
+          /* Skip header row (index 0); columns: 0=Property Name, 2=City, 7=Status */
+          for (var i = 1; i < lines.length; i++) {
+            var fields = parseCSVLine(lines[i]);
+            var name   = (fields[0] || '').trim();
+            var city   = (fields[2] || '').trim();
+            var status = (fields[7] || '').trim();
+            if (!name || !status) continue;
+            var label  = name + ' \u2013 ' + city + ' (' + status + ')';
+            var lbl = document.createElement('label');
+            lbl.className = 'il-listing-label';
+            var cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.name = 'listing_interest';
+            cb.value = label;
+            lbl.appendChild(cb);
+            lbl.appendChild(document.createTextNode('\u00a0' + label));
+            container.insertBefore(lbl, noneLabel);
+          }
+        })
+        .catch(function () { /* silently skip — "None" option still available */ });
     }
 
     function syncListings() {
