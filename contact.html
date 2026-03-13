@@ -116,7 +116,7 @@
             <!-- Phase 3 will replace the Formspree action with the Apps Script endpoint -->
             <form
               id="il-form"
-              action="https://formspree.io/f/mojkjgkd"
+              action="#"
               method="POST"
               aria-label="Interest List questionnaire"
               novalidate
@@ -1114,6 +1114,7 @@
     var STORAGE_KEY  = 'caah_il_draft';
     var COOLDOWN_KEY = 'caah_buyer_submitted';
     var COOLDOWN_MS  = 2 * 60 * 1000; /* DEV: 2 min — set to 30 * 24 * 60 * 60 * 1000 at launch */
+    var SCRIPT_URL   = 'PASTE_APPS_SCRIPT_URL_HERE'; /* REPLACE WITH DEPLOYED SCRIPT URL */
 
     /* Static listings — Phase 4 will replace with live Sheet data */
     var LISTINGS = [
@@ -1427,6 +1428,26 @@
       if (hidden) hidden.value = vals.join('; ');
     }
 
+    /* Serialise the form to a plain JSON object.
+       Radios: only the checked value is included.
+       Checkboxes: skipped — listing_interest_summary (hidden) carries that value.
+       All other inputs/selects/textareas: value as string. */
+    function buildPayload() {
+      var payload  = {};
+      var elements = form.elements;
+      for (var i = 0; i < elements.length; i++) {
+        var el = elements[i];
+        if (!el.name || el.disabled) continue;
+        if (el.type === 'radio') {
+          if (el.checked) payload[el.name] = el.value;
+          continue;
+        }
+        if (el.type === 'checkbox') continue; /* use listing_interest_summary hidden field */
+        payload[el.name] = el.value;
+      }
+      return payload;
+    }
+
     function submitForm() {
       var orig = submitBtn.innerHTML;
       submitBtn.disabled = true;
@@ -1434,10 +1455,12 @@
 
       syncListings();
 
-      fetch(form.action, {
+      /* Apps Script Web Apps require Content-Type: text/plain to avoid a
+         CORS preflight — the server parses e.postData.contents as JSON. */
+      fetch(SCRIPT_URL, {
         method: 'POST',
-        headers: { 'Accept': 'application/json' },
-        body: new FormData(form)
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(buildPayload())
       })
       .then(function (res) { return res.json(); })
       .then(function (data) {
@@ -1448,7 +1471,7 @@
         } else {
           submitBtn.disabled = false;
           submitBtn.innerHTML = orig;
-          showError(form, data.errors);
+          showError(form, null);
         }
       })
       .catch(function () {

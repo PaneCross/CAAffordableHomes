@@ -9,10 +9,15 @@
    3. Delete the default empty function
    4. Paste this entire file and click Save (disk icon)
 
-   5. UPDATE THE SUBSCRIBERS TAB HEADERS:
+   5. UPDATE THE SUBSCRIBERS TAB HEADERS (listing alert sign-ups):
       - Set the header row to these exact column names:
         A: Email | B: First Name | C: Last Name | D: Phone | E: Regions | F: Date Subscribed
       - Clear any test rows added before this update (column layout changed)
+
+   5b. INTEREST LIST TAB — no manual setup needed:
+      - The "Interest List" tab is created automatically on the first form submission.
+      - Column headers are written by the script. Do not rename or reorder them.
+      - Set status values manually: "new" (default) → "reviewing" → "matched" → "expired".
 
    6. DEPLOY / UPDATE:
       - If first time: Click Deploy → New deployment → Web App
@@ -53,6 +58,84 @@ var COL_PHONE      = 4;
 var COL_REGIONS    = 5;
 var COL_DATE       = 6;
 var SUBS_COL_COUNT = 6;
+
+/* ── Interest List sheet name ── */
+var IL_SHEET = 'Interest List';
+
+/* ── Interest List column order (must stay in sync with contact.html field names) ──
+   Columns are created automatically on first doPost if the tab doesn't exist.
+   Do NOT reorder — append new fields at the end to keep existing data aligned.
+
+   System (A–C)
+   Section I  — General Information (D–Q)
+   Section II — Income members ×6, tax-year income, non-taxable (R–AO)
+   Section III — Employment ×4 (AP–EK)
+   Section IV — Financial & Disclosures (EL–EZ)            */
+var IL_COLUMNS = [
+  /* System */
+  'submitted_at', 'status', 'updated_at',
+  /* Section I */
+  'first_name', 'last_name', 'phone', 'email',
+  'owned_real_estate', 'household_size',
+  'lived_together_12mo', 'live_in_sd_county',
+  'credit_score_range', 'monthly_rent',
+  'rent_subsidized', 'rent_subsidy_amount',
+  'worked_lived_sd_2yr', 'sdhc_prior_purchase',
+  /* Section II — income members (up to 6; 3 columns each) */
+  'income_1_name', 'income_1_relationship', 'income_1_annual',
+  'income_2_name', 'income_2_relationship', 'income_2_annual',
+  'income_3_name', 'income_3_relationship', 'income_3_annual',
+  'income_4_name', 'income_4_relationship', 'income_4_annual',
+  'income_5_name', 'income_5_relationship', 'income_5_annual',
+  'income_6_name', 'income_6_relationship', 'income_6_annual',
+  /* Tax-year income */
+  'income_2023_total', 'income_2023_sched_c',
+  'income_2024_total', 'income_2024_sched_c',
+  'income_2025_total', 'income_2025_sched_c',
+  /* Non-taxable income */
+  'non_taxable_income', 'non_taxable_who', 'non_taxable_source',
+  'non_taxable_amount', 'non_taxable_end_date_yn', 'non_taxable_end_date',
+  /* Section III — employment entries (up to 4; 16 columns each) */
+  'emp_1_name', 'emp_1_relationship', 'emp_1_employer', 'emp_1_status',
+  'emp_1_end_date', 'emp_1_same_line', 'emp_1_start_date',
+  'emp_1_breaks', 'emp_1_breaks_desc', 'emp_1_income_type',
+  'emp_1_annual_salary', 'emp_1_hourly_rate', 'emp_1_hours_per_week',
+  'emp_1_ytd_gross', 'emp_1_pay_period_end', 'emp_1_w2_2025',
+
+  'emp_2_name', 'emp_2_relationship', 'emp_2_employer', 'emp_2_status',
+  'emp_2_end_date', 'emp_2_same_line', 'emp_2_start_date',
+  'emp_2_breaks', 'emp_2_breaks_desc', 'emp_2_income_type',
+  'emp_2_annual_salary', 'emp_2_hourly_rate', 'emp_2_hours_per_week',
+  'emp_2_ytd_gross', 'emp_2_pay_period_end', 'emp_2_w2_2025',
+
+  'emp_3_name', 'emp_3_relationship', 'emp_3_employer', 'emp_3_status',
+  'emp_3_end_date', 'emp_3_same_line', 'emp_3_start_date',
+  'emp_3_breaks', 'emp_3_breaks_desc', 'emp_3_income_type',
+  'emp_3_annual_salary', 'emp_3_hourly_rate', 'emp_3_hours_per_week',
+  'emp_3_ytd_gross', 'emp_3_pay_period_end', 'emp_3_w2_2025',
+
+  'emp_4_name', 'emp_4_relationship', 'emp_4_employer', 'emp_4_status',
+  'emp_4_end_date', 'emp_4_same_line', 'emp_4_start_date',
+  'emp_4_breaks', 'emp_4_breaks_desc', 'emp_4_income_type',
+  'emp_4_annual_salary', 'emp_4_hourly_rate', 'emp_4_hours_per_week',
+  'emp_4_ytd_gross', 'emp_4_pay_period_end', 'emp_4_w2_2025',
+  /* Section IV — Financial & Disclosures */
+  'monthly_debt_payments',
+  'foreclosure', 'foreclosure_date',
+  'bankruptcy', 'bankruptcy_discharge_date',
+  'judgments', 'judgments_description',
+  'us_citizen', 'permanent_resident',
+  'asset_checking', 'asset_savings', 'asset_401k', 'asset_other',
+  'loan_signers', 'household_members', 'additional_info',
+  'listing_interest_summary'
+];
+
+/* Build a field-name → 1-based column-number lookup at load time */
+var IL_COL = (function () {
+  var map = {};
+  for (var i = 0; i < IL_COLUMNS.length; i++) map[IL_COLUMNS[i]] = i + 1;
+  return map;
+}());
 
 /* ── Region → Cities mapping ──
    Add or edit city names here at any time.
@@ -100,6 +183,210 @@ var REGION_NAMES = {
   'downtown-metro':       'Downtown / Metro',
   'south-bay':            'South Bay'
 };
+
+/* ==========================================================
+   doPost — Interest List questionnaire submission
+   Called by the contact.html Interest List wizard via JSON POST.
+   Writes one row to the "Interest List" sheet, deduplicates by
+   email (updates existing active rows; inserts new ones), then
+   sends a confirmation email to the applicant and a summary
+   notification to the internal team.
+   ========================================================== */
+function doPost(e) {
+  try {
+    var data  = JSON.parse(e.postData.contents);
+    var email = (data.email || '').trim().toLowerCase();
+
+    if (!email) {
+      return jsonResponse({ ok: false, error: 'Email is required' });
+    }
+
+    var ss    = SpreadsheetApp.openById(SPREADSHEET_ID);
+    var sheet = ss.getSheetByName(IL_SHEET);
+
+    /* Auto-create the Interest List tab with headers on first submission */
+    if (!sheet) {
+      sheet = ss.insertSheet(IL_SHEET);
+      sheet.getRange(1, 1, 1, IL_COLUMNS.length).setValues([IL_COLUMNS]);
+      sheet.setFrozenRows(1);
+    }
+
+    var now     = new Date();
+    var row     = buildILRow(data, now, 'new');
+    var updated = false;
+
+    /* Deduplication: find existing active row with same email */
+    var lastRow = sheet.getLastRow();
+    if (lastRow > 1) {
+      var emailVals = sheet.getRange(2, IL_COL['email'], lastRow - 1, 1).getValues();
+      for (var i = 0; i < emailVals.length; i++) {
+        var existingEmail  = (emailVals[i][0] || '').toString().trim().toLowerCase();
+        if (existingEmail === email) {
+          var existingStatus = sheet.getRange(i + 2, IL_COL['status']).getValue();
+          if (existingStatus !== 'expired') {
+            /* Keep original submitted_at and current status; bump updated_at */
+            row[IL_COL['submitted_at'] - 1] = sheet.getRange(i + 2, IL_COL['submitted_at']).getValue();
+            row[IL_COL['status']       - 1] = existingStatus;
+            row[IL_COL['updated_at']   - 1] = now;
+            sheet.getRange(i + 2, 1, 1, row.length).setValues([row]);
+            updated = true;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!updated) {
+      sheet.appendRow(row);
+    }
+
+    /* Send emails */
+    sendILConfirmation(data);
+    sendILNotification(data, updated);
+
+    return jsonResponse({ ok: true });
+
+  } catch (err) {
+    Logger.log('doPost error: ' + err.message);
+    return jsonResponse({ ok: false, error: err.message });
+  }
+}
+
+/* ── Build a flat array aligned to IL_COLUMNS for one submission ── */
+function buildILRow(data, now, status) {
+  var row = new Array(IL_COLUMNS.length).fill('');
+  row[IL_COL['submitted_at'] - 1] = now;
+  row[IL_COL['status']       - 1] = status || 'new';
+  row[IL_COL['updated_at']   - 1] = now;
+
+  /* Copy every recognised field from the submitted payload */
+  for (var key in data) {
+    if (Object.prototype.hasOwnProperty.call(data, key) && IL_COL[key] !== undefined) {
+      row[IL_COL[key] - 1] = data[key];
+    }
+  }
+  return row;
+}
+
+/* ── Applicant confirmation email ── */
+function sendILConfirmation(data) {
+  var toEmail   = (data.email      || '').trim();
+  var firstName = (data.first_name || '').trim();
+  if (!toEmail) return;
+
+  var greeting = firstName ? 'Hi ' + firstName + ',' : 'Hi there,';
+  var subject  = 'You\u2019re on the Interest List \u2014 CA Affordable Homes';
+
+  var body =
+    greeting + '\n\n'
+    + 'Thank you for completing the CA Affordable Homes Interest List questionnaire.\n\n'
+    + 'You\u2019re officially on our Interest List. Here\u2019s what happens next:\n\n'
+    + '1. We review your profile and compare it to our current and upcoming listings.\n'
+    + '2. When a listing may be a good match, we\u2019ll reach out directly to walk you through next steps.\n'
+    + '3. You don\u2019t need to do anything right now \u2014 we\u2019ll contact you.\n\n'
+    + 'Need to update your information at any time? Just email us at Info@CAAffordableHomes.com '
+    + 'with your name and the changes.\n\n'
+    + 'Thank you for trusting CA Affordable Homes.\n\n'
+    + '\u2014 ' + FROM_NAME + '\n'
+    + 'We are not a lender. This acknowledgment is informational only.';
+
+  var htmlBody =
+    '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#fff;">'
+    + '<div style="background:#818b7e;padding:22px 32px;">'
+    +   '<p style="color:#fff;margin:0;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;opacity:0.85;">CA Affordable Homes</p>'
+    +   '<h1 style="color:#fff;margin:6px 0 0;font-size:22px;font-weight:600;">&#10003;&nbsp; You\'re on the Interest List</h1>'
+    + '</div>'
+    + '<div style="padding:32px;">'
+    +   '<p style="color:#333;margin-top:0;">' + greeting + '</p>'
+    +   '<p style="color:#333;">Thank you for completing the CA Affordable Homes Interest List questionnaire. You\'re officially on our list.</p>'
+    +   '<div style="background:#f7f7f4;border-left:4px solid #818b7e;padding:18px 22px;margin:22px 0;border-radius:4px;">'
+    +     '<p style="margin:0 0 10px;font-weight:600;color:#222;">What happens next:</p>'
+    +     '<ol style="margin:0;padding-left:1.25rem;color:#444;line-height:1.8;">'
+    +       '<li>We review your profile and compare it to current and upcoming listings.</li>'
+    +       '<li>When a listing may be a good match, we\'ll reach out directly.</li>'
+    +       '<li>You don\'t need to do anything right now &mdash; we\'ll contact you.</li>'
+    +     '</ol>'
+    +   '</div>'
+    +   '<p style="color:#555;font-size:14px;">'
+    +     'Need to update your information? Email us any time at '
+    +     '<a href="mailto:Info@CAAffordableHomes.com" style="color:#818b7e;">Info@CAAffordableHomes.com</a>'
+    +     ' with your name and the changes.'
+    +   '</p>'
+    +   '<hr style="border:none;border-top:1px solid #eee;margin:24px 0;">'
+    +   '<p style="color:#999;font-size:12px;margin:0;">'
+    +     'CA Affordable Homes &bull; '
+    +     '<a href="' + SITE_URL + '" style="color:#999;">caaffordablehomes.com</a><br>'
+    +     'We are not a lender. This acknowledgment is informational only.'
+    +   '</p>'
+    + '</div>'
+    + '</div>';
+
+  try {
+    MailApp.sendEmail({
+      to:       toEmail,
+      subject:  subject,
+      body:     body,
+      htmlBody: htmlBody,
+      name:     FROM_NAME,
+      replyTo:  REPLY_TO
+    });
+    Logger.log('IL confirmation sent to: ' + toEmail);
+  } catch (err) {
+    Logger.log('IL confirmation failed for ' + toEmail + ': ' + err.message);
+  }
+}
+
+/* ── Internal notification email to the team ── */
+function sendILNotification(data, updated) {
+  var fullName = ((data.first_name || '') + ' ' + (data.last_name || '')).trim();
+  var subject  = (updated ? '[UPDATED] ' : '[NEW] ')
+    + 'Interest List: ' + fullName + ' <' + (data.email || '') + '>';
+
+  var body =
+    'Interest List submission received.\n\n'
+    + 'Action:           ' + (updated ? 'UPDATED (returning applicant)' : 'NEW') + '\n'
+    + '---\n'
+    + 'Name:             ' + fullName + '\n'
+    + 'Email:            ' + (data.email || '') + '\n'
+    + 'Phone:            ' + (data.phone || '') + '\n'
+    + '---\n'
+    + 'Household size:   ' + (data.household_size || '') + '\n'
+    + 'Credit score:     ' + (data.credit_score_range || '') + '\n'
+    + 'Monthly rent:     $' + (data.monthly_rent || '0') + '\n'
+    + 'Monthly debt:     $' + (data.monthly_debt_payments || '0') + '\n'
+    + '---\n'
+    + '2023 income:      $' + (data.income_2023_total || '0') + '\n'
+    + '2024 income:      $' + (data.income_2024_total || '0') + '\n'
+    + '2025 income:      $' + (data.income_2025_total || '') + '\n'
+    + '---\n'
+    + 'Checking assets:  $' + (data.asset_checking || '0') + '\n'
+    + 'Savings assets:   $' + (data.asset_savings || '0') + '\n'
+    + '---\n'
+    + 'Foreclosure:      ' + (data.foreclosure || 'No') + '\n'
+    + 'Bankruptcy:       ' + (data.bankruptcy || 'No') + '\n'
+    + 'Judgments:        ' + (data.judgments || 'No') + '\n'
+    + '---\n'
+    + 'Owned real estate:  ' + (data.owned_real_estate || '') + '\n'
+    + 'SD resident 2yr:    ' + (data.worked_lived_sd_2yr || '') + '\n'
+    + 'SDHC prior purchase:' + (data.sdhc_prior_purchase || '') + '\n'
+    + '---\n'
+    + 'Listing interest: ' + (data.listing_interest_summary || '(none selected)') + '\n\n'
+    + 'Full submission in Google Sheets:\n'
+    + 'https://docs.google.com/spreadsheets/d/' + SPREADSHEET_ID + '/edit#gid=0';
+
+  try {
+    MailApp.sendEmail({
+      to:      'tj@nostos.tech',
+      subject: subject,
+      body:    body,
+      name:    FROM_NAME,
+      replyTo: REPLY_TO
+    });
+    Logger.log('IL notification sent to tj@nostos.tech');
+  } catch (err) {
+    Logger.log('IL notification failed: ' + err.message);
+  }
+}
 
 /* ==========================================================
    doGet — routes to subscribe or unsubscribe based on ?action=
