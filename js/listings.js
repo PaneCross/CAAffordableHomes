@@ -305,12 +305,10 @@ function buildAffordableContent(l) {
 
   return (
     '<div class="lm-header">' +
-      '<div>' +
-        '<h2 class="lm-title" id="lm-title">' + escapeHTML(name) + '</h2>' +
-        (address ? '<p class="lm-address">' + escapeHTML(address) + '</p>' : '') +
-        (price   ? '<p class="lm-price">'   + escapeHTML(price)   + '</p>' : '') +
-      '</div>' +
-      '<span class="status-badge ' + badgeClass + '">' + escapeHTML(status) + '</span>' +
+      '<h2 class="lm-title" id="lm-title">' + escapeHTML(name) + '</h2>' +
+      (address ? '<p class="lm-address">' + escapeHTML(address) + '</p>' : '') +
+      (price   ? '<p class="lm-price">'   + escapeHTML(price)   + '</p>' : '') +
+      '<span class="status-badge ' + badgeClass + '" style="margin-top:0.5rem;display:inline-block;">' + escapeHTML(status) + '</span>' +
     '</div>' +
     buildCarouselHTML(photos, name) +
     descHTML +
@@ -344,13 +342,11 @@ function buildMLSContent(l) {
 
   return (
     '<div class="lm-header">' +
-      '<div>' +
-        '<span class="tag tag--mls" style="margin-bottom:0.4rem;display:inline-block;">MLS Listing</span>' +
-        '<h2 class="lm-title" id="lm-title">' + escapeHTML(name) + '</h2>' +
-        (address ? '<p class="lm-address">' + escapeHTML(address) + '</p>' : '') +
-        (price   ? '<p class="lm-price">'   + escapeHTML(price)   + '</p>' : '') +
-      '</div>' +
-      '<span class="status-badge ' + badgeClass + '">' + escapeHTML(status) + '</span>' +
+      '<span class="tag tag--mls" style="margin-bottom:0.5rem;display:inline-block;">MLS Listing</span>' +
+      '<h2 class="lm-title" id="lm-title">' + escapeHTML(name) + '</h2>' +
+      (address ? '<p class="lm-address">' + escapeHTML(address) + '</p>' : '') +
+      (price   ? '<p class="lm-price">'   + escapeHTML(price)   + '</p>' : '') +
+      '<span class="status-badge ' + badgeClass + '" style="margin-top:0.5rem;display:inline-block;">' + escapeHTML(status) + '</span>' +
     '</div>' +
     buildCarouselHTML(photos, name) +
     descHTML +

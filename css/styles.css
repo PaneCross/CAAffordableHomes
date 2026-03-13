@@ -2365,14 +2365,10 @@ body.modal-open { overflow: hidden; }
   color: var(--color-sage);
 }
 
-/* Header row */
+/* Header block — stacked, padded right to clear the close button */
 .lm-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 1rem;
   margin-bottom: 1.25rem;
-  padding-right: 2.5rem; /* clearance for close button */
+  padding-right: 3rem;
 }
 .lm-title {
   font-family: 'Cormorant Garamond', serif;
@@ -2552,6 +2548,5 @@ body.modal-open { overflow: hidden; }
   .lm-carousel__img,
   .lm-slides img { height: 220px; }
   .lm-title   { font-size: 1.3rem; }
-  .lm-header  { flex-direction: column; }
   .lm-actions { flex-direction: column; }
 }
