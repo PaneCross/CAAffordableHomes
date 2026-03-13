@@ -64,6 +64,15 @@
       - Time based trigger type: Day timer
       - Time of day: 6am to 7am
       - Click Save
+      (The daily trigger also auto-rebuilds the Dashboard after matching runs.)
+
+  10. DASHBOARD TAB — created automatically by the script:
+      - In Apps Script editor, select rebuildDashboard → click Run (do this once manually)
+      - After that it rebuilds automatically every morning after matching (Trigger B above)
+      - The tab is read-only for Kacee — DO NOT edit it manually; it gets overwritten on each run
+      - To protect it from accidental editing:
+          Open the sheet → right-click the "Dashboard" tab → Protect sheet
+          Set "Show a warning when editing this range" or restrict to yourself only
 
    ========================================================== */
 
@@ -78,6 +87,7 @@ var REPLY_TO       = 'Info@CAAffordableHomes.com';
 /* ── Matching configuration ── */
 var REQUIREMENTS_SHEET  = 'Requirements';
 var MATCH_RESULTS_SHEET = 'Match Results';
+var DASHBOARD_SHEET     = 'Dashboard';
 var CLOSE_THRESHOLD     = 2;  /* applicants with <= this many failed fields are "Close" */
 var NOTIFY_EMAIL        = 'tj@nostos.tech'; /* switch to Kacee's address at Phase 8 launch */
 
@@ -206,6 +216,50 @@ var MR_COLUMNS = [
   'listing_id', 'listing_name', 'applicant_email', 'applicant_name',
   'applicant_phone', 'match_status', 'failed_fields', 'run_at'
 ];
+
+/* ==========================================================
+   doGet — handles GET requests to the Web App URL
+     ?action=getListings  → returns JSON array of affordable listings
+   ========================================================== */
+function doGet(e) {
+  var action = (e && e.parameter && e.parameter.action) || '';
+  if (action === 'getListings') return handleGetListings();
+  return ContentService
+    .createTextOutput('CA Affordable Homes — Apps Script (use POST for form submissions)')
+    .setMimeType(ContentService.MimeType.TEXT);
+}
+
+/* Returns [{id, name, city, status}] for all affordable, non-empty-status rows */
+function handleGetListings() {
+  try {
+    var ss    = SpreadsheetApp.openById(SPREADSHEET_ID);
+    var sheet = ss.getSheetByName(LISTINGS_SHEET);
+    if (!sheet || sheet.getLastRow() < 2) {
+      return ContentService.createTextOutput('[]').setMimeType(ContentService.MimeType.JSON);
+    }
+
+    /* Listings columns: 0=Property Name, 1=Address, 2=City, 7=Status, 8=listing_type */
+    var data     = sheet.getRange(2, 1, sheet.getLastRow() - 1, 9).getValues();
+    var listings = [];
+
+    for (var i = 0; i < data.length; i++) {
+      var name        = (data[i][0] || '').toString().trim();
+      var city        = (data[i][2] || '').toString().trim();
+      var status      = (data[i][7] || '').toString().trim();
+      var listingType = (data[i][8] || '').toString().trim().toLowerCase();
+      if (!name || !status || listingType !== 'affordable') continue;
+      listings.push({ id: name, name: name, city: city, status: status });
+    }
+
+    return ContentService
+      .createTextOutput(JSON.stringify(listings))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ error: err.message }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
 
 /* ==========================================================
    doPost — routes by form_type:
@@ -743,6 +797,7 @@ function runMatchingForAllListings() {
   }
 
   Logger.log('Matching complete. Listings: ' + listingsProcessed + ' | Applicants: ' + applicants.length);
+  rebuildDashboard();
 }
 
 /* ==========================================================
@@ -1127,6 +1182,191 @@ function testMatching() {
   Logger.log('Starting test match run...');
   runMatchingForAllListings();
   Logger.log('Done. Check Match Results tab and your inbox.');
+}
+
+/* ==========================================================
+   rebuildDashboard
+   Creates (or fully overwrites) the "Dashboard" tab with a
+   clean, color-coded summary of Pass and Close candidates
+   grouped by active listing. Called automatically at the end
+   of runMatchingForAllListings(). Also run it manually once
+   to create the tab for the first time (see setup step 10).
+   ========================================================== */
+function rebuildDashboard() {
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+
+  /* ── Get active listings from Requirements ── */
+  var reqSheet = ss.getSheetByName(REQUIREMENTS_SHEET);
+  if (!reqSheet || reqSheet.getLastRow() < 2) {
+    Logger.log('rebuildDashboard: no Requirements rows — skipping.');
+    return;
+  }
+  var reqData        = reqSheet.getRange(2, 1, reqSheet.getLastRow() - 1, REQ_COLUMNS.length).getValues();
+  var activeListings = [];
+  for (var i = 0; i < reqData.length; i++) {
+    var req = rowToReqObj(reqData[i]);
+    if ((req['active'] || '').toString().trim().toLowerCase() === 'yes') activeListings.push(req);
+  }
+
+  /* ── Get all Match Results ── */
+  var mrSheet    = ss.getSheetByName(MATCH_RESULTS_SHEET);
+  var allResults = [];
+  if (mrSheet && mrSheet.getLastRow() > 1) {
+    var mrData = mrSheet.getRange(2, 1, mrSheet.getLastRow() - 1, MR_COLUMNS.length).getValues();
+    for (var j = 0; j < mrData.length; j++) {
+      allResults.push({
+        listing_id: (mrData[j][0] || '').toString(),
+        name:       (mrData[j][3] || '').toString(),
+        phone:      (mrData[j][4] || '').toString(),
+        email:      (mrData[j][2] || '').toString(),
+        status:     (mrData[j][5] || '').toString(),
+        failed:     (mrData[j][6] || '').toString(),
+        run_at:     mrData[j][7]
+      });
+    }
+  }
+
+  /* ── Get address info from Listings tab ── */
+  var addressMap   = {}; /* Property Name → "Address, City" */
+  var listingsTab  = ss.getSheetByName(LISTINGS_SHEET);
+  if (listingsTab && listingsTab.getLastRow() > 1) {
+    var lData = listingsTab.getRange(2, 1, listingsTab.getLastRow() - 1, 3).getValues();
+    for (var k = 0; k < lData.length; k++) {
+      var pName = (lData[k][0] || '').toString().trim();
+      var addr  = (lData[k][1] || '').toString().trim();
+      var city  = (lData[k][2] || '').toString().trim();
+      if (pName) addressMap[pName] = addr + (city ? ', ' + city : '');
+    }
+  }
+
+  /* ── Create or clear Dashboard tab ── */
+  var dash = ss.getSheetByName(DASHBOARD_SHEET);
+  if (!dash) {
+    dash = ss.insertSheet(DASHBOARD_SHEET);
+  } else {
+    dash.clearContents();
+    dash.clearFormats();
+  }
+
+  /* Set column widths: Name | Phone | Email | Submitted | Areas to Review */
+  dash.setColumnWidth(1, 210);
+  dash.setColumnWidth(2, 135);
+  dash.setColumnWidth(3, 240);
+  dash.setColumnWidth(4, 115);
+  dash.setColumnWidth(5, 380);
+
+  var row = 1;
+
+  /* ── Title row ── */
+  dash.getRange(row, 1, 1, 5).merge()
+    .setValue('CA Affordable Homes — Match Dashboard')
+    .setFontSize(15).setFontWeight('bold')
+    .setBackground('#818b7e').setFontColor('#ffffff')
+    .setVerticalAlignment('middle').setHorizontalAlignment('left');
+  dash.setRowHeight(row, 40);
+  row++;
+
+  dash.getRange(row, 1, 1, 5).merge()
+    .setValue('Last updated: ' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'MMMM d, yyyy \'at\' h:mm a'))
+    .setFontSize(10).setFontStyle('italic').setFontColor('#888888')
+    .setBackground('#f5f5f2');
+  row++;
+
+  if (activeListings.length === 0) {
+    dash.getRange(row, 1, 1, 5).merge()
+      .setValue('No active listings found in the Requirements tab.')
+      .setFontColor('#888888').setFontStyle('italic');
+    Logger.log('rebuildDashboard: no active listings.');
+    return;
+  }
+
+  /* ── One block per active listing ── */
+  activeListings.forEach(function (listing) {
+    var listingId   = (listing['listing_id']   || '').toString().trim();
+    var listingName = (listing['listing_name'] || listingId).toString().trim();
+    var address     = addressMap[listingId] || '';
+
+    var passes = allResults.filter(function (r) { return r.listing_id === listingId && r.status === 'Pass'; });
+    var closes = allResults.filter(function (r) { return r.listing_id === listingId && r.status === 'Close'; });
+
+    /* Blank spacer between blocks */
+    if (row > 3) { dash.setRowHeight(row, 14); row++; }
+
+    /* Listing name + address header */
+    dash.getRange(row, 1, 1, 5).merge()
+      .setValue(listingName + (address ? '   ·   ' + address : ''))
+      .setFontSize(12).setFontWeight('bold')
+      .setBackground('#e8ede6').setFontColor('#2a2a2a');
+    dash.setRowHeight(row, 32);
+    row++;
+
+    /* Pass / Close count summary */
+    dash.getRange(row, 1).setValue('✓  Pass: ' + passes.length)
+      .setFontWeight('bold').setFontColor('#1a5c38').setBackground('#edf7f0');
+    dash.getRange(row, 2).setValue('⚠  Close: ' + closes.length)
+      .setFontWeight('bold').setFontColor('#7a4f00').setBackground('#fef8e7');
+    dash.getRange(row, 3, 1, 3).setBackground('#f9f9f7');
+    row++;
+
+    /* ── Pass candidates table ── */
+    if (passes.length > 0) {
+      dash.getRange(row, 1, 1, 5).merge()
+        .setValue('PASS CANDIDATES')
+        .setFontWeight('bold').setFontSize(10)
+        .setBackground('#d4edda').setFontColor('#1a5c38');
+      row++;
+
+      ['Name', 'Phone', 'Email', 'Submitted', ''].forEach(function (h, ci) {
+        dash.getRange(row, ci + 1).setValue(h).setFontWeight('bold').setBackground('#f0f9f3').setFontColor('#333');
+      });
+      row++;
+
+      passes.forEach(function (r) {
+        dash.getRange(row, 1).setValue(r.name);
+        dash.getRange(row, 2).setValue(r.phone);
+        dash.getRange(row, 3).setValue(r.email);
+        dash.getRange(row, 4).setValue(r.run_at instanceof Date
+          ? Utilities.formatDate(r.run_at, Session.getScriptTimeZone(), 'MMM d, yyyy') : r.run_at.toString());
+        row++;
+      });
+    }
+
+    /* ── Close candidates table ── */
+    if (closes.length > 0) {
+      dash.getRange(row, 1, 1, 5).merge()
+        .setValue('CLOSE CANDIDATES  —  minor areas to review')
+        .setFontWeight('bold').setFontSize(10)
+        .setBackground('#fff3cd').setFontColor('#7a4f00');
+      row++;
+
+      ['Name', 'Phone', 'Email', 'Submitted', 'Areas to Review'].forEach(function (h, ci) {
+        dash.getRange(row, ci + 1).setValue(h).setFontWeight('bold').setBackground('#fffdf0').setFontColor('#333');
+      });
+      row++;
+
+      closes.forEach(function (r) {
+        dash.getRange(row, 1).setValue(r.name);
+        dash.getRange(row, 2).setValue(r.phone);
+        dash.getRange(row, 3).setValue(r.email);
+        dash.getRange(row, 4).setValue(r.run_at instanceof Date
+          ? Utilities.formatDate(r.run_at, Session.getScriptTimeZone(), 'MMM d, yyyy') : r.run_at.toString());
+        dash.getRange(row, 5).setValue(r.failed).setFontColor('#7a4f00');
+        row++;
+      });
+    }
+
+    if (passes.length === 0 && closes.length === 0) {
+      dash.getRange(row, 1, 1, 5).merge()
+        .setValue('No Pass or Close candidates yet — matching runs daily at 7 AM.')
+        .setFontColor('#aaaaaa').setFontStyle('italic');
+      row++;
+    }
+  });
+
+  /* Freeze the title + timestamp rows so they stay visible while scrolling */
+  dash.setFrozenRows(2);
+
+  Logger.log('Dashboard rebuilt: ' + activeListings.length + ' active listing(s).');
 }
 
 /* ── Utility functions ── */
