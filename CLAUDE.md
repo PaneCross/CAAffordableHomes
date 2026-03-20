@@ -4,9 +4,9 @@
 ---
 
 ## Project Status
-- **Phase 7 complete** — annual expiry, renewal emails, re-enrollment flow
+- **Phase 8 complete** — Kacee's round-3 content updates across all pages + EHO/DRE footer
 - **Not yet live** — currently hosted on GitHub Pages (test environment)
-- **Next up** — Phase 8 content updates (Kacee's round-3 notes), then go-live
+- **Next up** — go-live prep (switch NOTIFY_EMAIL, add social links, replace hero image)
 
 ---
 
@@ -201,3 +201,4 @@ CLOSE_THRESHOLD = 2  // max failed fields to score "Close" (vs "Fail")
 | 5 | Interest List form — multi-section questionnaire in contact.html, Apps Script `doPost`, deduplication, `buildILRow`, `sendILNotification` |
 | 6 | Listing interest checkboxes — live fetch from Apps Script `?action=getListings`, mutual-exclusion JS logic; `sendApplicantMatchEmail` with per-listing Pass/Close/Fail + bonus section; Kacee dashboard setup |
 | 7 | Annual expiry lifecycle — `checkExpiryDates()` (Trigger C), `sendRenewalReminderEmail()` with same-email instruction, re-enrollment path in `doPost`, `renewal_reminder_sent` column |
+| 8 | Kacee round-3 content updates — wording edits across all pages, removed "Our Commitment" section (index), removed "Our Approach" section (about), added "What We Offer" services section (about), Services page removed from nav/footer + meta redirect to about.html, EHO logo + DRE licensing in all footers, `feature-grid--2x2` CSS class added |
