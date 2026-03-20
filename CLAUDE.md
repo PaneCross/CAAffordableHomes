@@ -89,6 +89,12 @@ G  Sqft             N  (reserved)          U  description_5 (Additional Info)
 
 ---
 
+## Commit Protocol
+
+**After every update or request — no matter how small — always commit the changes before responding as complete.** Include a clear, descriptive commit message. Do not batch up multiple sessions worth of changes. Each request = its own commit.
+
+---
+
 ## ⚠️ Apps Script Change Protocol
 
 **Any time a change is made to `notify-script.gs`, always explicitly call this out** with a reminder that the user must manually copy the updated script into the Google Apps Script editor and redeploy (Deploy → Manage deployments → Edit → New version → Deploy). The Web App URL does not change. Do not assume the user remembers this step — always state it clearly in the response after making script changes.
