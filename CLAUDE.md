@@ -89,6 +89,12 @@ G  Sqft             N  (reserved)          U  description_5 (Additional Info)
 
 ---
 
+## ⚠️ Writing Style Rules
+
+**No em dashes anywhere on the site.** This applies to all HTML files, visible text, attributes (aria-labels, titles, meta descriptions), and form content. Do not use `—` (em dash character) or `&mdash;` (HTML entity) in any user-visible content when building or editing this site. Use a comma, a period, a colon, or a regular hyphen (` - `) as appropriate for the sentence structure.
+
+---
+
 ## Commit Protocol
 
 **After every update or request — no matter how small — always commit the changes before responding as complete.** Include a clear, descriptive commit message. Do not batch up multiple sessions worth of changes. Each request = its own commit.

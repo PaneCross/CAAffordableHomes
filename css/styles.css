@@ -950,6 +950,27 @@ header {
   background: var(--color-sage);
 }
 
+/* Nested sub-list inside serve-column (for indented bullet groups) */
+.serve-sublist {
+  margin-top: 0.5rem;
+  padding-left: 1rem;
+  gap: 0.4rem !important;
+}
+
+.serve-sublist li {
+  font-size: 0.9rem !important;
+  color: var(--color-text-muted) !important;
+  padding-left: 1rem !important;
+}
+
+.serve-sublist li::before {
+  width: 4px !important;
+  height: 4px !important;
+  top: 0.6rem !important;
+  background: var(--color-sage) !important;
+  opacity: 0.65;
+}
+
 .disclaimer-block {
   background: var(--color-light-bg);
   border-left: 3px solid var(--color-border-light);
