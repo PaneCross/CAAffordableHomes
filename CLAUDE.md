@@ -89,6 +89,14 @@ G  Sqft             N  (reserved)          U  description_5 (Additional Info)
 
 ---
 
+## ⚠️ Apps Script Change Protocol
+
+**Any time a change is made to `notify-script.gs`, always explicitly call this out** with a reminder that the user must manually copy the updated script into the Google Apps Script editor and redeploy (Deploy → Manage deployments → Edit → New version → Deploy). The Web App URL does not change. Do not assume the user remembers this step — always state it clearly in the response after making script changes.
+
+Triggers are set once and do not need to be re-created after redeployment unless the function name changes.
+
+---
+
 ## Apps Script
 
 **Script URL (Web App):**
@@ -121,7 +129,7 @@ CLOSE_THRESHOLD = 2  // max failed fields to score "Close" (vs "Fail")
 | 1 | Interest List Welcome | Applicant | Form submit, no listings checked | "You're on the Interest List" |
 | 2 | Pre-Screening Results | Applicant | Form submit, listings checked | "Your Pre-Screening Results" |
 | 3 | Internal Submission Alert | Team | Every form submit | [NEW] / [UPDATED] / [RE-ENROLLMENT] Interest List: Name |
-| 4 | Daily Match Report | Team | Trigger B (if Pass/Close found) | "[CA Affordable Homes] New candidates for {listing}" |
+| 4 | Daily Match Digest | Team | Trigger B (if any listing has Pass/Close) | "[CA Affordable Homes] Daily Match Report — {date} (X Pass, Y Close)" |
 | 5 | 11-Month Renewal Reminder | Applicant | Trigger C (11mo + no reminder sent) | "Your CA Affordable Homes profile is expiring soon" |
 | 6 | MLS Inquiry Notification | Team | homes.html modal contact form | [MLS Inquiry] Property — Name |
 

@@ -934,6 +934,7 @@ function runMatchingForAllListings() {
 
   var reqData           = reqSheet.getRange(2, 1, reqLastRow - 1, REQ_COLUMNS.length).getValues();
   var listingsProcessed = 0;
+  var digestSections    = []; /* collect all listing results for one digest email */
 
   for (var i = 0; i < reqData.length; i++) {
     var req    = rowToReqObj(reqData[i]);
@@ -946,10 +947,19 @@ function runMatchingForAllListings() {
     var passes = results.filter(function (r) { return r.match_status === 'Pass'; });
     var closes = results.filter(function (r) { return r.match_status === 'Close'; });
     if (passes.length > 0 || closes.length > 0) {
-      sendMatchEmail(req['listing_name'] || req['listing_id'], passes, closes);
+      digestSections.push({
+        name:   req['listing_name'] || req['listing_id'],
+        passes: passes,
+        closes: closes
+      });
     }
 
     listingsProcessed++;
+  }
+
+  /* Send one consolidated digest instead of one email per listing */
+  if (digestSections.length > 0) {
+    sendMatchDigestEmail(digestSections);
   }
 
   Logger.log('Matching complete. Listings: ' + listingsProcessed + ' | Applicants: ' + applicants.length);
@@ -1233,86 +1243,121 @@ function writeMatchResults(ss, results) {
 }
 
 /* ==========================================================
-   sendMatchEmail
-   Sends a branded HTML summary of Pass + Close candidates
-   to NOTIFY_EMAIL after each listing match run.
+   sendMatchDigestEmail
+   Sends ONE consolidated daily email covering all listings
+   that have Pass or Close candidates. Called once per day
+   after runMatchingForAllListings() finishes all listings.
+   sections = [{ name, passes, closes }, ...]
    ========================================================== */
-function sendMatchEmail(listingName, passes, closes) {
-  if (passes.length === 0 && closes.length === 0) return;
+function sendMatchDigestEmail(sections) {
+  if (!sections || sections.length === 0) return;
 
-  var subject  = '[CA Affordable Homes] New candidates for ' + listingName;
-  var sheetUrl = 'https://docs.google.com/spreadsheets/d/' + SPREADSHEET_ID + '/edit';
+  var sheetUrl  = 'https://docs.google.com/spreadsheets/d/' + SPREADSHEET_ID + '/edit';
+  var runDate   = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'MMMM d, yyyy');
+  var totalPass = 0;
+  var totalClose = 0;
+  sections.forEach(function (s) { totalPass += s.passes.length; totalClose += s.closes.length; });
 
-  var body = 'Matching results for: ' + listingName + '\n'
-    + 'Run: ' + new Date().toLocaleString() + '\n\n';
-  if (passes.length > 0) {
-    body += '=== PASS (' + passes.length + ') ===\n';
-    for (var pi = 0; pi < passes.length; pi++) {
-      body += passes[pi].applicant_name + ' | ' + passes[pi].applicant_phone + ' | ' + passes[pi].applicant_email + '\n';
+  var subject = '[CA Affordable Homes] Daily Match Report — ' + runDate
+    + ' (' + totalPass + ' Pass, ' + totalClose + ' Close)';
+
+  /* ── Plain-text fallback ── */
+  var body = 'Daily Match Report — ' + runDate + '\n'
+    + totalPass + ' Pass | ' + totalClose + ' Close across ' + sections.length + ' listing(s)\n\n';
+  sections.forEach(function (s) {
+    body += '=== ' + s.name + ' ===\n';
+    if (s.passes.length > 0) {
+      body += 'PASS (' + s.passes.length + '):\n';
+      s.passes.forEach(function (r) {
+        body += '  ' + r.applicant_name + ' | ' + r.applicant_phone + ' | ' + r.applicant_email + '\n';
+      });
+    }
+    if (s.closes.length > 0) {
+      body += 'CLOSE (' + s.closes.length + '):\n';
+      s.closes.forEach(function (r) {
+        body += '  ' + r.applicant_name + ' | ' + r.applicant_phone + ' | ' + r.applicant_email + '\n';
+        if (r.failed_fields) body += '    Issues: ' + r.failed_fields + '\n';
+      });
     }
     body += '\n';
-  }
-  if (closes.length > 0) {
-    body += '=== CLOSE — ' + CLOSE_THRESHOLD + ' or fewer issues (' + closes.length + ') ===\n';
-    for (var ci = 0; ci < closes.length; ci++) {
-      body += closes[ci].applicant_name + ' | ' + closes[ci].applicant_phone + ' | ' + closes[ci].applicant_email + '\n';
-      body += '  Issues: ' + closes[ci].failed_fields + '\n';
-    }
-    body += '\n';
-  }
+  });
   body += 'Full results: ' + sheetUrl;
 
+  /* ── HTML email ── */
   var html =
-    '<div style="font-family:Arial,sans-serif;max-width:700px;margin:0 auto;background:#fff;">'
-    + '<div style="background:#818b7e;padding:20px 28px;">'
+    '<div style="font-family:Arial,sans-serif;max-width:720px;margin:0 auto;background:#fff;">'
+    + '<div style="background:#818b7e;padding:22px 32px;">'
     +   '<p style="color:#fff;margin:0;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;opacity:0.85;">CA Affordable Homes — Matching Engine</p>'
-    +   '<h1 style="color:#fff;margin:6px 0 0;font-size:20px;font-weight:600;">New Candidates: ' + escapeHtml(listingName) + '</h1>'
+    +   '<h1 style="color:#fff;margin:6px 0 0;font-size:20px;font-weight:600;">Daily Match Report &mdash; ' + escapeHtml(runDate) + '</h1>'
     + '</div>'
-    + '<div style="padding:28px;">';
+    + '<div style="padding:28px;">'
+    + '<p style="color:#555;font-size:14px;margin:0 0 24px;">'
+    +   '<strong>' + totalPass + ' Pass</strong> &nbsp;|&nbsp; <strong>' + totalClose + ' Close</strong>'
+    +   ' across <strong>' + sections.length + '</strong> active listing(s).'
+    + '</p>';
 
-  if (passes.length > 0) {
-    html += '<h2 style="color:#2e7d50;font-size:16px;margin:0 0 12px;">&#10003; Pass (' + passes.length + ')</h2>'
-      + '<table style="width:100%;border-collapse:collapse;margin-bottom:24px;font-size:13px;">'
-      + '<tr style="background:#f0f7f3;">'
-      + '<th style="padding:8px 10px;text-align:left;">Name</th>'
-      + '<th style="padding:8px 10px;text-align:left;">Phone</th>'
-      + '<th style="padding:8px 10px;text-align:left;">Email</th>'
-      + '</tr>';
-    for (var p2 = 0; p2 < passes.length; p2++) {
-      html += '<tr style="border-bottom:1px solid #eee;">'
-        + '<td style="padding:8px 10px;">' + escapeHtml(passes[p2].applicant_name) + '</td>'
-        + '<td style="padding:8px 10px;">' + escapeHtml(passes[p2].applicant_phone) + '</td>'
-        + '<td style="padding:8px 10px;">' + escapeHtml(passes[p2].applicant_email) + '</td>'
+  sections.forEach(function (s) {
+    html +=
+      '<div style="margin-bottom:32px;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;">'
+      + '<div style="background:#e8ede6;padding:12px 18px;">'
+      +   '<span style="font-weight:700;color:#2a2a2a;font-size:15px;">' + escapeHtml(s.name) + '</span>'
+      +   '&nbsp;&nbsp;'
+      +   '<span style="font-size:13px;color:#1a5c38;font-weight:600;">&#10003; ' + s.passes.length + ' Pass</span>'
+      +   '&nbsp;&nbsp;'
+      +   '<span style="font-size:13px;color:#7a4f00;font-weight:600;">&#9888; ' + s.closes.length + ' Close</span>'
+      + '</div>';
+
+    if (s.passes.length > 0) {
+      html +=
+        '<div style="padding:14px 18px 0;">'
+        + '<p style="margin:0 0 8px;font-weight:600;color:#1a5c38;font-size:13px;">PASS</p>'
+        + '<table style="width:100%;border-collapse:collapse;font-size:13px;">'
+        + '<tr style="background:#f0f9f3;">'
+        + '<th style="padding:7px 10px;text-align:left;color:#444;">Name</th>'
+        + '<th style="padding:7px 10px;text-align:left;color:#444;">Phone</th>'
+        + '<th style="padding:7px 10px;text-align:left;color:#444;">Email</th>'
         + '</tr>';
+      s.passes.forEach(function (r) {
+        html += '<tr style="border-bottom:1px solid #eee;">'
+          + '<td style="padding:7px 10px;">' + escapeHtml(r.applicant_name) + '</td>'
+          + '<td style="padding:7px 10px;">' + escapeHtml(r.applicant_phone) + '</td>'
+          + '<td style="padding:7px 10px;">' + escapeHtml(r.applicant_email) + '</td>'
+          + '</tr>';
+      });
+      html += '</table></div>';
     }
-    html += '</table>';
-  }
 
-  if (closes.length > 0) {
-    html += '<h2 style="color:#b07d2e;font-size:16px;margin:0 0 12px;">&#9888; Close &mdash; ' + CLOSE_THRESHOLD + ' or fewer issues (' + closes.length + ')</h2>'
-      + '<table style="width:100%;border-collapse:collapse;margin-bottom:24px;font-size:13px;">'
-      + '<tr style="background:#fdf8f0;">'
-      + '<th style="padding:8px 10px;text-align:left;">Name</th>'
-      + '<th style="padding:8px 10px;text-align:left;">Phone</th>'
-      + '<th style="padding:8px 10px;text-align:left;">Email</th>'
-      + '<th style="padding:8px 10px;text-align:left;">Issues</th>'
-      + '</tr>';
-    for (var c2 = 0; c2 < closes.length; c2++) {
-      html += '<tr style="border-bottom:1px solid #eee;">'
-        + '<td style="padding:8px 10px;">' + escapeHtml(closes[c2].applicant_name) + '</td>'
-        + '<td style="padding:8px 10px;">' + escapeHtml(closes[c2].applicant_phone) + '</td>'
-        + '<td style="padding:8px 10px;">' + escapeHtml(closes[c2].applicant_email) + '</td>'
-        + '<td style="padding:8px 10px;color:#b07d2e;">' + escapeHtml(closes[c2].failed_fields) + '</td>'
+    if (s.closes.length > 0) {
+      html +=
+        '<div style="padding:14px 18px 0;">'
+        + '<p style="margin:0 0 8px;font-weight:600;color:#7a4f00;font-size:13px;">CLOSE &mdash; ' + CLOSE_THRESHOLD + ' or fewer issues</p>'
+        + '<table style="width:100%;border-collapse:collapse;font-size:13px;">'
+        + '<tr style="background:#fdf8f0;">'
+        + '<th style="padding:7px 10px;text-align:left;color:#444;">Name</th>'
+        + '<th style="padding:7px 10px;text-align:left;color:#444;">Phone</th>'
+        + '<th style="padding:7px 10px;text-align:left;color:#444;">Email</th>'
+        + '<th style="padding:7px 10px;text-align:left;color:#444;">Issues</th>'
         + '</tr>';
+      s.closes.forEach(function (r) {
+        html += '<tr style="border-bottom:1px solid #eee;">'
+          + '<td style="padding:7px 10px;">' + escapeHtml(r.applicant_name) + '</td>'
+          + '<td style="padding:7px 10px;">' + escapeHtml(r.applicant_phone) + '</td>'
+          + '<td style="padding:7px 10px;">' + escapeHtml(r.applicant_email) + '</td>'
+          + '<td style="padding:7px 10px;color:#7a4f00;">' + escapeHtml(r.failed_fields || '') + '</td>'
+          + '</tr>';
+      });
+      html += '</table></div>';
     }
-    html += '</table>';
-  }
 
-  html += '<a href="' + sheetUrl + '" style="display:inline-block;background:#818b7e;color:#fff;'
+    html += '<div style="height:14px;"></div></div>'; /* bottom padding inside card */
+  });
+
+  html +=
+    '<a href="' + sheetUrl + '" style="display:inline-block;background:#818b7e;color:#fff;'
     + 'padding:11px 24px;text-decoration:none;border-radius:6px;font-size:14px;font-weight:600;">'
     + 'Open Google Sheets &rarr;</a>'
     + '<hr style="border:none;border-top:1px solid #eee;margin:24px 0;">'
-    + '<p style="color:#999;font-size:12px;margin:0;">CA Affordable Homes &bull; Automated matching engine</p>'
+    + '<p style="color:#999;font-size:12px;margin:0;">CA Affordable Homes &bull; Automated daily matching engine</p>'
     + '</div></div>';
 
   try {
@@ -1324,9 +1369,9 @@ function sendMatchEmail(listingName, passes, closes) {
       name:     FROM_NAME,
       replyTo:  REPLY_TO
     });
-    Logger.log('Match email sent for: ' + listingName + ' | Pass: ' + passes.length + ' | Close: ' + closes.length);
+    Logger.log('Daily match digest sent. Listings: ' + sections.length + ' | Pass: ' + totalPass + ' | Close: ' + totalClose);
   } catch (err) {
-    Logger.log('Match email failed for ' + listingName + ': ' + err.message);
+    Logger.log('Daily match digest failed: ' + err.message);
   }
 }
 
