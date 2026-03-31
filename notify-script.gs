@@ -165,7 +165,9 @@ var IL_COLUMNS = [
   'loan_signers', 'household_members', 'additional_info',
   'listing_interest_summary',
   /* Phase 7 — expiry lifecycle */
-  'renewal_reminder_sent'
+  'renewal_reminder_sent',
+  /* Phase 9 — signup anniversary */
+  'original_signup_at'
 ];
 
 /* Build a field-name → 1-based column-number lookup at load time */
@@ -317,19 +319,22 @@ function doPost(e) {
           var existingStatus = sheet.getRange(i + 2, IL_COL['status']).getValue();
           if ((existingStatus || '').toString().trim().toLowerCase() === 'expired') {
             /* Re-enrollment: reset clock, restore to active, clear reminder flag */
+            /* original_signup_at is always preserved — it never resets */
             row[IL_COL['submitted_at']          - 1] = now;
             row[IL_COL['status']               - 1] = 'active';
             row[IL_COL['updated_at']           - 1] = now;
             row[IL_COL['renewal_reminder_sent'] - 1] = '';
+            row[IL_COL['original_signup_at']    - 1] = sheet.getRange(i + 2, IL_COL['original_signup_at']).getValue();
             sheet.getRange(i + 2, 1, 1, row.length).setValues([row]);
             reEnrolled = true;
             updated    = true;
           } else {
-            /* Regular update: preserve original submission date, status, and reminder flag */
+            /* Regular update: preserve original submission date, status, reminder flag, and signup date */
             row[IL_COL['submitted_at']          - 1] = sheet.getRange(i + 2, IL_COL['submitted_at']).getValue();
             row[IL_COL['status']               - 1] = existingStatus;
             row[IL_COL['updated_at']           - 1] = now;
             row[IL_COL['renewal_reminder_sent'] - 1] = sheet.getRange(i + 2, IL_COL['renewal_reminder_sent']).getValue();
+            row[IL_COL['original_signup_at']    - 1] = sheet.getRange(i + 2, IL_COL['original_signup_at']).getValue();
             sheet.getRange(i + 2, 1, 1, row.length).setValues([row]);
             updated = true;
           }
@@ -398,9 +403,10 @@ function handleMLSContact(data) {
 /* ── Build a flat array aligned to IL_COLUMNS for one submission ── */
 function buildILRow(data, now, status) {
   var row = new Array(IL_COLUMNS.length).fill('');
-  row[IL_COL['submitted_at'] - 1] = now;
-  row[IL_COL['status']       - 1] = status || 'new';
-  row[IL_COL['updated_at']   - 1] = now;
+  row[IL_COL['submitted_at']       - 1] = now;
+  row[IL_COL['status']             - 1] = status || 'new';
+  row[IL_COL['updated_at']         - 1] = now;
+  row[IL_COL['original_signup_at'] - 1] = now;  // default for new signups; overwritten on updates
 
   for (var key in data) {
     if (Object.prototype.hasOwnProperty.call(data, key) && IL_COL[key] !== undefined) {
