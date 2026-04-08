@@ -110,7 +110,7 @@ var IL_COLUMNS = [
   /* System */
   'submitted_at', 'status', 'updated_at',
   /* Section I */
-  'first_name', 'last_name', 'phone', 'email',
+  'full_name', 'phone', 'email',
   'owned_real_estate', 'household_size',
   'lived_together_12mo', 'live_in_sd_county',
   'credit_score_self', 'credit_score_coborrower', 'monthly_rent',
@@ -339,8 +339,9 @@ function buildILRow(data, now, status) {
 
 /* ── Applicant confirmation email (no specific listings selected) ── */
 function sendILWelcomeEmail(data) {
-  var toEmail   = (data.email      || '').trim();
-  var firstName = (data.first_name || '').trim();
+  var toEmail   = (data.email     || '').trim();
+  var fullName  = (data.full_name || '').trim();
+  var firstName = fullName ? fullName.split(/\s+/)[0] : '';
   if (!toEmail) return;
 
   var greeting = firstName ? 'Hi ' + firstName + ',' : 'Hi there,';
@@ -406,7 +407,7 @@ function sendILWelcomeEmail(data) {
 
 /* ── Internal notification email to the team ── */
 function sendILNotification(data, updated, reEnrolled) {
-  var fullName  = ((data.first_name || '') + ' ' + (data.last_name || '')).trim();
+  var fullName  = (data.full_name || '').trim();
   var prefix    = reEnrolled ? '[RE-ENROLLMENT] ' : (updated ? '[UPDATED] ' : '[NEW] ');
   var actionStr = reEnrolled ? 'RE-ENROLLMENT (previously expired — profile reset & reactivated)'
                 : (updated   ? 'UPDATED (returning applicant)'
@@ -485,7 +486,7 @@ function checkExpiryDates() {
     var submittedAt  =  data[i][IL_COL['submitted_at']          - 1];
     var reminderSent = (data[i][IL_COL['renewal_reminder_sent'] - 1] || '').toString().trim();
     var email        = (data[i][IL_COL['email']                 - 1] || '').toString().trim();
-    var firstName    = (data[i][IL_COL['first_name']            - 1] || '').toString().trim();
+    var firstName    = ((data[i][IL_COL['full_name'] - 1] || '').toString().trim()).split(/\s+/)[0] || '';
 
     if (rowStatus !== 'active') continue;
     if (!submittedAt || !(submittedAt instanceof Date)) continue;
@@ -735,7 +736,7 @@ function matchApplicantsToListing(req, applicants) {
       listing_id:      req['listing_id'],
       listing_name:    req['listing_name'],
       applicant_email: (ap['email'] || '').toString().trim(),
-      applicant_name:  ((ap['first_name'] || '') + ' ' + (ap['last_name'] || '')).trim(),
+      applicant_name:  (ap['full_name'] || '').toString().trim(),
       applicant_phone: (ap['phone'] || '').toString().trim(),
       match_status:    result.status,
       failed_fields:   result.failedFields.join('; '),

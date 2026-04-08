@@ -1591,7 +1591,6 @@
     /* Serialise the form to a plain JSON object.
        Radios: only the checked value is included.
        Checkboxes: skipped — area_preference (hidden) carries that value.
-       full_name is split into first_name / last_name for the sheet.
        All other inputs/selects/textareas: value as string. */
     function buildPayload() {
       var payload  = {};
@@ -1605,13 +1604,6 @@
         }
         if (el.type === 'checkbox') continue; /* use area_preference hidden field */
         payload[el.name] = el.value;
-      }
-      /* Split full_name into first_name / last_name */
-      if (payload.full_name) {
-        var parts = payload.full_name.trim().split(/\s+/);
-        payload.first_name = parts[0] || '';
-        payload.last_name  = parts.length > 1 ? parts.slice(1).join(' ') : '';
-        delete payload.full_name;
       }
       return payload;
     }
