@@ -4,9 +4,12 @@
 ---
 
 ## Project Status
-- **Phase 8 complete** — Kacee's round-3 content updates across all pages + EHO/DRE footer
+- **Phase 9 complete** — Major legal/compliance redesign: Available Homes page removed, listing exposure eliminated, area preference replaces listing interest, applicant match emails removed
 - **Not yet live** — currently hosted on GitHub Pages (test environment)
 - **Next up** — go-live prep (switch NOTIFY_EMAIL, add social links, replace hero image)
+
+## ⚠️ Legal Context — Why Homes Page Was Removed
+California MLS Clear Cooperation Policy (adopted by NAR and all major CA MLSs): any property publicly marketed must be submitted to the MLS within 1 business day. A public-facing Available Homes page with addresses/prices/photos constitutes public marketing. The compliant model is: Kacee maintains listings and requirements internally, the matching engine runs privately, and she reaches out manually when a match is identified. **Users must never see a specific address, price, or listing detail without Kacee initiating that contact.**
 
 ---
 
@@ -138,14 +141,16 @@ CLOSE_THRESHOLD = 2  // max failed fields to score "Close" (vs "Fail")
 
 | # | Email | To | Fired By | Subject |
 |---|-------|----|----------|---------|
-| 1 | Interest List Welcome | Applicant | Form submit, no listings checked | "You're on the Interest List" |
-| 2 | Pre-Screening Results | Applicant | Form submit, listings checked | "Your Pre-Screening Results" |
-| 3 | Internal Submission Alert | Team | Every form submit | [NEW] / [UPDATED] / [RE-ENROLLMENT] Interest List: Name |
-| 4 | Daily Match Digest | Team | Trigger B (if any listing has Pass/Close) | "[CA Affordable Homes] Daily Match Report — {date} (X Pass, Y Close)" |
-| 5 | 11-Month Renewal Reminder | Applicant | Trigger C (11mo + no reminder sent) | "Your CA Affordable Homes profile is expiring soon" |
-| 6 | MLS Inquiry Notification | Team | homes.html modal contact form | [MLS Inquiry] Property — Name |
+| 1 | Interest List Welcome | Applicant | Every form submit | "You're on the Interest List" |
+| 2 | Internal Submission Alert | Team | Every form submit | [NEW] / [UPDATED] / [RE-ENROLLMENT] Interest List: Name |
+| 3 | Daily Match Digest | Team | Trigger B (if any listing has Pass/Close) | "[CA Affordable Homes] Daily Match Report — {date} (X Pass, Y Close)" |
+| 4 | 11-Month Renewal Reminder | Applicant | Trigger C (11mo + no reminder sent) | "Your CA Affordable Homes profile is expiring soon" |
 
-**Email 5 note:** Includes the applicant's specific email address in the body, instructing them to use the same email when re-submitting to update their existing profile (vs. creating a new row).
+**Removed emails (Phase 9):**
+- ~~Email 2: Pre-Screening Results~~ — sent applicants Pass/Close/Fail per listing. Removed: users must never see listing-specific match data.
+- ~~Email 6: MLS Inquiry Notification~~ — fired from homes.html modal. Removed with homes page.
+
+**Email 1 note:** Now always sent on every submission (previously only sent when no listings were selected). No listing names, scores, or match results — only confirms receipt and sets expectation that Kacee will reach out if there's a fit.
 
 ---
 
@@ -178,11 +183,13 @@ CLOSE_THRESHOLD = 2  // max failed fields to score "Close" (vs "Fail")
 
 ## Interest List Form (contact.html)
 
-- Multi-section questionnaire: personal info, income members (up to 6), tax-year income, employment (up to 4), financial/disclosures, listing interest
-- Listing interest checkboxes: loaded live from Apps Script `?action=getListings` — shows only `affordable` listing_type rows with a non-empty status
-- "I'm interested in future listings only" checkbox: mutual-exclusion with specific listing checkboxes (checking it clears all others; checking any specific listing clears it)
+- Multi-section questionnaire: personal info, income members (up to 6), tax-year income, employment (up to 4), financial/disclosures, area preference
+- Area preference: static checkboxes for 6 San Diego regions + "Other" with free-text entry. No live fetch, no listing names exposed to users.
+  - North County Coastal, North County Inland, Central San Diego, East County, South Bay, City of San Diego - Urban Core, Other (free text)
+- Stored in `area_preference` column of Interest List sheet (replaces `listing_interest_summary`)
 - Deduplication: matches on email. Expired → re-enrollment path. Non-expired → update path.
 - Post-submit: redirects to `thankyou.html`
+- **No listing data is ever sent to the front-end.** `?action=getListings` endpoint removed from Apps Script.
 
 ---
 
@@ -208,3 +215,4 @@ CLOSE_THRESHOLD = 2  // max failed fields to score "Close" (vs "Fail")
 | 6 | Listing interest checkboxes — live fetch from Apps Script `?action=getListings`, mutual-exclusion JS logic; `sendApplicantMatchEmail` with per-listing Pass/Close/Fail + bonus section; Kacee dashboard setup |
 | 7 | Annual expiry lifecycle — `checkExpiryDates()` (Trigger C), `sendRenewalReminderEmail()` with same-email instruction, re-enrollment path in `doPost`, `renewal_reminder_sent` column |
 | 8 | Kacee round-3 content updates — wording edits across all pages, removed "Our Commitment" section (index), removed "Our Approach" section (about), added "What We Offer" services section (about), Services page removed from nav/footer + meta redirect to about.html, EHO logo + DRE licensing in all footers, `feature-grid--2x2` CSS class added |
+| 9 | Legal/compliance redesign — Available Homes page redirected to index, removed from nav/footer sitewide; listing interest checkboxes replaced with San Diego area preference; `sendApplicantMatchEmail` and `handleMLSContact` removed from Apps Script; `?action=getListings` endpoint removed; `listing_interest_summary` column renamed `area_preference`; all applicant-facing emails now listing-agnostic |

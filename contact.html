@@ -30,7 +30,6 @@
         <ul class="nav-links" role="list">
           <li><a href="index.html">Home</a></li>
           <li><a href="about.html">About</a></li>
-          <li><a href="homes.html">Available Homes</a></li>
           <li><a href="faq.html">FAQ</a></li>
           <li><a href="contact.html">Contact</a></li>
         </ul>
@@ -49,7 +48,6 @@
         <ul role="list">
           <li><a href="index.html">Home</a></li>
           <li><a href="about.html">About</a></li>
-          <li><a href="homes.html">Available Homes</a></li>
           <li><a href="faq.html">FAQ</a></li>
           <li><a href="contact.html">Contact</a></li>
         </ul>
@@ -783,20 +781,26 @@
                   <textarea id="il-additional-info" name="additional_info" class="form-control" rows="4" placeholder="Use this space for any context that would help us assess your profile, including employment changes, income changes, breaks in employment, etc."></textarea>
                 </div>
 
-                <!-- Listing interest -->
+                <!-- Area preference -->
                 <div class="form-group">
-                  <label class="form-label">Which current listings are you interested in?</label>
+                  <label class="form-label">Which areas are you interested in?</label>
                   <p class="il-note" style="margin-bottom:0.75rem;">
                     <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
-                    Selecting any listing below also keeps you on the interest list for all future listings.
+                    Select all areas that apply. This helps us match you with relevant opportunities when they become available.
                   </p>
-                  <div class="il-listing-checks" id="il-listing-container">
-                    <!-- JS populates listing checkboxes here -->
-                    <label class="il-listing-label" style="border-top:1px solid #e8e8e4;margin-top:0.5rem;padding-top:0.75rem;">
-                      <input type="checkbox" name="listing_interest" id="il-none-checkbox" value="None - future listings only"> Future listings only  -  I&rsquo;m not interested in any current listings
-                    </label>
+                  <div class="il-area-checks">
+                    <label class="il-listing-label"><input type="checkbox" name="area_pref" value="North County Coastal"> North County Coastal <span style="color:var(--color-text-muted);font-size:0.875rem;">(Carlsbad, Encinitas, Oceanside, Del Mar)</span></label>
+                    <label class="il-listing-label"><input type="checkbox" name="area_pref" value="North County Inland"> North County Inland <span style="color:var(--color-text-muted);font-size:0.875rem;">(Escondido, San Marcos, Vista, Fallbrook)</span></label>
+                    <label class="il-listing-label"><input type="checkbox" name="area_pref" value="Central San Diego"> Central San Diego <span style="color:var(--color-text-muted);font-size:0.875rem;">(Kearny Mesa, Mission Valley, North Park, Hillcrest)</span></label>
+                    <label class="il-listing-label"><input type="checkbox" name="area_pref" value="East County"> East County <span style="color:var(--color-text-muted);font-size:0.875rem;">(El Cajon, Santee, La Mesa, Spring Valley)</span></label>
+                    <label class="il-listing-label"><input type="checkbox" name="area_pref" value="South Bay"> South Bay <span style="color:var(--color-text-muted);font-size:0.875rem;">(Chula Vista, National City, Imperial Beach)</span></label>
+                    <label class="il-listing-label"><input type="checkbox" name="area_pref" value="City of San Diego - Urban Core"> City of San Diego - Urban Core <span style="color:var(--color-text-muted);font-size:0.875rem;">(Downtown, OB, Pacific Beach, Midway)</span></label>
+                    <label class="il-listing-label"><input type="checkbox" name="area_pref" id="area-other-checkbox" value="Other"> Other</label>
+                    <div id="area-other-detail" style="display:none;margin-top:0.5rem;">
+                      <input type="text" name="area_preference_other" id="area-other-text" class="form-control" placeholder="Please specify the area(s) you are interested in..." maxlength="200">
+                    </div>
                   </div>
-                  <input type="hidden" id="il-listings-hidden" name="listing_interest_summary">
+                  <input type="hidden" id="il-area-hidden" name="area_preference">
                 </div>
 
                 <!-- Pre-submit note -->
@@ -988,7 +992,6 @@
           <ul class="footer-nav-links" role="list">
             <li><a href="index.html">Home</a></li>
             <li><a href="about.html">About</a></li>
-            <li><a href="homes.html">Available Homes</a></li>
             <li><a href="faq.html">FAQ</a></li>
             <li><a href="contact.html">Contact</a></li>
           </ul>
@@ -1003,7 +1006,6 @@
           <h4>Get Started</h4>
           <ul class="footer-nav-links" role="list">
             <li><a href="contact.html">Join the Interest List</a></li>
-            <li><a href="homes.html">View Listings</a></li>
             <li><a href="contact.html#partner-form">Partner With Us</a></li>
             <li><a href="faq.html">Common Questions</a></li>
           </ul>
@@ -1150,15 +1152,6 @@
     var COOLDOWN_MS  = 2 * 60 * 1000; /* DEV: 2 min — set to 30 * 24 * 60 * 60 * 1000 at launch */
     var SCRIPT_URL   = 'https://script.google.com/macros/s/AKfycbw0MOVFTvtDia4k_bcGVtgcwb-7EhWczMzSdLpaesRDUqV4ZmUpJ6CU75B09ee9tXHO/exec';
 
-    /* Fallback listing data — shown if the live fetch fails */
-    var STATIC_LISTINGS_FALLBACK = [
-      { name: 'Bay View 13 (1 home)',    city: 'San Diego',   status: 'Available' },
-      { name: 'Cypress Point (4 homes)', city: 'Oceanside',   status: 'Available' },
-      { name: 'Tower 1888 (3 homes)',    city: 'Oceanside',   status: 'Coming Soon' },
-      { name: 'Tower 1888 (2 homes)',    city: 'Oceanside',   status: 'Coming Soon' },
-      { name: 'Agualuna',                city: 'San Diego',   status: 'Available' },
-      { name: 'Sunrise Commons Unit 4B', city: 'Chula Vista', status: 'Available' }
-    ];
 
     var SECTION_NAMES = ['General Information', 'Income', 'Employment', 'Financial & Disclosures'];
     var currentSection = 1;
@@ -1185,8 +1178,6 @@
       return;
     }
 
-    /* Build listing checkboxes before the "None" option */
-    buildListings();
 
     /* Restore any saved draft values */
     restoreFromStorage();
@@ -1365,7 +1356,11 @@
 
     /* Listing checkbox sync */
     form.addEventListener('change', function (e) {
-      if (e.target.name === 'listing_interest') syncListings(e.target);
+      if (e.target.name === 'area_pref') syncAreaPreference();
+      if (e.target.id === 'area-other-checkbox') {
+        var otherDetail = document.getElementById('area-other-detail');
+        if (otherDetail) otherDetail.style.display = e.target.checked ? 'block' : 'none';
+      }
     });
 
     /* ---- Helper functions ---- */
@@ -1484,84 +1479,24 @@
       });
     }
 
-    function buildListings() {
-      var container = document.getElementById('il-listing-container');
-      if (!container) return;
-      var noneLabel = container.querySelector('label:last-child');
 
-      /* Loading indicator */
-      var loadingEl = document.createElement('p');
-      loadingEl.className = 'il-note';
-      loadingEl.id = 'il-listings-loading';
-      loadingEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Loading current listings\u2026';
-      container.insertBefore(loadingEl, noneLabel);
-
-      fetch(SCRIPT_URL + '?action=getListings')
-        .then(function (r) { return r.json(); })
-        .then(function (listings) {
-          loadingEl.remove();
-          if (!Array.isArray(listings) || listings.length === 0) {
-            insertListingCheckboxes(STATIC_LISTINGS_FALLBACK, container, noneLabel, true);
-          } else {
-            insertListingCheckboxes(listings, container, noneLabel, false);
-          }
-        })
-        .catch(function () {
-          loadingEl.remove();
-          insertListingCheckboxes(STATIC_LISTINGS_FALLBACK, container, noneLabel, true);
-        });
-    }
-
-    function insertListingCheckboxes(listings, container, noneLabel, isFallback) {
-      if (isFallback) {
-        var warn = document.createElement('p');
-        warn.className = 'il-note';
-        warn.style.color = '#b07d2e';
-        warn.innerHTML = '<i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>'
-          + ' Listings may not be current \u2014 please refresh the page to try again.';
-        container.insertBefore(warn, noneLabel);
+    function syncAreaPreference() {
+      var boxes = form.querySelectorAll('input[name="area_pref"]');
+      var vals  = [];
+      boxes.forEach(function (cb) { if (cb.checked) vals.push(cb.value); });
+      var otherText = document.getElementById('area-other-text');
+      if (otherText && otherText.value.trim()) {
+        var idx = vals.indexOf('Other');
+        if (idx > -1) vals[idx] = 'Other: ' + otherText.value.trim();
       }
-      listings.forEach(function (listing) {
-        var name   = (listing.name   || '').trim();
-        var city   = (listing.city   || '').trim();
-        var status = (listing.status || '').trim();
-        if (!name) return;
-        var labelText = name + ' \u2013 ' + city + ' (' + status + ')';
-        var lbl = document.createElement('label');
-        lbl.className = 'il-listing-label';
-        var cb = document.createElement('input');
-        cb.type = 'checkbox';
-        cb.name = 'listing_interest';
-        cb.value = labelText;
-        lbl.appendChild(cb);
-        lbl.appendChild(document.createTextNode('\u00a0' + labelText));
-        container.insertBefore(lbl, noneLabel);
-      });
-    }
-
-    function syncListings(changed) {
-      var noneBox = document.getElementById('il-none-checkbox');
-      var allBoxes = form.querySelectorAll('input[name="listing_interest"]');
-
-      if (changed && noneBox) {
-        if (changed === noneBox && noneBox.checked) {
-          /* "Future only" just checked — uncheck all specific listings */
-          allBoxes.forEach(function (cb) { if (cb !== noneBox) cb.checked = false; });
-        } else if (changed !== noneBox && changed.checked) {
-          /* A specific listing just checked — uncheck "Future only" */
-          noneBox.checked = false;
-        }
-      }
-
-      var vals = [];
-      allBoxes.forEach(function (cb) { if (cb.checked) vals.push(cb.value); });
-      var hidden = document.getElementById('il-listings-hidden');
+      var hidden = document.getElementById('il-area-hidden');
       if (hidden) hidden.value = vals.join('; ');
     }
 
+
     /* Serialise the form to a plain JSON object.
        Radios: only the checked value is included.
-       Checkboxes: skipped — listing_interest_summary (hidden) carries that value.
+       Checkboxes: skipped — area_preference (hidden) carries that value.
        All other inputs/selects/textareas: value as string. */
     function buildPayload() {
       var payload  = {};
@@ -1573,7 +1508,7 @@
           if (el.checked) payload[el.name] = el.value;
           continue;
         }
-        if (el.type === 'checkbox') continue; /* use listing_interest_summary hidden field */
+        if (el.type === 'checkbox') continue; /* use area_preference hidden field */
         payload[el.name] = el.value;
       }
       return payload;
@@ -1584,7 +1519,7 @@
       submitBtn.disabled = true;
       submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Submitting\u2026';
 
-      syncListings();
+      syncAreaPreference();
 
       /* Apps Script Web Apps require Content-Type: text/plain to avoid a
          CORS preflight — the server parses e.postData.contents as JSON. */

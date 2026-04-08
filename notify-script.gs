@@ -163,7 +163,7 @@ var IL_COLUMNS = [
   'us_citizen', 'permanent_resident',
   'asset_checking', 'asset_savings', 'asset_401k', 'asset_other',
   'loan_signers', 'household_members', 'additional_info',
-  'listing_interest_summary',
+  'area_preference',
   /* Phase 7 — expiry lifecycle */
   'renewal_reminder_sent',
   /* Phase 9 — signup anniversary */
@@ -232,61 +232,20 @@ var MR_COLUMNS = [
 
 /* ==========================================================
    doGet — handles GET requests to the Web App URL
-     ?action=getListings  → returns JSON array of affordable listings
+   No public data endpoints — listing data is internal only.
    ========================================================== */
 function doGet(e) {
-  var action = (e && e.parameter && e.parameter.action) || '';
-  if (action === 'getListings') return handleGetListings();
   return ContentService
     .createTextOutput('CA Affordable Homes — Apps Script (use POST for form submissions)')
     .setMimeType(ContentService.MimeType.TEXT);
 }
 
-/* Returns [{id, name, city, status}] for all affordable, non-empty-status rows */
-function handleGetListings() {
-  try {
-    var ss    = SpreadsheetApp.openById(SPREADSHEET_ID);
-    var sheet = ss.getSheetByName(LISTINGS_SHEET);
-    if (!sheet || sheet.getLastRow() < 2) {
-      return ContentService.createTextOutput('[]').setMimeType(ContentService.MimeType.JSON);
-    }
-
-    /* Listings columns: 0=Property Name, 1=Address, 2=City, 7=Status, 8=listing_type */
-    var data     = sheet.getRange(2, 1, sheet.getLastRow() - 1, 9).getValues();
-    var listings = [];
-
-    for (var i = 0; i < data.length; i++) {
-      var name        = (data[i][0] || '').toString().trim();
-      var city        = (data[i][2] || '').toString().trim();
-      var status      = (data[i][7] || '').toString().trim();
-      var listingType = (data[i][8] || '').toString().trim().toLowerCase();
-      if (!name || !status || listingType !== 'affordable') continue;
-      listings.push({ id: name, name: name, city: city, status: status });
-    }
-
-    return ContentService
-      .createTextOutput(JSON.stringify(listings))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch (err) {
-    return ContentService
-      .createTextOutput(JSON.stringify({ error: err.message }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}
-
 /* ==========================================================
-   doPost — routes by form_type:
-     "interest_list" (default) — Interest List questionnaire
-     "mls_contact"             — MLS property inquiry from homes.html modal
+   doPost — handles Interest List questionnaire submissions
    ========================================================== */
 function doPost(e) {
   try {
     var data     = JSON.parse(e.postData.contents);
-    var formType = (data.form_type || 'interest_list').trim().toLowerCase();
-
-    if (formType === 'mls_contact') {
-      return handleMLSContact(data);
-    }
 
     /* ── Interest List flow ── */
     var email = (data.email || '').trim().toLowerCase();
@@ -347,7 +306,7 @@ function doPost(e) {
       sheet.appendRow(row);
     }
 
-    sendApplicantMatchEmail(data, ss);
+    sendILWelcomeEmail(data);
     sendILNotification(data, updated, reEnrolled);
 
     return jsonResponse({ ok: true });
@@ -356,48 +315,6 @@ function doPost(e) {
     Logger.log('doPost error: ' + err.message);
     return jsonResponse({ ok: false, error: err.message });
   }
-}
-
-/* ==========================================================
-   handleMLSContact — MLS property inquiry from homes.html modal
-   ========================================================== */
-function handleMLSContact(data) {
-  var propName = (data.property_name || 'Unknown Property').trim();
-  var name     = (data.name    || '').trim();
-  var email    = (data.email   || '').trim();
-  var phone    = (data.phone   || '').trim();
-  var message  = (data.message || '').trim();
-
-  if (!email) {
-    return jsonResponse({ ok: false, error: 'Email is required' });
-  }
-
-  var subject = '[MLS Inquiry] ' + propName + ' \u2014 ' + (name || 'Anonymous') + ' <' + email + '>';
-  var body =
-    'MLS Property Inquiry\n\n'
-    + 'Property: ' + propName + '\n'
-    + '---\n'
-    + 'Name:    ' + name  + '\n'
-    + 'Email:   ' + email + '\n'
-    + 'Phone:   ' + (phone || '(not provided)') + '\n'
-    + '---\n'
-    + 'Message:\n' + (message || '(no message provided)') + '\n\n'
-    + 'Reply directly to: ' + email;
-
-  try {
-    MailApp.sendEmail({
-      to:      NOTIFY_EMAIL,
-      subject: subject,
-      body:    body,
-      name:    FROM_NAME,
-      replyTo: email
-    });
-    Logger.log('MLS inquiry sent for: ' + propName + ' from ' + email);
-  } catch (err) {
-    Logger.log('MLS inquiry email failed: ' + err.message);
-  }
-
-  return jsonResponse({ ok: true });
 }
 
 /* ── Build a flat array aligned to IL_COLUMNS for one submission ── */
@@ -482,233 +399,6 @@ function sendILWelcomeEmail(data) {
   }
 }
 
-/* ==========================================================
-   sendApplicantMatchEmail
-   Fired immediately on every Interest List submission.
-   - Parses listing_interest_summary for specific listings.
-   - If none selected → falls back to sendILWelcomeEmail.
-   - Runs evaluateApplicant() against every checked listing
-     (shows Pass / Close / Fail / Pending-requirements).
-   - Also scans unchecked active listings and surfaces any
-     that score Pass or Close as a bonus "you may also like" section.
-   ========================================================== */
-function sendApplicantMatchEmail(data, ss) {
-  var toEmail   = (data.email      || '').trim();
-  var firstName = (data.first_name || '').trim();
-  if (!toEmail) return;
-
-  /* Parse listing_interest_summary → specific listing labels */
-  var summary      = (data.listing_interest_summary || '').trim();
-  var allItems     = summary ? summary.split('; ') : [];
-  var checkedLabels = allItems.filter(function (item) {
-    return item && item.toLowerCase().indexOf('none') !== 0;
-  });
-
-  /* No specific listings selected — send warm welcome instead */
-  if (checkedLabels.length === 0) {
-    sendILWelcomeEmail(data);
-    return;
-  }
-
-  /* Load active requirements rows */
-  var reqSheet  = ss.getSheetByName(REQUIREMENTS_SHEET);
-  var reqByName = {}; /* normalized listing_id → req obj */
-  var allReqs   = []; /* all active reqs */
-
-  if (reqSheet && reqSheet.getLastRow() > 1) {
-    var reqData = reqSheet.getRange(2, 1, reqSheet.getLastRow() - 1, REQ_COLUMNS.length).getValues();
-    for (var i = 0; i < reqData.length; i++) {
-      var req    = rowToReqObj(reqData[i]);
-      var active = (req['active'] || '').toString().trim().toLowerCase();
-      if (active !== 'yes') continue;
-      var key = (req['listing_id'] || '').toString().trim().toLowerCase();
-      reqByName[key] = req;
-      allReqs.push(req);
-    }
-  }
-
-  /* Evaluate each checked listing */
-  var checkedResults = [];
-  var checkedKeys    = {};
-
-  checkedLabels.forEach(function (label) {
-    var listingName = extractListingName(label);
-    var key         = listingName.toLowerCase();
-    var req         = reqByName[key];
-
-    if (!req) {
-      checkedResults.push({ label: label, name: listingName, status: 'pending', failed: [] });
-    } else {
-      checkedKeys[key] = true;
-      var result = evaluateApplicant(data, req);
-      checkedResults.push({ label: label, name: listingName, status: result.status, failed: result.failedFields });
-    }
-  });
-
-  /* Scan unchecked active listings — only surface Pass or Close */
-  var bonusResults = [];
-  allReqs.forEach(function (req) {
-    var key = (req['listing_id'] || '').toString().trim().toLowerCase();
-    if (checkedKeys[key]) return;
-    var result = evaluateApplicant(data, req);
-    if (result.status === 'Pass' || result.status === 'Close') {
-      bonusResults.push({ name: req['listing_name'] || req['listing_id'], status: result.status, failed: result.failedFields });
-    }
-  });
-
-  /* ── Build HTML email ── */
-  var greeting = firstName ? 'Hi ' + firstName + ',' : 'Hi there,';
-  var subject  = 'Your Pre-Screening Results \u2014 CA Affordable Homes';
-
-  var html =
-    '<div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;background:#fff;">'
-    + '<div style="background:#818b7e;padding:22px 32px;">'
-    +   '<p style="color:#fff;margin:0;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;opacity:0.85;">CA Affordable Homes</p>'
-    +   '<h1 style="color:#fff;margin:6px 0 0;font-size:22px;font-weight:600;">Your Pre-Screening Results</h1>'
-    + '</div>'
-    + '<div style="padding:32px;">'
-    +   '<p style="color:#333;margin-top:0;">' + escapeHtml(greeting) + '</p>'
-    +   '<p style="color:#333;">Thank you for your interest in our affordable home purchase listings. '
-    +   'Below is an automated pre-screening summary for the properties you selected. '
-    +   'This is an instant snapshot based on the information you provided &mdash; it is <em>not</em> a final determination of eligibility.</p>'
-    +   '<h2 style="font-size:16px;color:#222;border-bottom:2px solid #e8e8e4;padding-bottom:8px;margin:28px 0 18px;">Properties You Selected</h2>';
-
-  checkedResults.forEach(function (r) {
-    var badgeColor, badgeBg, badgeText, message;
-
-    if (r.status === 'Pass') {
-      badgeColor = '#1a5c38'; badgeBg = '#e6f4ec'; badgeText = '&#10003;&nbsp;Pass';
-      message = '<strong>Great news</strong> &mdash; based on your information, you appear to meet the '
-        + 'automated pre-screening criteria for this listing. No action is required from you at this time. '
-        + 'If this listing looks like a strong fit, a member of our team will reach out to you directly.';
-
-    } else if (r.status === 'Close') {
-      badgeColor = '#7a4f00'; badgeBg = '#fef8e7'; badgeText = '&#9654;&nbsp;Close';
-      message = '<strong>You\'re close!</strong> Our automated screening flagged a small number of areas to review:'
-        + '<ul style="margin:8px 0 8px;padding-left:1.3rem;color:#555;">'
-        + r.failed.map(function (f) { return '<li style="margin-bottom:4px;">' + escapeHtml(f) + '</li>'; }).join('')
-        + '</ul>'
-        + 'This does not disqualify you. No action is required &mdash; if this listing moves forward, '
-        + 'someone from our team will be in touch to discuss next steps.';
-
-    } else if (r.status === 'Fail') {
-      badgeColor = '#7a1a1a'; badgeBg = '#fdf0f0'; badgeText = '&#10007;&nbsp;Not a Match';
-      message = 'Based on the information provided, this listing\'s specific requirements may not align with your '
-        + 'current profile. <strong>This does not mean you\'re not a great candidate</strong> &mdash; every listing '
-        + 'has different criteria, and not matching one listing does not reflect on your overall qualifications '
-        + 'or your standing on our interest list.';
-
-    } else {
-      /* pending — no requirements row yet */
-      badgeColor = '#555'; badgeBg = '#f0f0f0'; badgeText = '&#9679;&nbsp;Pending';
-      message = 'Requirements for this listing are still being finalized. We have your information on file '
-        + 'and will keep you in mind as details become available.';
-    }
-
-    html +=
-      '<div style="border:1px solid #e0e0e0;border-radius:8px;padding:20px;margin-bottom:14px;">'
-      + '<div style="margin-bottom:12px;">'
-      +   '<span style="font-weight:600;color:#222;font-size:15px;">' + escapeHtml(r.name) + '</span>'
-      +   '&nbsp;&nbsp;'
-      +   '<span style="display:inline-block;padding:3px 12px;border-radius:20px;font-size:12px;font-weight:600;'
-      +         'background:' + badgeBg + ';color:' + badgeColor + ';">' + badgeText + '</span>'
-      + '</div>'
-      + '<div style="color:#444;font-size:14px;line-height:1.7;">' + message + '</div>'
-      + '</div>';
-  });
-
-  /* Bonus listings section */
-  if (bonusResults.length > 0) {
-    html +=
-      '<div style="background:#f0f5f0;border-left:4px solid #818b7e;padding:18px 22px;margin:24px 0;border-radius:0 8px 8px 0;">'
-      + '<p style="margin:0 0 6px;font-weight:600;color:#222;">You May Also Want to Consider</p>'
-      + '<p style="margin:0 0 14px;color:#555;font-size:14px;">Based on your profile, you appear to be a strong candidate '
-      + 'for the following listings you didn\'t select. Let us know if any of these interest you.</p>';
-
-    bonusResults.forEach(function (r) {
-      var badge = r.status === 'Pass'
-        ? '<span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:12px;background:#e6f4ec;color:#1a5c38;font-weight:600;">&#10003;&nbsp;Pass</span>'
-        : '<span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:12px;background:#fef8e7;color:#7a4f00;font-weight:600;">&#9654;&nbsp;Close</span>';
-      html += '<div style="margin-bottom:8px;">'
-        + '<span style="color:#333;font-size:14px;">' + escapeHtml(r.name) + '</span>'
-        + '&nbsp;&nbsp;' + badge
-        + '</div>';
-    });
-    html += '</div>';
-  }
-
-  /* Encouragement + footer */
-  html +=
-    '<div style="background:#f7f7f4;border-radius:8px;padding:20px 22px;margin:24px 0;">'
-    + '<p style="margin:0 0 8px;font-weight:600;color:#222;">You\'re on Our Interest List &#127968;</p>'
-    + '<p style="margin:0;color:#555;font-size:14px;line-height:1.7;">'
-    + 'Regardless of today\'s results, you remain on our interest list for <em>all</em> future listings. '
-    + 'As new affordable home purchase opportunities become available, we\'ll automatically compare them '
-    + 'to your profile &mdash; and if you look like a good candidate, we\'ll reach out directly. '
-    + 'You don\'t need to do a thing.'
-    + '</p>'
-    + '</div>'
-    + '<p style="color:#555;font-size:14px;">Questions or need to update your information? Email us at '
-    + '<a href="mailto:Info@CAAffordableHomes.com" style="color:#818b7e;">Info@CAAffordableHomes.com</a>.</p>'
-    + '<hr style="border:none;border-top:1px solid #eee;margin:24px 0;">'
-    + '<p style="color:#999;font-size:11px;line-height:1.6;margin:0;">'
-    + '<em>This is an automated pre-screening estimate based on the information you submitted. '
-    + 'It is not a final determination of eligibility or an offer of any kind. '
-    + 'Actual program eligibility is determined by the administering agency and may vary.</em>'
-    + '</p>'
-    + '<p style="color:#999;font-size:12px;margin:8px 0 0;">'
-    + 'CA Affordable Homes &bull; <a href="' + SITE_URL + '" style="color:#999;">caaffordablehomes.com</a><br>'
-    + 'We are not a lender.'
-    + '</p>'
-    + '</div></div>';
-
-  /* Plain-text fallback */
-  var body = greeting + '\n\n'
-    + 'Thank you for your interest in CA Affordable Homes listings.\n\n'
-    + 'PRE-SCREENING RESULTS\n'
-    + '=====================\n';
-
-  checkedResults.forEach(function (r) {
-    var statusLabel = r.status === 'pending' ? 'Pending (requirements not yet finalized)' : r.status;
-    body += '\n' + r.name + ' — ' + statusLabel + '\n';
-    if (r.failed && r.failed.length > 0) {
-      body += 'Areas to review: ' + r.failed.join('; ') + '\n';
-    }
-  });
-
-  if (bonusResults.length > 0) {
-    body += '\nYOU MAY ALSO WANT TO CONSIDER\n';
-    bonusResults.forEach(function (r) { body += '  ' + r.name + ' (' + r.status + ')\n'; });
-  }
-
-  body += '\n'
-    + 'You remain on our interest list for all future listings.\n'
-    + 'No action is required from you at this time.\n\n'
-    + 'Questions? Email Info@CAAffordableHomes.com\n\n'
-    + '---\n'
-    + 'This is an automated pre-screening estimate, not a final eligibility determination.\n'
-    + 'CA Affordable Homes | We are not a lender.';
-
-  try {
-    MailApp.sendEmail({
-      to:       toEmail,
-      subject:  subject,
-      body:     body,
-      htmlBody: html,
-      name:     FROM_NAME,
-      replyTo:  REPLY_TO
-    });
-    Logger.log('Applicant match email sent to: ' + toEmail);
-  } catch (err) {
-    Logger.log('Applicant match email failed for ' + toEmail + ': ' + err.message);
-  }
-}
-
-/* ── Extract listing name from checkbox label ("Name – City (Status)") ── */
-function extractListingName(label) {
-  var idx = label.indexOf(' \u2013 '); /* en-dash separator used in buildListings() */
-  return (idx > -1 ? label.substring(0, idx) : label).trim();
-}
 
 /* ── Internal notification email to the team ── */
 function sendILNotification(data, updated, reEnrolled) {
@@ -747,7 +437,7 @@ function sendILNotification(data, updated, reEnrolled) {
     + 'SD resident 2yr:    ' + (data.worked_lived_sd_2yr || '') + '\n'
     + 'SDHC prior purchase:' + (data.sdhc_prior_purchase || '') + '\n'
     + '---\n'
-    + 'Listing interest:   ' + (data.listing_interest_summary || '(none selected)') + '\n\n'
+    + 'Area preference:    ' + (data.area_preference || '(not specified)') + '\n\n'
     + 'Full submission in Google Sheets:\n'
     + 'https://docs.google.com/spreadsheets/d/' + SPREADSHEET_ID + '/edit#gid=0';
 
