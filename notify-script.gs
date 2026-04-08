@@ -113,7 +113,7 @@ var IL_COLUMNS = [
   'first_name', 'last_name', 'phone', 'email',
   'owned_real_estate', 'household_size',
   'lived_together_12mo', 'live_in_sd_county',
-  'credit_score_range', 'monthly_rent',
+  'credit_score_self', 'credit_score_coborrower', 'monthly_rent',
   'rent_subsidized', 'rent_subsidy_amount',
   'worked_lived_sd_2yr', 'sdhc_prior_purchase',
   /* Section II — income members (up to 6) */
@@ -128,9 +128,13 @@ var IL_COLUMNS = [
   'income_2023_total', 'income_2023_sched_c',
   'income_2024_total', 'income_2024_sched_c',
   'income_2025_total', 'income_2025_sched_c',
-  /* Non-taxable income */
-  'non_taxable_income', 'non_taxable_who', 'non_taxable_source',
-  'non_taxable_amount', 'non_taxable_end_date_yn', 'non_taxable_end_date',
+  /* Non-taxable income (up to 3 entries) */
+  'non_taxable_income',
+  'nontax_1_who', 'nontax_1_source', 'nontax_1_amount', 'nontax_1_end_date_yn', 'nontax_1_end_date',
+  'nontax_2_who', 'nontax_2_source', 'nontax_2_amount', 'nontax_2_end_date_yn', 'nontax_2_end_date',
+  'nontax_3_who', 'nontax_3_source', 'nontax_3_amount', 'nontax_3_end_date_yn', 'nontax_3_end_date',
+  /* Real estate agent */
+  'agent_yn', 'agent_name', 'agent_email', 'agent_phone', 'agent_dre',
   /* Section III — employment entries (up to 4) */
   'emp_1_name', 'emp_1_relationship', 'emp_1_employer', 'emp_1_status',
   'emp_1_end_date', 'emp_1_same_line', 'emp_1_start_date',
@@ -751,10 +755,14 @@ function evaluateApplicant(ap, req) {
   var failed = [];
 
   /* 1 — Credit score (default minimum: 640) */
-  var minCredit = parseNum(req['min_credit_score'], 640);
-  var apCredit  = parseCreditScoreLowerBound(ap['credit_score_range']);
+  var minCredit    = parseNum(req['min_credit_score'], 640);
+  var selfScore    = parseNum(ap['credit_score_self'], null);
+  var coScore      = parseNum(ap['credit_score_coborrower'], null);
+  var apCredit     = (selfScore !== null && coScore !== null) ? Math.min(selfScore, coScore)
+                   : (selfScore !== null ? selfScore : coScore);
   if (apCredit !== null && apCredit < minCredit) {
-    failed.push('Credit score (' + ap['credit_score_range'] + ', need ' + minCredit + '+)');
+    var scoreDisplay = selfScore + (coScore !== null ? ' / ' + coScore : '');
+    failed.push('Credit score (' + scoreDisplay + ', need ' + minCredit + '+)');
   }
 
   /* 2 — First-time buyer / no prior ownership */

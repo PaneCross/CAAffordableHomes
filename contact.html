@@ -126,15 +126,9 @@
               <div class="form-section" id="il-section-1">
                 <h3 class="il-section-title">Section I: General Information</h3>
 
-                <div class="form-row">
-                  <div class="form-group">
-                    <label class="form-label" for="il-first-name">First Name</label>
-                    <input type="text" id="il-first-name" name="first_name" class="form-control" placeholder="Jane" required autocomplete="given-name">
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label" for="il-last-name">Last Name</label>
-                    <input type="text" id="il-last-name" name="last_name" class="form-control" placeholder="Smith" required autocomplete="family-name">
-                  </div>
+                <div class="form-group">
+                  <label class="form-label" for="il-full-name">Full Name</label>
+                  <input type="text" id="il-full-name" name="full_name" class="form-control" placeholder="Jane Smith" required autocomplete="name">
                 </div>
 
                 <div class="form-row">
@@ -158,12 +152,7 @@
 
                 <div class="form-group">
                   <label class="form-label" for="il-household-size">Household size (people living in the home)</label>
-                  <select id="il-household-size" name="household_size" class="form-control" required>
-                    <option value="" disabled selected>Select household size</option>
-                    <option>1</option><option>2</option><option>3</option><option>4</option>
-                    <option>5</option><option>6</option><option>7</option><option>8</option>
-                    <option>9</option><option>10+</option>
-                  </select>
+                  <input type="number" id="il-household-size" name="household_size" class="form-control" placeholder="e.g. 3" min="1" max="20" required>
                 </div>
 
                 <div class="form-group">
@@ -182,17 +171,15 @@
                   </div>
                 </div>
 
-                <div class="form-group">
-                  <label class="form-label" for="il-credit-score">Estimated credit score (you and co-borrower)</label>
-                  <select id="il-credit-score" name="credit_score_range" class="form-control" required>
-                    <option value="" disabled selected>Select range</option>
-                    <option>Below 580</option>
-                    <option>580–619</option>
-                    <option>620–659</option>
-                    <option>660–699</option>
-                    <option>700–739</option>
-                    <option>740+</option>
-                  </select>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label" for="il-credit-score-self">Your estimated credit score</label>
+                    <input type="number" id="il-credit-score-self" name="credit_score_self" class="form-control" placeholder="e.g. 680" min="300" max="850" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="il-credit-score-coborrower">Co-borrower estimated credit score <span class="optional">(if applicable)</span></label>
+                    <input type="number" id="il-credit-score-coborrower" name="credit_score_coborrower" class="form-control" placeholder="e.g. 710" min="300" max="850">
+                  </div>
                 </div>
 
                 <div class="form-group">
@@ -351,43 +338,92 @@
                     </label>
                   </div>
                   <div class="il-conditional" id="il-cond-nontax">
+                    <div id="il-nontax-blocks">
+                      <!-- Non-taxable income entry 1 (always present) -->
+                      <div class="il-repeating-block" id="il-nontax-block-1">
+                        <div class="il-repeating-block__header"><span>Non-Taxable Income 1</span></div>
+                        <div class="form-row">
+                          <div class="form-group">
+                            <label class="form-label">Who receives it</label>
+                            <input type="text" name="nontax_1_who" class="form-control" placeholder="Name" data-req>
+                          </div>
+                          <div class="form-group">
+                            <label class="form-label">Source of income</label>
+                            <input type="text" name="nontax_1_source" class="form-control" placeholder="e.g. Social Security" data-req>
+                          </div>
+                        </div>
+                        <div class="form-row">
+                          <div class="form-group">
+                            <label class="form-label">Amount per month</label>
+                            <div class="il-dollar-wrap">
+                              <input type="number" name="nontax_1_amount" class="form-control" placeholder="0" min="0" data-req>
+                            </div>
+                          </div>
+                          <div class="form-group">
+                            <label class="form-label">Is there an end date?</label>
+                            <div class="il-radio-group" style="margin-top:0.4rem">
+                              <label class="il-radio-label"><input type="radio" name="nontax_1_end_date_yn" value="Yes" data-shows="il-nontax1-enddate" data-show-when="Yes"> Yes</label>
+                              <label class="il-radio-label"><input type="radio" name="nontax_1_end_date_yn" value="No" data-shows="il-nontax1-enddate" data-show-when="Yes"> No</label>
+                            </div>
+                            <div class="il-conditional" id="il-nontax1-enddate">
+                              <label class="form-label" style="margin-top:0.5rem">End date</label>
+                              <input type="date" name="nontax_1_end_date" class="form-control" data-req>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <button type="button" class="il-add-btn" id="il-add-nontax">
+                      <i class="fa-solid fa-plus" aria-hidden="true"></i> Add Another Non-Taxable Income
+                    </button>
+                    <p class="il-note" id="il-nontax-max-note" style="display:none;">
+                      <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                      Maximum of 3 non-taxable income entries reached. Please list any additional non-taxable income in the <strong>Additional Information</strong> box at the end of the form.
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Real estate agent -->
+                <div class="form-group">
+                  <label class="form-label">Are you currently working with a licensed Real Estate Agent?</label>
+                  <div class="il-radio-group">
+                    <label class="il-radio-label">
+                      <input type="radio" name="agent_yn" value="Yes" required
+                        data-shows="il-cond-agent" data-show-when="Yes"> Yes
+                    </label>
+                    <label class="il-radio-label">
+                      <input type="radio" name="agent_yn" value="No"
+                        data-shows="il-cond-agent" data-show-when="Yes"> No
+                    </label>
+                  </div>
+                  <div class="il-conditional" id="il-cond-agent">
+                    <p class="il-note" style="margin-bottom:0.75rem;">
+                      <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                      Please provide your agent's contact information. DRE# is optional if you don't have it on hand.
+                    </p>
                     <div class="form-row">
                       <div class="form-group">
-                        <label class="form-label" for="il-nontax-who">Who receives it</label>
-                        <input type="text" id="il-nontax-who" name="non_taxable_who" class="form-control" placeholder="Name" data-req>
+                        <label class="form-label">Agent Name</label>
+                        <input type="text" name="agent_name" class="form-control" placeholder="Full name" data-req>
                       </div>
                       <div class="form-group">
-                        <label class="form-label" for="il-nontax-source">Source of income</label>
-                        <input type="text" id="il-nontax-source" name="non_taxable_source" class="form-control" placeholder="e.g. Social Security" data-req>
+                        <label class="form-label">Agent Email Address</label>
+                        <input type="email" name="agent_email" class="form-control" placeholder="agent@example.com" data-req>
                       </div>
                     </div>
                     <div class="form-row">
                       <div class="form-group">
-                        <label class="form-label" for="il-nontax-amount">Amount per month</label>
-                        <div class="il-dollar-wrap">
-                          <input type="number" id="il-nontax-amount" name="non_taxable_amount" class="form-control" placeholder="0" min="0" data-req>
-                        </div>
+                        <label class="form-label">Agent Phone Number</label>
+                        <input type="tel" name="agent_phone" class="form-control" placeholder="(555) 000-0000" data-req>
                       </div>
                       <div class="form-group">
-                        <label class="form-label">Is there an end date?</label>
-                        <div class="il-radio-group" style="margin-top:0.4rem">
-                          <label class="il-radio-label">
-                            <input type="radio" name="non_taxable_end_date_yn" value="Yes"
-                              data-shows="il-cond-nontax-enddate" data-show-when="Yes"> Yes
-                          </label>
-                          <label class="il-radio-label">
-                            <input type="radio" name="non_taxable_end_date_yn" value="No"
-                              data-shows="il-cond-nontax-enddate" data-show-when="Yes"> No
-                          </label>
-                        </div>
-                        <div class="il-conditional" id="il-cond-nontax-enddate">
-                          <label class="form-label" for="il-nontax-enddate" style="margin-top:0.5rem">End date</label>
-                          <input type="date" id="il-nontax-enddate" name="non_taxable_end_date" class="form-control" data-req>
-                        </div>
+                        <label class="form-label">Agent DRE# <span class="optional">(optional)</span></label>
+                        <input type="text" name="agent_dre" class="form-control" placeholder="e.g. 01234567">
                       </div>
                     </div>
                   </div>
                 </div>
+
               </div><!-- /section-2 -->
 
               <!-- ==================== SECTION III: Employment ==================== -->
@@ -1158,6 +1194,7 @@
     var totalSections  = 4;
     var empBlockCount  = 2;
     var incBlockCount  = 1;
+    var nontaxBlockCount = 1;
 
     /* DOM refs */
     var panel     = document.getElementById('buyer-form');
@@ -1229,6 +1266,63 @@
         if (span) span.textContent = 'Employment Entry ' + (i + 1);
       });
     }
+
+    /* Non-taxable income repeating blocks (max 3) */
+    var nontaxAddBtn  = document.getElementById('il-add-nontax');
+    var nontaxMaxNote = document.getElementById('il-nontax-max-note');
+    function renumberNontaxBlocks() {
+      var blocks = document.getElementById('il-nontax-blocks').querySelectorAll('.il-repeating-block');
+      blocks.forEach(function (block, i) {
+        var span = block.querySelector('.il-repeating-block__header span');
+        if (span) span.textContent = 'Non-Taxable Income ' + (i + 1);
+      });
+    }
+    function updateNontaxCapUI() {
+      var count = document.getElementById('il-nontax-blocks').querySelectorAll('.il-repeating-block').length;
+      var atMax = count >= 3;
+      nontaxAddBtn.style.display  = atMax ? 'none' : '';
+      nontaxMaxNote.style.display = atMax ? '' : 'none';
+    }
+    document.getElementById('il-nontax-blocks').addEventListener('click', function (e) {
+      var btn = e.target.closest('.il-remove-btn');
+      if (!btn) return;
+      var block = document.getElementById(btn.dataset.remove);
+      if (block) { block.remove(); renumberNontaxBlocks(); updateNontaxCapUI(); }
+    });
+    nontaxAddBtn.addEventListener('click', function () {
+      nontaxBlockCount++;
+      var container = document.getElementById('il-nontax-blocks');
+      var n = nontaxBlockCount;
+      var div = document.createElement('div');
+      div.className = 'il-repeating-block';
+      div.id = 'il-nontax-block-' + n;
+      div.innerHTML =
+        '<div class="il-repeating-block__header">'
+        + '<span>Non-Taxable Income ' + n + '</span>'
+        + '<button type="button" class="il-remove-btn" data-remove="il-nontax-block-' + n + '">'
+        + '<i class="fa-solid fa-xmark" aria-hidden="true"></i> Remove</button></div>'
+        + '<div class="form-row">'
+        + '<div class="form-group"><label class="form-label">Who receives it</label>'
+        + '<input type="text" name="nontax_' + n + '_who" class="form-control" placeholder="Name"></div>'
+        + '<div class="form-group"><label class="form-label">Source of income</label>'
+        + '<input type="text" name="nontax_' + n + '_source" class="form-control" placeholder="e.g. Social Security"></div></div>'
+        + '<div class="form-row">'
+        + '<div class="form-group"><label class="form-label">Amount per month</label>'
+        + '<div class="il-dollar-wrap"><input type="number" name="nontax_' + n + '_amount" class="form-control" placeholder="0" min="0"></div></div>'
+        + '<div class="form-group"><label class="form-label">Is there an end date?</label>'
+        + '<div class="il-radio-group" style="margin-top:0.4rem">'
+        + '<label class="il-radio-label"><input type="radio" name="nontax_' + n + '_end_date_yn" value="Yes"'
+        + ' data-shows="il-nontax' + n + '-enddate" data-show-when="Yes"> Yes</label>'
+        + '<label class="il-radio-label"><input type="radio" name="nontax_' + n + '_end_date_yn" value="No"'
+        + ' data-shows="il-nontax' + n + '-enddate" data-show-when="Yes"> No</label></div>'
+        + '<div class="il-conditional" id="il-nontax' + n + '-enddate">'
+        + '<label class="form-label" style="margin-top:0.5rem">End date</label>'
+        + '<input type="date" name="nontax_' + n + '_end_date" class="form-control" data-req></div></div></div>';
+      container.appendChild(div);
+      initConditionals(div);
+      renumberNontaxBlocks();
+      updateNontaxCapUI();
+    });
 
     /* Remove buttons on employment blocks */
     document.getElementById('il-employment-blocks').addEventListener('click', function (e) {
@@ -1497,6 +1591,7 @@
     /* Serialise the form to a plain JSON object.
        Radios: only the checked value is included.
        Checkboxes: skipped — area_preference (hidden) carries that value.
+       full_name is split into first_name / last_name for the sheet.
        All other inputs/selects/textareas: value as string. */
     function buildPayload() {
       var payload  = {};
@@ -1510,6 +1605,13 @@
         }
         if (el.type === 'checkbox') continue; /* use area_preference hidden field */
         payload[el.name] = el.value;
+      }
+      /* Split full_name into first_name / last_name */
+      if (payload.full_name) {
+        var parts = payload.full_name.trim().split(/\s+/);
+        payload.first_name = parts[0] || '';
+        payload.last_name  = parts.length > 1 ? parts.slice(1).join(' ') : '';
+        delete payload.full_name;
       }
       return payload;
     }
