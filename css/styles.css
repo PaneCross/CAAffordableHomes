@@ -1317,6 +1317,25 @@ header {
   box-shadow: 0 0 0 3px rgba(129, 139, 126, 0.18);
 }
 
+/* Validation error state */
+.form-group.has-error .form-control {
+  border-color: #c0392b;
+  background-color: #fdf6f6;
+}
+.form-group.has-error .form-control:focus {
+  box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.15);
+}
+.form-group.has-error .il-radio-group {
+  border-left: 3px solid #c0392b;
+  padding-left: 0.625rem;
+}
+.form-error-msg {
+  color: #c0392b;
+  font-size: 0.8rem;
+  margin-top: 0.3rem;
+  line-height: 1.4;
+}
+
 textarea.form-control {
   resize: vertical;
   min-height: 110px;

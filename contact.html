@@ -1407,14 +1407,32 @@
         + '<input type="text" name="emp_' + n + '_employer" class="form-control" placeholder="Company name"></div>'
         + '<div class="form-group"><label class="form-label">Current or Previous?</label>'
         + '<div class="il-radio-group">'
-        + '<label class="il-radio-label"><input type="radio" name="emp_' + n + '_status" value="Current"> Current</label>'
-        + '<label class="il-radio-label"><input type="radio" name="emp_' + n + '_status" value="Previous"> Previous</label>'
-        + '</div></div>'
+        + '<label class="il-radio-label"><input type="radio" name="emp_' + n + '_status" value="Current"'
+        + ' data-shows="il-emp' + n + '-cond-previous" data-show-when="Previous"> Current</label>'
+        + '<label class="il-radio-label"><input type="radio" name="emp_' + n + '_status" value="Previous"'
+        + ' data-shows="il-emp' + n + '-cond-previous" data-show-when="Previous"> Previous</label>'
+        + '</div>'
+        + '<div class="il-conditional" id="il-emp' + n + '-cond-previous">'
         + '<div class="form-row">'
+        + '<div class="form-group"><label class="form-label">End date</label>'
+        + '<input type="month" name="emp_' + n + '_end_date" class="form-control" data-req></div>'
+        + '<div class="form-group"><label class="form-label">Same line of work as current?</label>'
+        + '<div class="il-radio-group" style="margin-top:0.4rem">'
+        + '<label class="il-radio-label"><input type="radio" name="emp_' + n + '_same_line" value="Yes"> Yes</label>'
+        + '<label class="il-radio-label"><input type="radio" name="emp_' + n + '_same_line" value="No"> No</label>'
+        + '</div></div></div></div></div>'
         + '<div class="form-group"><label class="form-label">Start date</label>'
         + '<input type="month" name="emp_' + n + '_start_date" class="form-control"></div>'
-        + '<div class="form-group"><label class="form-label">End date <span class="optional">(if previous)</span></label>'
-        + '<input type="month" name="emp_' + n + '_end_date" class="form-control"></div></div>'
+        + '<div class="form-group"><label class="form-label">Any breaks in this employment?</label>'
+        + '<div class="il-radio-group">'
+        + '<label class="il-radio-label"><input type="radio" name="emp_' + n + '_breaks" value="Yes"'
+        + ' data-shows="il-emp' + n + '-cond-breaks" data-show-when="Yes"> Yes</label>'
+        + '<label class="il-radio-label"><input type="radio" name="emp_' + n + '_breaks" value="No"'
+        + ' data-shows="il-emp' + n + '-cond-breaks" data-show-when="Yes"> No</label>'
+        + '</div>'
+        + '<div class="il-conditional" id="il-emp' + n + '-cond-breaks">'
+        + '<label class="form-label">Describe dates of breaks</label>'
+        + '<input type="text" name="emp_' + n + '_breaks_desc" class="form-control" placeholder="e.g. Mar 2022 - Jun 2022" data-req></div></div>'
         + '<div class="form-group"><label class="form-label">Income type</label>'
         + '<div class="il-radio-group">'
         + '<label class="il-radio-label"><input type="radio" name="emp_' + n + '_income_type" value="W-2"'
@@ -1433,10 +1451,12 @@
         + '<input type="number" name="emp_' + n + '_hours_per_week" class="form-control" placeholder="40" min="0" max="168" data-req></div>'
         + '</div></div></div>'
         + '<div class="form-row">'
-        + '<div class="form-group"><label class="form-label">YTD gross income</label>'
+        + '<div class="form-group"><label class="form-label">Year-to-date gross income</label>'
         + '<div class="il-dollar-wrap"><input type="number" name="emp_' + n + '_ytd_gross" class="form-control" placeholder="0" min="0"></div></div>'
         + '<div class="form-group"><label class="form-label">Pay period end date</label>'
-        + '<input type="date" name="emp_' + n + '_pay_period_end" class="form-control"></div></div>';
+        + '<input type="date" name="emp_' + n + '_pay_period_end" class="form-control"></div></div>'
+        + '<div class="form-group"><label class="form-label">Largest income on 2025 W-2 <span class="optional">(optional)</span></label>'
+        + '<div class="il-dollar-wrap"><input type="number" name="emp_' + n + '_w2_2025" class="form-control" placeholder="0" min="0"></div></div>';
       container.appendChild(div);
       div.querySelector('.il-remove-btn').addEventListener('click', function () {
         div.remove();
@@ -1448,12 +1468,27 @@
       updateEmpCapUI();
     });
 
-    /* Listing checkbox sync */
+    /* Listing checkbox sync + clear validation errors on fix */
     form.addEventListener('change', function (e) {
       if (e.target.name === 'area_pref') syncAreaPreference();
       if (e.target.id === 'area-other-checkbox') {
         var otherDetail = document.getElementById('area-other-detail');
         if (otherDetail) otherDetail.style.display = e.target.checked ? 'block' : 'none';
+      }
+      /* Clear error for this field if it is now valid */
+      var fg = e.target.closest('.form-group');
+      if (fg && fg.classList.contains('has-error') && e.target.checkValidity()) {
+        fg.classList.remove('has-error');
+        var em = fg.querySelector('.form-error-msg');
+        if (em) em.remove();
+      }
+    });
+    form.addEventListener('input', function (e) {
+      var fg = e.target.closest('.form-group');
+      if (fg && fg.classList.contains('has-error') && e.target.checkValidity()) {
+        fg.classList.remove('has-error');
+        var em = fg.querySelector('.form-error-msg');
+        if (em) em.remove();
       }
     });
 
@@ -1492,14 +1527,63 @@
 
     function validateCurrentSection() {
       var section = document.getElementById('il-section-' + currentSection);
+      clearSectionErrors(section);
       var inputs = section.querySelectorAll('input[required]:not([disabled]), select[required]:not([disabled]), textarea[required]:not([disabled])');
-      var firstInvalid = null;
+      var firstInvalidEl = null;
+      var seenRadioNames = {};
       inputs.forEach(function (inp) {
-        if (!inp.offsetParent) return; /* skip hidden elements */
-        if (!inp.checkValidity() && !firstInvalid) firstInvalid = inp;
+        if (!inp.offsetParent) return; /* skip hidden/collapsed elements */
+        if (inp.checkValidity()) return;
+        if (inp.type === 'radio') {
+          if (seenRadioNames[inp.name]) return;
+          seenRadioNames[inp.name] = true;
+        }
+        if (!firstInvalidEl) firstInvalidEl = inp;
+        showFieldError(inp);
       });
-      if (firstInvalid) { firstInvalid.reportValidity(); return false; }
+      if (firstInvalidEl) {
+        var targetEl = firstInvalidEl.closest('.form-group') || firstInvalidEl;
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return false;
+      }
       return true;
+    }
+
+    function showFieldError(inp) {
+      var msg = '';
+      if (inp.validity.valueMissing) {
+        if (inp.type === 'radio' || inp.tagName === 'SELECT') msg = 'Please select an option.';
+        else if (inp.type === 'email') msg = 'Email address is required.';
+        else msg = 'This field is required.';
+      } else if (inp.validity.typeMismatch && inp.type === 'email') {
+        msg = 'Please enter a valid email address.';
+      } else if (inp.validity.rangeUnderflow || inp.validity.rangeOverflow) {
+        msg = 'Please enter a number between ' + inp.min + ' and ' + inp.max + '.';
+      } else {
+        msg = inp.validationMessage || 'Please check this field.';
+      }
+      var fg = inp.closest('.form-group');
+      if (!fg) return;
+      fg.classList.add('has-error');
+      if (!fg.querySelector('.form-error-msg')) {
+        var errEl = document.createElement('p');
+        errEl.className = 'form-error-msg';
+        errEl.textContent = msg;
+        if (inp.type === 'radio') {
+          var rg = inp.closest('.il-radio-group');
+          if (rg && rg.parentNode) rg.parentNode.insertBefore(errEl, rg.nextSibling);
+          else fg.appendChild(errEl);
+        } else {
+          var wrap = inp.closest('.il-dollar-wrap') || inp;
+          if (wrap.parentNode) wrap.parentNode.insertBefore(errEl, wrap.nextSibling);
+          else fg.appendChild(errEl);
+        }
+      }
+    }
+
+    function clearSectionErrors(section) {
+      (section || form).querySelectorAll('.has-error').forEach(function (el) { el.classList.remove('has-error'); });
+      (section || form).querySelectorAll('.form-error-msg').forEach(function (el) { el.remove(); });
     }
 
     function saveToStorage() {
@@ -1591,6 +1675,7 @@
     /* Serialise the form to a plain JSON object.
        Radios: only the checked value is included.
        Checkboxes: skipped — area_preference (hidden) carries that value.
+       Employment income type: fields not matching the selected type are cleared.
        All other inputs/selects/textareas: value as string. */
     function buildPayload() {
       var payload  = {};
@@ -1604,6 +1689,16 @@
         }
         if (el.type === 'checkbox') continue; /* use area_preference hidden field */
         payload[el.name] = el.value;
+      }
+      /* Clear income fields that do not match the selected income type */
+      for (var ei = 1; ei <= 4; ei++) {
+        var itype = payload['emp_' + ei + '_income_type'];
+        if (itype === 'W-2') {
+          delete payload['emp_' + ei + '_hourly_rate'];
+          delete payload['emp_' + ei + '_hours_per_week'];
+        } else if (itype === '1099') {
+          delete payload['emp_' + ei + '_annual_salary'];
+        }
       }
       return payload;
     }
