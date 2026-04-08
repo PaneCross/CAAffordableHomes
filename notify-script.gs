@@ -249,7 +249,12 @@ function doGet(e) {
    ========================================================== */
 function doPost(e) {
   try {
-    var data     = JSON.parse(e.postData.contents);
+    var data = JSON.parse(e.postData.contents);
+
+    /* ── Route property submissions separately ── */
+    if (data.form_type === 'property_submission') {
+      return handlePropertySubmission(data);
+    }
 
     /* ── Interest List flow ── */
     var email = (data.email || '').trim().toLowerCase();
@@ -588,6 +593,129 @@ function sendRenewalReminderEmail(toEmail, firstName) {
   } catch (err) {
     Logger.log('Renewal reminder failed for ' + toEmail + ': ' + err.message);
   }
+}
+
+/* ==========================================================
+   PROPERTY SUBMISSION HANDLER
+   ========================================================== */
+
+var PS_SHEET = 'Property Submissions';
+
+var PS_COLUMNS = [
+  'submitted_at', 'status',
+  'contact_name', 'contact_org', 'contact_email', 'contact_phone',
+  'prop_address', 'affordable_count', 'bedrooms', 'bathrooms',
+  'move_in_date', 'marketing_start', 'ami_percent', 'affordable_price',
+  'hoa_fee', 'hoa_covers', 'prop_tax_pct', 'special_assessments',
+  'deed_restriction_years', 'solar', 'solar_included', 'solar_lease_amount',
+  'file_links'
+];
+
+function handlePropertySubmission(data) {
+  var ss    = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName(PS_SHEET);
+  if (!sheet) {
+    sheet = ss.insertSheet(PS_SHEET);
+    sheet.getRange(1, 1, 1, PS_COLUMNS.length).setValues([PS_COLUMNS]);
+    sheet.setFrozenRows(1);
+  }
+
+  var now   = new Date();
+  var psCol = {};
+  PS_COLUMNS.forEach(function (c, i) { psCol[c] = i + 1; });
+
+  var row = new Array(PS_COLUMNS.length).fill('');
+  row[psCol['submitted_at'] - 1] = now;
+  row[psCol['status']       - 1] = 'new';
+
+  var fields = [
+    'contact_name','contact_org','contact_email','contact_phone',
+    'prop_address','affordable_count','bedrooms','bathrooms',
+    'move_in_date','marketing_start','ami_percent','affordable_price',
+    'hoa_fee','hoa_covers','prop_tax_pct','special_assessments',
+    'deed_restriction_years','solar','solar_included','solar_lease_amount'
+  ];
+  fields.forEach(function (k) {
+    if (data[k] !== undefined) row[psCol[k] - 1] = data[k];
+  });
+
+  /* Save files to Drive — one subfolder per submission */
+  var fileLinks = '';
+  if (data.attachments && data.attachments.length > 0) {
+    var parentFolder = getOrCreateDriveFolder('CA Affordable Homes - Property Submissions');
+    var subName = buildSubmissionFolderName(data, now);
+    var subFolder = parentFolder.createFolder(subName);
+    var links = [];
+    data.attachments.forEach(function (f) {
+      try {
+        var safeName = f.name.replace(/[^a-zA-Z0-9._\- ]/g, '_').substring(0, 100);
+        var blob = Utilities.newBlob(Utilities.base64Decode(f.data), f.mime || 'application/octet-stream', safeName);
+        var file = subFolder.createFile(blob);
+        file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+        links.push(f.name + ': ' + file.getUrl());
+      } catch (err) {
+        links.push(f.name + ': (upload failed - ' + err.message + ')');
+      }
+    });
+    fileLinks = links.join('\n');
+  }
+  row[psCol['file_links'] - 1] = fileLinks;
+
+  sheet.appendRow(row);
+  sendPropertyNotification(data, fileLinks);
+  return jsonResponse({ ok: true });
+}
+
+function buildSubmissionFolderName(data, now) {
+  var dateStr = Utilities.formatDate(now, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  var addr    = (data.prop_address || 'Unknown Address').replace(/[^a-zA-Z0-9 ,]/g, '').trim().substring(0, 60);
+  var name    = (data.contact_name || '').replace(/[^a-zA-Z0-9 ]/g, '').trim();
+  return dateStr + ' - ' + addr + (name ? ' (' + name + ')' : '');
+}
+
+function getOrCreateDriveFolder(name) {
+  var folders = DriveApp.getFoldersByName(name);
+  return folders.hasNext() ? folders.next() : DriveApp.createFolder(name);
+}
+
+function sendPropertyNotification(data, fileLinks) {
+  var address = (data.prop_address || '(no address)');
+  var subject = '[NEW PROPERTY] ' + address;
+  var body =
+    'A new property has been submitted for review.\n\n'
+    + '--- CONTACT ---\n'
+    + 'Name:          ' + (data.contact_name  || '') + '\n'
+    + 'Organization:  ' + (data.contact_org   || '') + '\n'
+    + 'Email:         ' + (data.contact_email || '') + '\n'
+    + 'Phone:         ' + (data.contact_phone || '') + '\n\n'
+    + '--- PROPERTY ---\n'
+    + 'Address:           ' + address + '\n'
+    + 'Affordable homes:  ' + (data.affordable_count || '') + '\n'
+    + 'Bedrooms:          ' + (data.bedrooms         || '') + '\n'
+    + 'Bathrooms:         ' + (data.bathrooms        || '') + '\n'
+    + 'Move-in date:      ' + (data.move_in_date     || '') + '\n'
+    + 'Marketing start:   ' + (data.marketing_start  || '') + '\n'
+    + 'AMI target:        ' + (data.ami_percent      || '') + '\n'
+    + 'Affordable price:  $' + (data.affordable_price || '') + '\n'
+    + 'Property tax:      ' + (data.prop_tax_pct     || '') + '%\n'
+    + 'HOA fee:           ' + (data.hoa_fee ? '$' + data.hoa_fee : 'N/A') + '\n'
+    + 'HOA covers:        ' + (data.hoa_covers || 'N/A') + '\n'
+    + 'Special assess.:   ' + (data.special_assessments || 'None') + '\n'
+    + 'Deed restriction:  ' + (data.deed_restriction_years || '') + '\n'
+    + 'Solar:             ' + (data.solar || '') + '\n'
+    + (data.solar === 'Yes'
+        ? 'Solar in price:    ' + (data.solar_included || '') + '\n'
+          + (data.solar_included === 'No' ? 'Solar lease/mo:    $' + (data.solar_lease_amount || '') + '\n' : '')
+        : '')
+    + '\n--- FILES ---\n'
+    + (fileLinks || 'No files submitted') + '\n';
+
+  MailApp.sendEmail({
+    to:      NOTIFY_EMAIL,
+    subject: subject,
+    body:    body,
+    replyTo: data.contact_email || REPLY_TO
+  });
 }
 
 /* ── Shared JSON response helper ── */

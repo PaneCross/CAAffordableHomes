@@ -862,101 +862,240 @@
             </form>
           </div>
 
-          <!-- Form 2: Builder / Partner Inquiry -->
+          <!-- Form 2: Builder / Partner -->
           <div class="contact-form-panel" id="partner-form">
             <span class="section-label">For Organizations</span>
             <h2>Builders &amp; Housing Partners</h2>
-            <p class="panel-subtitle">
-              Reach out to discuss listing your affordable housing inventory or exploring a partnership.
-            </p>
 
-            <!-- FORMSPREE: Replace the action URL below with your Formspree endpoint for the partner form -->
-            <!-- To set up: Go to formspree.io, sign in, create a form, and copy the endpoint URL -->
-            <!-- Example: action="https://formspree.io/f/YOUR_PARTNER_FORM_ID" -->
-            <form
-              action="https://formspree.io/f/xgonogny"
-              method="POST"
-              aria-label="Builder and housing partner inquiry form"
-              novalidate
-            >
-              <input type="hidden" name="_subject" value="New Builder / Partner Inquiry">
+            <!-- ── Choice screen ── -->
+            <div id="partner-choice">
+              <p style="color:var(--color-text-muted);margin-bottom:1.25rem;font-size:0.9rem;">
+                Select what brings you here today and we'll show you the right form.
+              </p>
 
-              <div class="form-group">
-                <label class="form-label" for="partner-name">Your Name</label>
-                <input
-                  type="text"
-                  id="partner-name"
-                  name="name"
-                  class="form-control"
-                  placeholder="John Doe"
-                  required
-                  autocomplete="name"
-                >
+              <!-- Option 1: Partnership Inquiry -->
+              <div class="il-callout" style="margin-bottom:1rem;">
+                <h3><i class="fa-solid fa-handshake" style="color:var(--color-sage);margin-right:0.45rem;" aria-hidden="true"></i>Partnership Inquiry</h3>
+                <p style="font-size:0.875rem;color:var(--color-text-body);margin-bottom:1rem;">
+                  Want to explore working together but not ready to submit specific properties yet? Use this form to introduce yourself, tell us about your organization and inventory, and start a conversation. We'll follow up to discuss how we can help.
+                </p>
+                <button type="button" class="btn btn-primary" id="choose-inquiry">
+                  Begin Inquiry <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                </button>
               </div>
 
-              <div class="form-group">
-                <label class="form-label" for="partner-org">Organization Name</label>
-                <input
-                  type="text"
-                  id="partner-org"
-                  name="organization"
-                  class="form-control"
-                  placeholder="e.g., Valley Housing Corp"
-                  required
-                  autocomplete="organization"
-                >
+              <!-- Option 2: Submit a Property -->
+              <div class="il-callout">
+                <h3><i class="fa-solid fa-building" style="color:var(--color-sage);margin-right:0.45rem;" aria-hidden="true"></i>Submit a Property</h3>
+                <p style="font-size:0.875rem;color:var(--color-text-body);margin-bottom:1rem;">
+                  Have specific properties ready for review? Use this form to submit property details, pricing, program requirements, and supporting documents directly to Kacee for evaluation and potential listing on the CA Affordable Homes platform.
+                </p>
+                <button type="button" class="btn btn-primary" id="choose-property">
+                  Submit a Property <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                </button>
               </div>
+            </div><!-- /partner-choice -->
 
-              <div class="form-group">
-                <label class="form-label" for="partner-email">Email Address</label>
-                <input
-                  type="email"
-                  id="partner-email"
-                  name="email"
-                  class="form-control"
-                  placeholder="john@yourorganization.com"
-                  required
-                  autocomplete="email"
-                >
-              </div>
+            <!-- ── Inquiry form ── -->
+            <div id="inquiry-wrapper" hidden>
+              <button type="button" class="partner-back-btn" id="inquiry-back">
+                <i class="fa-solid fa-chevron-left" aria-hidden="true"></i> Back to options
+              </button>
+              <form
+                action="https://formspree.io/f/xgonogny"
+                method="POST"
+                aria-label="Builder and housing partner inquiry form"
+                novalidate
+              >
+                <input type="hidden" name="_subject" value="New Builder / Partner Inquiry">
+                <div class="form-group">
+                  <label class="form-label" for="partner-name">Your Name</label>
+                  <input type="text" id="partner-name" name="name" class="form-control" placeholder="John Doe" required autocomplete="name">
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="partner-org">Organization Name</label>
+                  <input type="text" id="partner-org" name="organization" class="form-control" placeholder="e.g., Valley Housing Corp" required autocomplete="organization">
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="partner-email">Email Address</label>
+                  <input type="email" id="partner-email" name="email" class="form-control" placeholder="john@yourorganization.com" required autocomplete="email">
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="partner-phone">Phone Number <span class="optional">(optional)</span></label>
+                  <input type="tel" id="partner-phone" name="phone" class="form-control" placeholder="(555) 000-0000" autocomplete="tel">
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="partner-message">Message</label>
+                  <textarea id="partner-message" name="message" class="form-control" placeholder="Tell us about your organization, your affordable housing inventory or program, and what you're looking for. We'll follow up to discuss how we can help." rows="6" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:0.85rem;">
+                  <i class="fa-solid fa-handshake" aria-hidden="true"></i>
+                  Send Partnership Inquiry
+                </button>
+                <p class="form-note" style="margin-top:0.75rem;text-align:center;">We'll be in touch to discuss your needs.</p>
+              </form>
+            </div><!-- /inquiry-wrapper -->
 
-              <div class="form-group">
-                <label class="form-label" for="partner-phone">
-                  Phone Number
-                  <span class="optional">(optional)</span>
-                </label>
-                <input
-                  type="tel"
-                  id="partner-phone"
-                  name="phone"
-                  class="form-control"
-                  placeholder="(555) 000-0000"
-                  autocomplete="tel"
-                >
-              </div>
-
-              <div class="form-group">
-                <label class="form-label" for="partner-message">Message</label>
-                <textarea
-                  id="partner-message"
-                  name="message"
-                  class="form-control"
-                  placeholder="Tell us about your organization, your affordable housing inventory or program, and what you're looking for. We'll follow up to discuss how we can help."
-                  rows="6"
-                  required
-                ></textarea>
-              </div>
-
-              <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 0.85rem;">
-                <i class="fa-solid fa-handshake" aria-hidden="true"></i>
-                Send Partnership Inquiry
+            <!-- ── Property submission form ── -->
+            <div id="property-wrapper" hidden>
+              <button type="button" class="partner-back-btn" id="property-back">
+                <i class="fa-solid fa-chevron-left" aria-hidden="true"></i> Back to options
               </button>
 
-              <p class="form-note" style="margin-top: 0.75rem; text-align: center;">
-                We'll be in touch to discuss your needs.
-              </p>
-            </form>
-          </div>
+              <div id="prop-success" hidden style="text-align:center;padding:2rem 0;">
+                <i class="fa-solid fa-circle-check" style="font-size:2.5rem;color:var(--color-sage);display:block;margin-bottom:1rem;" aria-hidden="true"></i>
+                <h3>Property Submitted</h3>
+                <p style="color:var(--color-text-muted);">Kacee will review your submission and follow up with next steps.</p>
+              </div>
+
+              <form id="prop-form" novalidate>
+
+                <h3 class="il-section-title">Your Contact Information</h3>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label" for="prop-name">Full Name</label>
+                    <input type="text" id="prop-name" name="contact_name" class="form-control" placeholder="Jane Smith" required autocomplete="name">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="prop-org">Organization</label>
+                    <input type="text" id="prop-org" name="contact_org" class="form-control" placeholder="e.g. Valley Housing Corp" required autocomplete="organization">
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label" for="prop-email">Email Address</label>
+                    <input type="email" id="prop-email" name="contact_email" class="form-control" placeholder="jane@yourorg.com" required autocomplete="email">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="prop-phone">Phone Number</label>
+                    <input type="tel" id="prop-phone" name="contact_phone" class="form-control" placeholder="(555) 000-0000" required autocomplete="tel">
+                  </div>
+                </div>
+
+                <h3 class="il-section-title" style="margin-top:1.5rem;">Property Details</h3>
+
+                <div class="form-group">
+                  <label class="form-label" for="prop-address">Address of the Property</label>
+                  <input type="text" id="prop-address" name="prop_address" class="form-control" placeholder="123 Main St, San Diego, CA 92101" required>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label" for="prop-count">Number of Affordable Homes</label>
+                    <input type="number" id="prop-count" name="affordable_count" class="form-control" placeholder="e.g. 12" min="1" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="prop-ami">AMI Target</label>
+                    <input type="text" id="prop-ami" name="ami_percent" class="form-control" placeholder="e.g. 80% AMI" required>
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label" for="prop-bed">Bedrooms per unit</label>
+                    <input type="text" id="prop-bed" name="bedrooms" class="form-control" placeholder="e.g. 3" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="prop-bath">Bathrooms per unit</label>
+                    <input type="text" id="prop-bath" name="bathrooms" class="form-control" placeholder="e.g. 2" required>
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label" for="prop-move-in">Estimated Move-in Date</label>
+                    <input type="text" id="prop-move-in" name="move_in_date" class="form-control" placeholder="e.g. Q3 2026" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="prop-mkt-start">Desired Marketing Start</label>
+                    <input type="text" id="prop-mkt-start" name="marketing_start" class="form-control" placeholder="e.g. June 2026" required>
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label" for="prop-price">Affordable Price</label>
+                    <div class="il-dollar-wrap">
+                      <input type="number" id="prop-price" name="affordable_price" class="form-control" placeholder="0" min="0" required>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="prop-tax">Estimated Property Tax %</label>
+                    <input type="number" id="prop-tax" name="prop_tax_pct" class="form-control" placeholder="e.g. 1.25" min="0" step="0.01" required>
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label" for="prop-hoa-fee">HOA Fee at Build-out <span class="optional">(if any)</span></label>
+                    <div class="il-dollar-wrap">
+                      <input type="number" id="prop-hoa-fee" name="hoa_fee" class="form-control" placeholder="0" min="0">
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="prop-deed">Deed Restriction Duration</label>
+                    <input type="text" id="prop-deed" name="deed_restriction_years" class="form-control" placeholder="e.g. 45 years" required>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="prop-hoa-covers">What Does the HOA Cover? <span class="optional">(if applicable)</span></label>
+                  <textarea id="prop-hoa-covers" name="hoa_covers" class="form-control" placeholder="e.g. Exterior maintenance, landscaping, water, trash..." rows="2"></textarea>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="prop-assessments">Special Assessments, Mello-Roos, etc. <span class="optional">(leave blank if none)</span></label>
+                  <textarea id="prop-assessments" name="special_assessments" class="form-control" placeholder="Describe any special assessments, or leave blank if none." rows="2"></textarea>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Do these homes have solar panels?</label>
+                  <div class="il-radio-group">
+                    <label class="il-radio-label"><input type="radio" name="solar" value="Yes" required data-shows="prop-solar-cond" data-show-when="Yes"> Yes</label>
+                    <label class="il-radio-label"><input type="radio" name="solar" value="No" data-shows="prop-solar-cond" data-show-when="Yes"> No</label>
+                  </div>
+                  <div class="il-conditional" id="prop-solar-cond">
+                    <div class="form-group" style="margin-top:0.75rem;">
+                      <label class="form-label">Are solar panels included in the affordable price?</label>
+                      <div class="il-radio-group">
+                        <label class="il-radio-label"><input type="radio" name="solar_included" value="Yes" data-shows="prop-solar-lease-cond" data-show-when="No"> Yes</label>
+                        <label class="il-radio-label"><input type="radio" name="solar_included" value="No" data-shows="prop-solar-lease-cond" data-show-when="No"> No</label>
+                      </div>
+                      <div class="il-conditional" id="prop-solar-lease-cond">
+                        <label class="form-label" style="margin-top:0.5rem;">Average monthly lease amount</label>
+                        <div class="il-dollar-wrap">
+                          <input type="number" name="solar_lease_amount" class="form-control" placeholder="0" min="0" data-req>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <h3 class="il-section-title" style="margin-top:1.5rem;">Supporting Documents <span class="optional" style="font-size:0.8em;">(optional)</span></h3>
+                <p class="il-note">
+                  <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                  PDF, Word (DOC/DOCX), Excel (XLS/XLSX), JPG, PNG. Max 10 MB per file, up to 3 files. For larger files, email <a href="mailto:Info@CAAffordableHomes.com">Info@CAAffordableHomes.com</a>.
+                </p>
+                <div class="prop-upload-zone" id="prop-upload-zone">
+                  <i class="fa-solid fa-cloud-arrow-up prop-upload-icon" aria-hidden="true"></i>
+                  <p class="prop-upload-text">Drag files here or <span class="prop-upload-link">click to browse</span></p>
+                  <p class="prop-upload-sub">PDF, Word, Excel, JPG, PNG - max 10 MB each</p>
+                  <input type="file" id="prop-file-input" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png" aria-label="Upload supporting documents">
+                </div>
+                <ul class="prop-file-list" id="prop-file-list" aria-live="polite"></ul>
+                <p id="prop-file-error" class="form-error-msg" style="display:none;"></p>
+                <p id="prop-submit-error" class="form-ajax-error" style="display:none;color:#b91c1c;text-align:center;margin-top:0.75rem;font-size:0.9rem;"></p>
+
+                <button type="submit" class="btn btn-primary" id="prop-submit-btn" style="width:100%;justify-content:center;padding:0.85rem;margin-top:1.5rem;">
+                  <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
+                  Submit Property for Review
+                </button>
+                <p class="form-note" style="margin-top:0.75rem;text-align:center;">Kacee will review your submission and follow up within a few business days.</p>
+
+              </form>
+            </div><!-- /property-wrapper -->
+
+          </div><!-- /partner-form panel -->
 
         </div><!-- end contact-forms-grid -->
 
@@ -1761,6 +1900,239 @@
     }
 
   })();
+
+  /* ---------------------------------------------------------
+     Partner panel: choice toggle
+     --------------------------------------------------------- */
+  (function () {
+    var choiceEl   = document.getElementById('partner-choice');
+    var inquiryEl  = document.getElementById('inquiry-wrapper');
+    var propertyEl = document.getElementById('property-wrapper');
+    if (!choiceEl) return;
+
+    function showChoice() {
+      choiceEl.hidden   = false;
+      inquiryEl.hidden  = true;
+      propertyEl.hidden = true;
+      document.getElementById('partner-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    document.getElementById('choose-inquiry').addEventListener('click', function () {
+      choiceEl.hidden   = true;
+      inquiryEl.hidden  = false;
+      propertyEl.hidden = true;
+      document.getElementById('partner-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    document.getElementById('choose-property').addEventListener('click', function () {
+      choiceEl.hidden   = true;
+      inquiryEl.hidden  = true;
+      propertyEl.hidden = false;
+      document.getElementById('partner-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    document.getElementById('inquiry-back').addEventListener('click', showChoice);
+    document.getElementById('property-back').addEventListener('click', showChoice);
+  })();
+
+  /* ---------------------------------------------------------
+     Property submission form
+     --------------------------------------------------------- */
+  (function () {
+    var SCRIPT_URL   = 'https://script.google.com/macros/s/AKfycbw0MOVFTvtDia4k_bcGVtgcwb-7EhWczMzSdLpaesRDUqV4ZmUpJ6CU75B09ee9tXHO/exec';
+    var MAX_FILES    = 3;
+    var MAX_SIZE_MB  = 10;
+    var ALLOWED_EXT  = ['pdf','doc','docx','xls','xlsx','jpg','jpeg','png'];
+
+    var form        = document.getElementById('prop-form');
+    var successEl   = document.getElementById('prop-success');
+    var submitBtn   = document.getElementById('prop-submit-btn');
+    var uploadZone  = document.getElementById('prop-upload-zone');
+    var fileInput   = document.getElementById('prop-file-input');
+    var fileList    = document.getElementById('prop-file-list');
+    var fileError   = document.getElementById('prop-file-error');
+    var submitError = document.getElementById('prop-submit-error');
+    if (!form) return;
+
+    var selectedFiles = [];
+
+    /* ── Conditionals (solar fields) ── */
+    (function initConditionals(root) {
+      var map = {};
+      root.querySelectorAll('[data-shows]').forEach(function (c) {
+        var t = c.dataset.shows;
+        if (!map[t]) map[t] = [];
+        map[t].push(c);
+      });
+      Object.keys(map).forEach(function (tid) {
+        var target = document.getElementById(tid);
+        if (!target) return;
+        var ctrls = map[tid];
+        function evaluate() {
+          var show = ctrls.some(function (c) {
+            return (c.type === 'radio' || c.type === 'checkbox') && c.checked && c.value === c.dataset.showWhen;
+          });
+          target.classList.toggle('is-visible', show);
+          target.querySelectorAll('[data-req]').forEach(function (f) { f.required = show; });
+        }
+        ctrls.forEach(function (c) {
+          c.addEventListener('change', evaluate);
+          if (c.type === 'radio' && c.name) {
+            root.querySelectorAll('input[type="radio"][name="' + c.name + '"]').forEach(function (s) {
+              if (s !== c) s.addEventListener('change', evaluate);
+            });
+          }
+        });
+        evaluate();
+      });
+    }(form));
+
+    /* ── File upload ── */
+    uploadZone.addEventListener('click', function () { fileInput.click(); });
+    uploadZone.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); }
+    });
+    uploadZone.addEventListener('dragover',  function (e) { e.preventDefault(); uploadZone.classList.add('is-dragover'); });
+    uploadZone.addEventListener('dragleave', function ()  { uploadZone.classList.remove('is-dragover'); });
+    uploadZone.addEventListener('drop', function (e) {
+      e.preventDefault(); uploadZone.classList.remove('is-dragover');
+      handleFiles(e.dataTransfer.files);
+    });
+    fileInput.addEventListener('change', function () { handleFiles(fileInput.files); fileInput.value = ''; });
+
+    function handleFiles(newFiles) {
+      fileError.style.display = 'none';
+      Array.from(newFiles).forEach(function (f) {
+        if (selectedFiles.length >= MAX_FILES) {
+          showFileError('Maximum of ' + MAX_FILES + ' files allowed. Remove a file to add another.'); return;
+        }
+        var ext = f.name.split('.').pop().toLowerCase();
+        if (ALLOWED_EXT.indexOf(ext) === -1) {
+          showFileError('"' + escHtml(f.name) + '" is not an accepted file type.'); return;
+        }
+        if (f.size > MAX_SIZE_MB * 1024 * 1024) {
+          showFileError('"' + escHtml(f.name) + '" exceeds the 10 MB limit.'); return;
+        }
+        if (selectedFiles.some(function (s) { return s.name === f.name; })) return;
+        selectedFiles.push(f);
+      });
+      renderFileList();
+    }
+
+    function renderFileList() {
+      fileList.innerHTML = '';
+      selectedFiles.forEach(function (f, idx) {
+        var li = document.createElement('li');
+        li.className = 'prop-file-item';
+        li.innerHTML =
+          '<i class="fa-solid fa-file prop-file-icon" aria-hidden="true"></i>'
+          + '<span class="prop-file-name">' + escHtml(f.name) + '</span>'
+          + '<span class="prop-file-size">' + (f.size / (1024 * 1024)).toFixed(1) + ' MB</span>'
+          + '<button type="button" class="prop-file-remove" aria-label="Remove ' + escHtml(f.name) + '">'
+          + '<i class="fa-solid fa-xmark" aria-hidden="true"></i></button>';
+        li.querySelector('.prop-file-remove').addEventListener('click', function () {
+          selectedFiles.splice(idx, 1);
+          renderFileList();
+          fileError.style.display = 'none';
+        });
+        fileList.appendChild(li);
+      });
+    }
+
+    function showFileError(msg) { fileError.textContent = msg; fileError.style.display = 'block'; }
+    function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    /* ── Validation ── */
+    function validateForm() {
+      form.querySelectorAll('.has-error').forEach(function (el) { el.classList.remove('has-error'); });
+      form.querySelectorAll('.form-error-msg').forEach(function (el) { el.remove(); });
+      var inputs = form.querySelectorAll('input[required]:not([disabled]),select[required]:not([disabled]),textarea[required]:not([disabled])');
+      var first = null;
+      var seenRadio = {};
+      inputs.forEach(function (inp) {
+        if (!inp.offsetParent || inp.checkValidity()) return;
+        if (inp.type === 'radio') { if (seenRadio[inp.name]) return; seenRadio[inp.name] = true; }
+        if (!first) first = inp;
+        var msg = inp.validity.valueMissing
+          ? ((inp.type === 'radio' || inp.tagName === 'SELECT') ? 'Please select an option.' : 'This field is required.')
+          : (inp.validity.typeMismatch && inp.type === 'email' ? 'Please enter a valid email address.' : (inp.validationMessage || 'Please check this field.'));
+        var fg = inp.closest('.form-group');
+        if (!fg) return;
+        fg.classList.add('has-error');
+        if (!fg.querySelector('.form-error-msg')) {
+          var err = document.createElement('p');
+          err.className = 'form-error-msg';
+          err.textContent = msg;
+          if (inp.type === 'radio') {
+            var rg = inp.closest('.il-radio-group');
+            if (rg && rg.parentNode) rg.parentNode.insertBefore(err, rg.nextSibling); else fg.appendChild(err);
+          } else {
+            var wr = inp.closest('.il-dollar-wrap') || inp;
+            if (wr.parentNode) wr.parentNode.insertBefore(err, wr.nextSibling); else fg.appendChild(err);
+          }
+        }
+      });
+      if (first) { (first.closest('.form-group') || first).scrollIntoView({ behavior:'smooth', block:'center' }); return false; }
+      return true;
+    }
+
+    form.addEventListener('input',  function (e) { clearFieldError(e.target); });
+    form.addEventListener('change', function (e) { clearFieldError(e.target); });
+    function clearFieldError(el) {
+      var fg = el.closest('.form-group');
+      if (fg && fg.classList.contains('has-error') && el.checkValidity()) {
+        fg.classList.remove('has-error');
+        var em = fg.querySelector('.form-error-msg'); if (em) em.remove();
+      }
+    }
+
+    /* ── Submission ── */
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      submitError.style.display = 'none';
+      if (!validateForm()) return;
+
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Submitting\u2026';
+
+      var payload = { form_type: 'property_submission' };
+      Array.from(form.elements).forEach(function (el) {
+        if (!el.name || el.disabled || el.type === 'file') return;
+        if (el.type === 'radio') { if (el.checked) payload[el.name] = el.value; return; }
+        payload[el.name] = el.value;
+      });
+
+      if (selectedFiles.length === 0) {
+        send(payload);
+      } else {
+        Promise.all(selectedFiles.map(function (f) {
+          return new Promise(function (res, rej) {
+            var r = new FileReader();
+            r.onload = function () { res({ name: f.name, mime: f.type || 'application/octet-stream', data: r.result.split(',')[1] }); };
+            r.onerror = rej;
+            r.readAsDataURL(f);
+          });
+        })).then(function (encoded) { payload.attachments = encoded; send(payload); })
+          .catch(function () { reset(); showSubmitError('Could not read the selected files. Please try again.'); });
+      }
+    });
+
+    function send(payload) {
+      fetch(SCRIPT_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(payload) })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (d.ok) { form.hidden = true; successEl.hidden = false; successEl.scrollIntoView({ behavior:'smooth', block:'center' }); }
+          else { reset(); showSubmitError('Submission failed. Please try again or email us directly.'); }
+        })
+        .catch(function () { reset(); showSubmitError('Unable to submit. Please check your connection and try again.'); });
+    }
+
+    function reset() {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane" aria-hidden="true"></i> Submit Property for Review';
+    }
+    function showSubmitError(msg) { submitError.textContent = msg; submitError.style.display = 'block'; }
+
+  })();
+
   </script>
 </body>
 </html>

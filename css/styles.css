@@ -1317,6 +1317,91 @@ header {
   box-shadow: 0 0 0 3px rgba(129, 139, 126, 0.18);
 }
 
+/* ── Partner panel: choice + property form ── */
+.partner-back-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 1.25rem;
+}
+.partner-back-btn:hover { color: var(--color-text); }
+
+/* File upload zone */
+.prop-upload-zone {
+  position: relative;
+  border: 2px dashed var(--color-sage);
+  border-radius: 8px;
+  padding: 1.75rem 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  background: #fff;
+}
+.prop-upload-zone:hover,
+.prop-upload-zone.is-dragover {
+  background: rgba(129, 139, 126, 0.07);
+}
+.prop-upload-zone input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+.prop-upload-icon {
+  font-size: 1.75rem;
+  color: var(--color-sage);
+  margin-bottom: 0.4rem;
+  display: block;
+}
+.prop-upload-text {
+  font-size: 0.925rem;
+  color: var(--color-text);
+  margin: 0 0 0.2rem;
+}
+.prop-upload-link { color: var(--color-sage); text-decoration: underline; }
+.prop-upload-sub  { font-size: 0.78rem; color: var(--color-text-muted); margin: 0; }
+
+/* Uploaded file list */
+.prop-file-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.6rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.prop-file-item {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  background: #fff;
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+}
+.prop-file-icon  { color: var(--color-sage); flex-shrink: 0; }
+.prop-file-name  { flex: 1; word-break: break-all; }
+.prop-file-size  { color: var(--color-text-muted); white-space: nowrap; flex-shrink: 0; }
+.prop-file-remove {
+  background: none;
+  border: none;
+  color: #c0392b;
+  cursor: pointer;
+  padding: 0.2rem 0.3rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.prop-file-remove:hover { color: #922b21; }
+
 /* Validation error state */
 .form-group.has-error .form-control {
   border-color: #c0392b;
