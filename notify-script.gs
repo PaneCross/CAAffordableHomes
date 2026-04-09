@@ -123,11 +123,11 @@ var IL_COLUMNS = [
   'income_4_name', 'income_4_relationship', 'income_4_annual',
   'income_5_name', 'income_5_relationship', 'income_5_annual',
   'income_6_name', 'income_6_relationship', 'income_6_annual',
-  /* Tax-year income */
-  'income_2022_total', 'income_2022_sched_c',
-  'income_2023_total', 'income_2023_sched_c',
-  'income_2024_total', 'income_2024_sched_c',
-  'income_2025_total', 'income_2025_sched_c',
+  /* Tax-year income — positional (1 = most recent year, 3 = oldest shown) */
+  'tax_year_labels',
+  'tax_1_total', 'tax_1_sched_c',
+  'tax_2_total', 'tax_2_sched_c',
+  'tax_3_total', 'tax_3_sched_c',
   /* Non-taxable income (up to 3 entries) */
   'non_taxable_income',
   'nontax_1_who', 'nontax_1_source', 'nontax_1_amount', 'nontax_1_end_date_yn', 'nontax_1_end_date',
@@ -432,9 +432,10 @@ function sendILNotification(data, updated, reEnrolled) {
     + 'Monthly rent:       $' + (data.monthly_rent || '0') + '\n'
     + 'Monthly debt:       $' + (data.monthly_debt_payments || '0') + '\n'
     + '---\n'
-    + '2023 income:        $' + (data.income_2023_total || '0') + '\n'
-    + '2024 income:        $' + (data.income_2024_total || '0') + '\n'
-    + '2025 income:        $' + (data.income_2025_total || '') + '\n'
+    + 'Tax years:          ' + (data.tax_year_labels || '') + '\n'
+    + 'Most recent income: $' + (data.tax_1_total || '0') + '\n'
+    + 'Prior year income:  $' + (data.tax_2_total || '0') + '\n'
+    + 'Oldest year income: $' + (data.tax_3_total || '0') + '\n'
     + '---\n'
     + 'Checking assets:    $' + (data.asset_checking || '0') + '\n'
     + 'Savings assets:     $' + (data.asset_savings || '0') + '\n'
@@ -1451,10 +1452,10 @@ function getApplicantIncome(ap) {
     if (amt !== null && amt > 0) { memberTotal += amt; hasMemberData = true; }
   }
   if (hasMemberData) return memberTotal;
-  var t2024 = parseNum(ap['income_2024_total']);
-  if (t2024 !== null && t2024 > 0) return t2024;
-  var t2023 = parseNum(ap['income_2023_total']);
-  if (t2023 !== null && t2023 > 0) return t2023;
+  var t1 = parseNum(ap['tax_1_total']);
+  if (t1 !== null && t1 > 0) return t1;
+  var t2 = parseNum(ap['tax_2_total']);
+  if (t2 !== null && t2 > 0) return t2;
   return null;
 }
 

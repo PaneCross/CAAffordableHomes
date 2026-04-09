@@ -85,7 +85,7 @@
             <div id="il-callout" class="il-callout">
               <h3>Before you begin, have these documents ready to accurately answer the questions on the form:</h3>
               <ul>
-                <li>Tax returns for 2023 and 2024 (and 2025 if already filed), and W-2's, for all household members, even if they will not be on the loan documents</li>
+                <li id="il-callout-tax-line">Tax returns for 2023 and 2024 (and 2025 if already filed), and W-2's, for all household members, even if they will not be on the loan documents</li>
                 <li>Recent pay stubs for all household members</li>
                 <li>Current bank statements</li>
                 <li>A list of all monthly debt obligations</li>
@@ -266,63 +266,9 @@
                   Maximum of 6 household members reached. Please list any additional members and their income in the <strong>Additional Information</strong> box at the end of the form.
                 </p>
 
-                <!-- Tax year income -->
-                <div class="form-row">
-                  <div class="form-group">
-                    <label class="form-label" for="il-income-2022">2022 Total Income <span class="optional">(1040 first page)</span></label>
-                    <div class="il-dollar-wrap">
-                      <input type="number" id="il-income-2022" name="income_2022_total" class="form-control" placeholder="0" min="0">
-                    </div>
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label" for="il-sch-c-2022">2022 Schedule C Line 31 <span class="optional">(1099, if any)</span></label>
-                    <div class="il-dollar-wrap">
-                      <input type="number" id="il-sch-c-2022" name="income_2022_sched_c" class="form-control" placeholder="0" min="0">
-                    </div>
-                  </div>
-                </div>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label class="form-label" for="il-income-2023">2023 Total Income <span class="optional">(1040 first page)</span></label>
-                    <div class="il-dollar-wrap">
-                      <input type="number" id="il-income-2023" name="income_2023_total" class="form-control" placeholder="0" min="0" required>
-                    </div>
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label" for="il-sch-c-2023">2023 Schedule C Line 31 <span class="optional">(1099, if any)</span></label>
-                    <div class="il-dollar-wrap">
-                      <input type="number" id="il-sch-c-2023" name="income_2023_sched_c" class="form-control" placeholder="0" min="0">
-                    </div>
-                  </div>
-                </div>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label class="form-label" for="il-income-2024">2024 Total Income <span class="optional">(1040 first page)</span></label>
-                    <div class="il-dollar-wrap">
-                      <input type="number" id="il-income-2024" name="income_2024_total" class="form-control" placeholder="0" min="0" required>
-                    </div>
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label" for="il-sch-c-2024">2024 Schedule C Line 31 <span class="optional">(1099, if any)</span></label>
-                    <div class="il-dollar-wrap">
-                      <input type="number" id="il-sch-c-2024" name="income_2024_sched_c" class="form-control" placeholder="0" min="0">
-                    </div>
-                  </div>
-                </div>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label class="form-label" for="il-income-2025">2025 Total Income <span class="optional">(if filed)</span></label>
-                    <div class="il-dollar-wrap">
-                      <input type="number" id="il-income-2025" name="income_2025_total" class="form-control" placeholder="0" min="0">
-                    </div>
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label" for="il-sch-c-2025">2025 Schedule C Line 31 <span class="optional">(if any)</span></label>
-                    <div class="il-dollar-wrap">
-                      <input type="number" id="il-sch-c-2025" name="income_2025_sched_c" class="form-control" placeholder="0" min="0">
-                    </div>
-                  </div>
-                </div>
+                <!-- Tax year income — rendered by JS, auto-updates each year -->
+                <div id="il-tax-year-rows"></div>
+                <input type="hidden" name="tax_year_labels" id="il-tax-year-labels">
 
                 <!-- Non-taxable income -->
                 <div class="form-group">
@@ -1354,6 +1300,61 @@
       return;
     }
 
+
+    /* ── Tax year rows: auto-compute from current date ──
+       Filing season = Jan–Apr (month 0–3): newest year gets "(if already filed)" caveat.
+       Always renders exactly 3 years. Field names are positional (tax_1 = most recent). */
+    (function () {
+      var now    = new Date();
+      var yr     = now.getFullYear();
+      var filing = now.getMonth() <= 3;   /* Jan(0)–Apr(3) */
+      var y1 = yr - 1;                    /* most recent */
+      var y2 = yr - 2;
+      var y3 = yr - 3;                    /* oldest */
+
+      /* Update callout bullet */
+      var cl = document.getElementById('il-callout-tax-line');
+      if (cl) {
+        cl.textContent = filing
+          ? 'Tax returns for ' + y3 + ' and ' + y2 + ' (and ' + y1 + ' if already filed), and W-2\'s, for all household members, even if they will not be on the loan documents'
+          : 'Tax returns for ' + y3 + ', ' + y2 + ', and ' + y1 + ', and W-2\'s, for all household members, even if they will not be on the loan documents';
+      }
+
+      /* Store year labels so the sheet knows which years are in which column */
+      var lbl = document.getElementById('il-tax-year-labels');
+      if (lbl) lbl.value = y1 + ' / ' + y2 + ' / ' + y3;
+
+      /* Render three rows oldest → newest */
+      var container = document.getElementById('il-tax-year-rows');
+      if (!container) return;
+      var rows = [
+        { year: y3, num: 3, required: true },
+        { year: y2, num: 2, required: true },
+        { year: y1, num: 1, required: !filing }
+      ];
+      container.innerHTML = rows.map(function (r) {
+        var totalLabel  = r.year + ' Total Income';
+        var schedLabel  = r.year + ' Schedule C Line 31';
+        var totalSuffix = r.required ? '(1040 first page)' : (filing ? 'if already filed' : '(1040 first page)');
+        var reqAttr     = r.required ? ' required' : '';
+        return '<div class="form-row">'
+          + '<div class="form-group">'
+          + '<label class="form-label" for="il-income-' + r.year + '">' + totalLabel
+          + ' <span class="optional">(' + totalSuffix + ')</span></label>'
+          + '<div class="il-dollar-wrap">'
+          + '<input type="number" id="il-income-' + r.year + '" name="tax_' + r.num + '_total"'
+          + ' class="form-control" placeholder="0" min="0"' + reqAttr + '>'
+          + '</div></div>'
+          + '<div class="form-group">'
+          + '<label class="form-label" for="il-sch-c-' + r.year + '">' + schedLabel
+          + ' <span class="optional">(1099, if any)</span></label>'
+          + '<div class="il-dollar-wrap">'
+          + '<input type="number" id="il-sch-c-' + r.year + '" name="tax_' + r.num + '_sched_c"'
+          + ' class="form-control" placeholder="0" min="0">'
+          + '</div></div>'
+          + '</div>';
+      }).join('');
+    }());
 
     /* Restore any saved draft values */
     restoreFromStorage();
