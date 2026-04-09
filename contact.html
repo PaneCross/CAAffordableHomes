@@ -1637,6 +1637,7 @@
     /* ---- Helper functions ---- */
 
     function goToSection(n) {
+      if (n < 1 || n > totalSections) return;
       document.getElementById('il-section-' + currentSection).hidden = true;
       currentSection = n;
       document.getElementById('il-section-' + currentSection).hidden = false;
