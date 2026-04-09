@@ -1235,8 +1235,11 @@
           if (data.ok) {
             /* Store submission timestamp — cooldown starts now */
             localStorage.setItem(storageKey, Date.now().toString());
-            if (onSuccess) onSuccess(form);
-            panel.innerHTML = successHTML(successMsg);
+            if (onSuccess) {
+              onSuccess();  /* caller handles the success state entirely */
+            } else {
+              panel.innerHTML = successHTML(successMsg);
+            }
           } else {
             btn.disabled = false;
             btn.innerHTML = originalHTML;
@@ -1257,7 +1260,30 @@
     initForm(
       'partner-form',
       'caah_partner_submitted',
-      'We\u2019ve received your inquiry. We\u2019ll be in touch to discuss your needs.'
+      null,
+      function () {
+        /* Show success inside inquiry-wrapper and offer property submission */
+        var inquiryEl  = document.getElementById('inquiry-wrapper');
+        var propertyEl = document.getElementById('property-wrapper');
+        var choiceEl   = document.getElementById('partner-choice');
+        inquiryEl.hidden = false;
+        choiceEl.hidden  = true;
+        inquiryEl.innerHTML =
+          '<div style="text-align:center;padding:2rem 0 1.5rem;">'
+          + '<i class="fa-solid fa-circle-check" style="font-size:2.5rem;color:var(--color-sage);display:block;margin-bottom:1rem;" aria-hidden="true"></i>'
+          + '<h3 style="margin-bottom:0.5rem;">Inquiry Received</h3>'
+          + '<p style="color:var(--color-text-muted);max-width:340px;margin:0 auto 1.5rem;">We\u2019ll be in touch to discuss your needs.</p>'
+          + '<p style="font-size:0.9rem;color:var(--color-text-muted);margin-bottom:1rem;">Have a specific property ready to submit?</p>'
+          + '<button type="button" class="btn btn-primary" id="inquiry-also-prop-btn">'
+          + '<i class="fa-solid fa-building" aria-hidden="true"></i> Submit a Property</button>'
+          + '</div>';
+        document.getElementById('inquiry-also-prop-btn').addEventListener('click', function () {
+          inquiryEl.hidden  = true;
+          propertyEl.hidden = false;
+          document.getElementById('partner-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+        document.getElementById('partner-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     );
 
   })();
