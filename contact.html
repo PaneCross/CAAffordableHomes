@@ -493,9 +493,9 @@
                       </div>
                     </div>
                     <div class="form-group">
-                      <label class="form-label" for="il-emp1-w2-2025">Largest income shown on 2025 W-2 <span class="optional">(optional)</span></label>
+                      <label class="form-label" for="il-emp1-w2-recent">Largest income shown on <span class="il-w2-year">2025</span> W-2 <span class="optional">(optional)</span></label>
                       <div class="il-dollar-wrap">
-                        <input type="number" id="il-emp1-w2-2025" name="emp_1_w2_2025" class="form-control" placeholder="0" min="0">
+                        <input type="number" id="il-emp1-w2-recent" name="emp_1_w2_recent" class="form-control" placeholder="0" min="0">
                       </div>
                     </div>
                   </div><!-- /emp-block-1 -->
@@ -620,9 +620,9 @@
                       </div>
                     </div>
                     <div class="form-group">
-                      <label class="form-label" for="il-emp2-w2-2025">Largest income on 2025 W-2 <span class="optional">(optional)</span></label>
+                      <label class="form-label" for="il-emp2-w2-recent">Largest income on <span class="il-w2-year">2025</span> W-2 <span class="optional">(optional)</span></label>
                       <div class="il-dollar-wrap">
-                        <input type="number" id="il-emp2-w2-2025" name="emp_2_w2_2025" class="form-control" placeholder="0" min="0">
+                        <input type="number" id="il-emp2-w2-recent" name="emp_2_w2_recent" class="form-control" placeholder="0" min="0">
                       </div>
                     </div>
                   </div><!-- /emp-block-2 -->
@@ -790,19 +790,18 @@
                   <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
                   Submitting this form adds you to our interest list only. It does not initiate pre-screening for any property. You will be contacted when a listing becomes available that may match your profile.
                 </div>
-
-                <button type="submit" id="il-submit-btn" class="btn btn-primary" style="width:100%;justify-content:center;padding:0.85rem;" hidden>
-                  Join the Interest List <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-                </button>
               </div><!-- /section-4 -->
 
-              <!-- Navigation buttons -->
+              <!-- Navigation buttons (submit lives here so it is never inside a hidden section) -->
               <div class="il-nav" id="il-nav">
                 <button type="button" id="il-back-btn" class="btn btn-secondary" hidden>
                   <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back
                 </button>
                 <button type="button" id="il-next-btn" class="btn btn-primary">
                   Next: Income <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                </button>
+                <button type="submit" id="il-submit-btn" class="btn btn-primary" style="width:100%;justify-content:center;padding:0.85rem;" hidden>
+                  Join the Interest List <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                 </button>
               </div>
             </form>
@@ -1324,6 +1323,9 @@
       var lbl = document.getElementById('il-tax-year-labels');
       if (lbl) lbl.value = y1 + ' / ' + y2 + ' / ' + y3;
 
+      /* Stamp W-2 year (most recent complete tax year) into static block labels */
+      document.querySelectorAll('.il-w2-year').forEach(function (el) { el.textContent = y1; });
+
       /* Render three rows oldest → newest */
       var container = document.getElementById('il-tax-year-rows');
       if (!container) return;
@@ -1595,8 +1597,8 @@
         + '<div class="il-dollar-wrap"><input type="number" name="emp_' + n + '_ytd_gross" class="form-control" placeholder="0" min="0"></div></div>'
         + '<div class="form-group"><label class="form-label">Pay period end date</label>'
         + '<input type="date" name="emp_' + n + '_pay_period_end" class="form-control"></div></div>'
-        + '<div class="form-group"><label class="form-label">Largest income on 2025 W-2 <span class="optional">(optional)</span></label>'
-        + '<div class="il-dollar-wrap"><input type="number" name="emp_' + n + '_w2_2025" class="form-control" placeholder="0" min="0"></div></div>';
+        + '<div class="form-group"><label class="form-label">Largest income on <span class="il-w2-year">' + (new Date().getFullYear() - 1) + '</span> W-2 <span class="optional">(optional)</span></label>'
+        + '<div class="il-dollar-wrap"><input type="number" name="emp_' + n + '_w2_recent" class="form-control" placeholder="0" min="0"></div></div>';
       container.appendChild(div);
       div.querySelector('.il-remove-btn').addEventListener('click', function () {
         div.remove();
