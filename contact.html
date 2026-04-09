@@ -2150,7 +2150,7 @@
         .then(function (r) { return r.json(); })
         .then(function (d) {
           if (d.ok) { form.hidden = true; successEl.hidden = false; successEl.scrollIntoView({ behavior:'smooth', block:'center' }); }
-          else { reset(); showSubmitError('Submission failed. Please try again or email us directly.'); }
+          else { reset(); showSubmitError('Submission failed: ' + (d.error || 'unknown error')); }
         })
         .catch(function () { reset(); showSubmitError('Unable to submit. Please check your connection and try again.'); });
     }
