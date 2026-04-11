@@ -70,7 +70,7 @@ var REPLY_TO       = 'Info@CAAffordableHomes.com';
 var MATCH_RESULTS_SHEET = 'Match Results';
 var DASHBOARD_SHEET     = 'Dashboard';
 var CLOSE_THRESHOLD     = 2;  /* applicants with <= this many failed fields are "Close" */
-var NOTIFY_EMAIL        = 'kcaffordablehomes@gmail.com'; /* switch to Kacee's final email at go-live */
+var NOTIFY_EMAIL        = 'tj@nostos.tech'; /* switch to kcaffordablehomes@gmail.com at go-live */
 
 /* ── Interest List sheet name ── */
 var IL_SHEET = 'Interest List';
