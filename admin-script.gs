@@ -403,23 +403,30 @@ function getOrCreateListingsSheet_(ss) {
    ADMIN DATA — Programs
    ========================================================== */
 function adminGetPrograms(token) {
-  var auth = requireAdmin_(token);
-  if (!auth.ok) return { ok: false, error: auth.error };
-
   try {
+    var auth = requireAdmin_(token);
+    if (!auth.ok) return { ok: false, error: 'Auth: ' + auth.error };
+
     var ss    = SpreadsheetApp.openById(ADMIN_SS_ID);
-    var sheet = getOrCreateProgSheet_(ss);
+    var sheet = ss.getSheetByName(ADMIN_PROG_SHEET);
+    if (!sheet) return { ok: false, error: 'Programs tab not found in spreadsheet.' };
     if (sheet.getLastRow() < 2) return { ok: true, rows: [] };
 
     var data = sheet.getRange(2, 1, sheet.getLastRow() - 1, PROG_COLUMNS.length).getValues();
     var rows = data.map(function(row, i) {
       var obj = { _rowIndex: i };
-      PROG_COLUMNS.forEach(function(col, j) { obj[col] = row[j]; });
+      PROG_COLUMNS.forEach(function(col, j) {
+        /* Force primitives — Date objects from Sheets cannot cross the google.script.run boundary */
+        var v = row[j];
+        obj[col] = (v instanceof Date) ? Utilities.formatDate(v, Session.getScriptTimeZone(), 'yyyy-MM-dd')
+                 : (v === null || v === undefined) ? ''
+                 : String(v);
+      });
       return obj;
     });
     return { ok: true, rows: rows };
   } catch (e) {
-    return { ok: false, error: e.message || String(e) };
+    return { ok: false, error: 'Exception: ' + (e.message || e.name || String(e)) };
   }
 }
 
@@ -1352,7 +1359,7 @@ function getAdminJS_() {
   + '  document.getElementById("prog-area").innerHTML=\'<div class="loading-state"><i class="fa-solid fa-circle-notch fa-spin"></i><p>Loading\u2026</p></div>\';'
   + '  google.script.run'
   + '    .withSuccessHandler(function(d){progData=d;renderPrograms(d);})'
-  + '    .withFailureHandler(function(e){document.getElementById("prog-area").innerHTML=\'<div class="loading-state"><i class="fa-solid fa-triangle-exclamation"></i><p>\'+esc(e.message||"Error")+\'</p></div>\';;})'
+  + '    .withFailureHandler(function(e){document.getElementById("prog-area").innerHTML=\'<div class="loading-state"><i class="fa-solid fa-triangle-exclamation"></i><p>Script error: \'+esc(e.message||e.name||String(e)||"unknown")+\'</p></div>\';;})'
   + '    .adminGetPrograms(SESSION_TOKEN);'
   + '}'
 
