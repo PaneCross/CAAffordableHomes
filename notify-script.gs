@@ -87,14 +87,14 @@
 
 /* ── Configuration ── */
 var SPREADSHEET_ID = '1YCdiFVSRTipvDD-Ylt7nv6Sq5coAG-Zjasnu9tIrmFw';
-var LISTINGS_SHEET = 'Listings';
+var LISTINGS_SHEET  = 'Listings';  /* master tab — merges old Listings + Requirements */
 var SITE_URL       = 'https://caaffordablehomes.com/homes.html'; /* update when domain is live */
 var SCRIPT_URL     = 'https://script.google.com/macros/s/AKfycbw0MOVFTvtDia4k_bcGVtgcwb-7EhWczMzSdLpaesRDUqV4ZmUpJ6CU75B09ee9tXHO/exec';
 var FROM_NAME      = 'CA Affordable Homes Team';
 var REPLY_TO       = 'Info@CAAffordableHomes.com';
 
 /* ── Matching configuration ── */
-var REQUIREMENTS_SHEET  = 'Requirements';
+/* LISTINGS_SHEET removed — matching engine now reads from LISTINGS_SHEET */
 var MATCH_RESULTS_SHEET = 'Match Results';
 var DASHBOARD_SHEET     = 'Dashboard';
 var CLOSE_THRESHOLD     = 2;  /* applicants with <= this many failed fields are "Close" */
@@ -181,14 +181,17 @@ var IL_COL = (function () {
   return map;
 }());
 
-/* ── Requirements sheet columns ──
-   One row per listing. All fields optional except listing_id and active.
-   Leave a cell blank to skip that check for this listing. */
-var REQ_COLUMNS = [
-  'listing_id',                    /* A — must match Property Name in Listings tab */
+/* ── Master Listings sheet columns ──
+   First 35 columns are identical to the old Requirements tab — the matching
+   engine depends on positional order so do NOT reorder these.
+   New property-info columns are appended after (columns AF onward). */
+var LISTINGS_COLUMNS = [
+  /* ── Identification & matching toggle (A–C) ── */
+  'listing_id',                    /* A — property name / unique key */
   'listing_name',                  /* B — display name used in emails */
   'active',                        /* C — YES to include in daily matching */
-  'ami_percent',                   /* D — e.g. "80%" — reference only */
+  /* ── Requirements: income & AMI (D–L) ── */
+  'ami_percent',                   /* D */
   'min_household_size',            /* E */
   'max_household_size',            /* F */
   'max_income_1person',            /* G */
@@ -197,15 +200,18 @@ var REQ_COLUMNS = [
   'max_income_4person',            /* J */
   'max_income_5person',            /* K */
   'max_income_6person',            /* L */
+  /* ── Requirements: credit & debt (M–P) ── */
   'min_income',                    /* M */
   'min_credit_score',              /* N — default 640 */
   'max_dti_percent',               /* O — default 45 */
   'max_monthly_debt',              /* P */
+  /* ── Requirements: buyer eligibility (Q–U) ── */
   'first_time_buyer_required',     /* Q — YES/NO */
   'no_ownership_years',            /* R — default 3 */
   'sd_county_residency_required',  /* S — YES/NO */
   'sd_residency_months',           /* T — default 24 */
   'household_together_months',     /* U — default 12 */
+  /* ── Requirements: history (V–AC) ── */
   'sdhc_prior_purchase_allowed',   /* V — YES/NO */
   'foreclosure_allowed',           /* W — YES/NO */
   'foreclosure_min_years',         /* X */
@@ -214,17 +220,29 @@ var REQ_COLUMNS = [
   'judgments_allowed',             /* AA — YES/NO */
   'citizenship_required',          /* AB — YES/NO */
   'permanent_resident_acceptable', /* AC — YES/NO */
+  /* ── Requirements: assets & financing (AD–AH) ── */
   'min_assets',                    /* AD */
   'max_assets',                    /* AE */
   'min_down_payment_pct',          /* AF */
   'max_down_payment_pct',          /* AG */
   'min_employment_months',         /* AH */
-  'program_notes'                  /* AI — reference only, not used in matching */
+  /* ── Requirements notes (AI) ── */
+  'program_notes',                 /* AI */
+  /* ── Property info (AJ onward — new columns) ── */
+  'address',                       /* AJ */
+  'city',                          /* AK */
+  'price',                         /* AL */
+  'bedrooms',                      /* AM */
+  'bathrooms',                     /* AN */
+  'sqft',                          /* AO */
+  'listing_type',                  /* AP — 'affordable' or 'mls' */
+  'program_type',                  /* AQ */
+  'internal_notes'                 /* AR */
 ];
 
-var REQ_COL = (function () {
+var LISTINGS_COL = (function () {
   var map = {};
-  for (var i = 0; i < REQ_COLUMNS.length; i++) map[REQ_COLUMNS[i]] = i + 1;
+  for (var i = 0; i < LISTINGS_COLUMNS.length; i++) map[LISTINGS_COLUMNS[i]] = i + 1;
   return map;
 }());
 
@@ -738,7 +756,7 @@ function jsonResponse(obj) {
 function runMatchingForAllListings() {
   var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
 
-  var reqSheet = ss.getSheetByName(REQUIREMENTS_SHEET);
+  var reqSheet = ss.getSheetByName(LISTINGS_SHEET);
   if (!reqSheet) {
     Logger.log('Requirements sheet not found. Create it and add headers first (see setup step 6).');
     return;
@@ -762,7 +780,7 @@ function runMatchingForAllListings() {
     return;
   }
 
-  var reqData           = reqSheet.getRange(2, 1, reqLastRow - 1, REQ_COLUMNS.length).getValues();
+  var reqData           = reqSheet.getRange(2, 1, reqLastRow - 1, LISTINGS_COLUMNS.length).getValues();
   var listingsProcessed = 0;
   var digestSections    = []; /* collect all listing results for one digest email */
 
@@ -804,14 +822,14 @@ function runMatchingForAllListings() {
 function onRequirementsEdit(e) {
   if (!e || !e.range) return;
   var sheet = e.range.getSheet();
-  if (sheet.getName() !== REQUIREMENTS_SHEET) return;
+  if (sheet.getName() !== LISTINGS_SHEET) return;
 
   var row = e.range.getRow();
   if (row === 1) return;
 
   var ss       = SpreadsheetApp.openById(SPREADSHEET_ID);
-  var reqSheet = ss.getSheetByName(REQUIREMENTS_SHEET);
-  var rowData  = reqSheet.getRange(row, 1, 1, REQ_COLUMNS.length).getValues()[0];
+  var reqSheet = ss.getSheetByName(LISTINGS_SHEET);
+  var rowData  = reqSheet.getRange(row, 1, 1, LISTINGS_COLUMNS.length).getValues()[0];
   var req      = rowToReqObj(rowData);
 
   var active = (req['active'] || '').toString().trim().toLowerCase();
@@ -1231,12 +1249,12 @@ function rebuildDashboard() {
   var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
 
   /* ── Get active listings from Requirements ── */
-  var reqSheet = ss.getSheetByName(REQUIREMENTS_SHEET);
+  var reqSheet = ss.getSheetByName(LISTINGS_SHEET);
   if (!reqSheet || reqSheet.getLastRow() < 2) {
     Logger.log('rebuildDashboard: no Requirements rows — skipping.');
     return;
   }
-  var reqData        = reqSheet.getRange(2, 1, reqSheet.getLastRow() - 1, REQ_COLUMNS.length).getValues();
+  var reqData        = reqSheet.getRange(2, 1, reqSheet.getLastRow() - 1, LISTINGS_COLUMNS.length).getValues();
   var activeListings = [];
   for (var i = 0; i < reqData.length; i++) {
     var req = rowToReqObj(reqData[i]);
@@ -1261,15 +1279,18 @@ function rebuildDashboard() {
     }
   }
 
-  /* ── Get address info from Listings tab ── */
-  var addressMap   = {}; /* Property Name → "Address, City" */
+  /* ── Get address info from master Listings tab (address + city are appended columns) ── */
+  var addressMap   = {};
+  var addrColIdx   = LISTINGS_COLUMNS.indexOf('address');   /* 0-based */
+  var cityColIdx   = LISTINGS_COLUMNS.indexOf('city');      /* 0-based */
   var listingsTab  = ss.getSheetByName(LISTINGS_SHEET);
   if (listingsTab && listingsTab.getLastRow() > 1) {
-    var lData = listingsTab.getRange(2, 1, listingsTab.getLastRow() - 1, 3).getValues();
+    var numCols = cityColIdx + 1; /* read up to and including city column */
+    var lData   = listingsTab.getRange(2, 1, listingsTab.getLastRow() - 1, numCols).getValues();
     for (var k = 0; k < lData.length; k++) {
       var pName = (lData[k][0] || '').toString().trim();
-      var addr  = (lData[k][1] || '').toString().trim();
-      var city  = (lData[k][2] || '').toString().trim();
+      var addr  = (lData[k][addrColIdx] || '').toString().trim();
+      var city  = (lData[k][cityColIdx] || '').toString().trim();
       if (pName) addressMap[pName] = addr + (city ? ', ' + city : '');
     }
   }
@@ -1408,8 +1429,8 @@ function rebuildDashboard() {
 
 function rowToReqObj(row) {
   var obj = {};
-  for (var i = 0; i < REQ_COLUMNS.length; i++) {
-    obj[REQ_COLUMNS[i]] = (row[i] !== undefined && row[i] !== null) ? row[i] : '';
+  for (var i = 0; i < LISTINGS_COLUMNS.length; i++) {
+    obj[LISTINGS_COLUMNS[i]] = (row[i] !== undefined && row[i] !== null) ? row[i] : '';
   }
   return obj;
 }
@@ -1487,4 +1508,90 @@ function escapeHtml(str) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+/* ==========================================================
+   MIGRATION HELPER — run once after updating this script
+   Merges old Listings (A-V) + old Requirements tabs into
+   the new master Listings tab. Safe to re-run (checks first).
+   ========================================================== */
+function migrateToMasterListings() {
+  var ss        = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var masterTab = ss.getSheetByName(LISTINGS_SHEET);
+
+  /* If master Listings already has data beyond headers, abort */
+  if (masterTab && masterTab.getLastRow() > 1) {
+    Logger.log('Master Listings tab already has data — migration skipped. Delete rows first if you want to re-run.');
+    return;
+  }
+
+  /* Create or clear the master tab */
+  if (!masterTab) {
+    masterTab = ss.insertSheet(LISTINGS_SHEET);
+  } else {
+    masterTab.clearContents();
+  }
+
+  /* Write headers */
+  masterTab.getRange(1, 1, 1, LISTINGS_COLUMNS.length).setValues([LISTINGS_COLUMNS]);
+  masterTab.setFrozenRows(1);
+
+  /* Read old Requirements tab */
+  var reqTab  = ss.getSheetByName('Requirements');
+  var oldReqs = {}; /* listing_id → row array */
+  if (reqTab && reqTab.getLastRow() > 1) {
+    var reqData = reqTab.getRange(2, 1, reqTab.getLastRow() - 1, 35).getValues();
+    reqData.forEach(function (row) {
+      var id = (row[0] || '').toString().trim();
+      if (id) oldReqs[id] = row; /* index 0 = listing_id */
+    });
+  }
+
+  /* Read old Listings tab if it exists and has different content */
+  var oldListTab = ss.getSheetByName('_OldListings'); /* already renamed or skip */
+  var propInfo   = {}; /* Property Name → { address, city, price, beds, baths, sqft, type, program } */
+
+  /* Try reading from a tab named "Listings_bak" or similar if user renamed it */
+  ['Listings_bak','Listings_backup','_OldListings'].forEach(function (n) {
+    var t = ss.getSheetByName(n);
+    if (t && t.getLastRow() > 1 && Object.keys(propInfo).length === 0) {
+      var d = t.getRange(2, 1, t.getLastRow() - 1, 11).getValues();
+      d.forEach(function (r) {
+        var nm = (r[0] || '').toString().trim();
+        if (nm) propInfo[nm] = { address: r[1], city: r[2], price: r[3], bedrooms: r[4],
+          bathrooms: r[5], sqft: r[6], listing_type: r[8], program_type: r[10] };
+      });
+    }
+  });
+
+  /* Build merged rows */
+  var newRows = [];
+  Object.keys(oldReqs).forEach(function (id) {
+    var req  = oldReqs[id];
+    var prop = propInfo[id] || {};
+    /* Start with all 35 old Requirements columns */
+    var newRow = req.slice(0, 35);
+    /* Pad to 35 if shorter */
+    while (newRow.length < 35) newRow.push('');
+    /* Append 9 new property info columns */
+    newRow.push(
+      prop.address      || '',
+      prop.city         || '',
+      prop.price        || '',
+      prop.bedrooms     || '',
+      prop.bathrooms    || '',
+      prop.sqft         || '',
+      prop.listing_type || '',
+      prop.program_type || '',
+      '' /* internal_notes */
+    );
+    newRows.push(newRow);
+  });
+
+  if (newRows.length > 0) {
+    masterTab.getRange(2, 1, newRows.length, LISTINGS_COLUMNS.length).setValues(newRows);
+    Logger.log('Migration complete: ' + newRows.length + ' listing(s) written to master Listings tab.');
+  } else {
+    Logger.log('Migration: no data found in old Requirements tab. Master Listings tab created with headers only.');
+  }
 }

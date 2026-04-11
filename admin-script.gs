@@ -48,8 +48,28 @@ var SESSION_EXPIRY_HR  = 8;    /* OTP sessions last this many hours */
 var ADMIN_SS_ID        = '1YCdiFVSRTipvDD-Ylt7nv6Sq5coAG-Zjasnu9tIrmFw';
 var ADMIN_IL_SHEET     = 'Interest List';
 var ADMIN_PS_SHEET     = 'Property Submissions';
-var ADMIN_PROG_SHEET   = 'Programs';
+var ADMIN_PROG_SHEET      = 'Programs';
+var ADMIN_LISTINGS_SHEET  = 'Listings';
 var ADMIN_DASH_SHEET   = 'Dashboard';
+
+/* Master Listings sheet columns — must stay in sync with notify-script.gs LISTINGS_COLUMNS */
+var LISTINGS_COLUMNS = [
+  'listing_id','listing_name','active',
+  'ami_percent','min_household_size','max_household_size',
+  'max_income_1person','max_income_2person','max_income_3person',
+  'max_income_4person','max_income_5person','max_income_6person',
+  'min_income','min_credit_score','max_dti_percent','max_monthly_debt',
+  'first_time_buyer_required','no_ownership_years',
+  'sd_county_residency_required','sd_residency_months',
+  'household_together_months','sdhc_prior_purchase_allowed',
+  'foreclosure_allowed','foreclosure_min_years',
+  'bankruptcy_allowed','bankruptcy_min_years',
+  'judgments_allowed','citizenship_required','permanent_resident_acceptable',
+  'min_assets','max_assets','min_down_payment_pct','max_down_payment_pct',
+  'min_employment_months','program_notes',
+  'address','city','price','bedrooms','bathrooms','sqft',
+  'listing_type','program_type','internal_notes'
+];
 
 /* Programs sheet column headers — must match exactly */
 var PROG_COLUMNS = [
@@ -319,6 +339,64 @@ function adminSendRenewal(token, email, firstName) {
   } catch (err) {
     return { ok: false, error: err.message };
   }
+}
+
+/* ==========================================================
+   ADMIN DATA — Listings
+   ========================================================== */
+function adminGetListings(token) {
+  var auth = requireAdmin_(token);
+  if (!auth.ok) return { ok: false, error: auth.error };
+
+  var ss    = SpreadsheetApp.openById(ADMIN_SS_ID);
+  var sheet = getOrCreateListingsSheet_(ss);
+  if (sheet.getLastRow() < 2) return { ok: true, rows: [] };
+
+  var data = sheet.getRange(2, 1, sheet.getLastRow() - 1, LISTINGS_COLUMNS.length).getValues();
+  var rows = data.map(function(row, i) {
+    var obj = { _rowIndex: i };
+    LISTINGS_COLUMNS.forEach(function(col, j) { obj[col] = row[j] !== undefined ? row[j] : ''; });
+    return obj;
+  });
+  return { ok: true, rows: rows };
+}
+
+function adminSaveListing(token, listing) {
+  var auth = requireAdmin_(token);
+  if (!auth.ok) return { ok: false, error: auth.error };
+
+  var ss    = SpreadsheetApp.openById(ADMIN_SS_ID);
+  var sheet = getOrCreateListingsSheet_(ss);
+  var row   = LISTINGS_COLUMNS.map(function(col) { return listing[col] !== undefined ? listing[col] : ''; });
+
+  if (typeof listing._rowIndex === 'number' && listing._rowIndex >= 0) {
+    sheet.getRange(listing._rowIndex + 2, 1, 1, LISTINGS_COLUMNS.length).setValues([row]);
+  } else {
+    sheet.appendRow(row);
+  }
+  return { ok: true };
+}
+
+function adminDeleteListing(token, rowIndex) {
+  var auth = requireAdmin_(token);
+  if (!auth.ok) return { ok: false, error: auth.error };
+
+  var ss    = SpreadsheetApp.openById(ADMIN_SS_ID);
+  var sheet = ss.getSheetByName(ADMIN_LISTINGS_SHEET);
+  if (!sheet) return { ok: false, error: 'Listings sheet not found.' };
+
+  sheet.deleteRow(rowIndex + 2);
+  return { ok: true };
+}
+
+function getOrCreateListingsSheet_(ss) {
+  var sheet = ss.getSheetByName(ADMIN_LISTINGS_SHEET);
+  if (!sheet) {
+    sheet = ss.insertSheet(ADMIN_LISTINGS_SHEET);
+    sheet.getRange(1, 1, 1, LISTINGS_COLUMNS.length).setValues([LISTINGS_COLUMNS]);
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
 }
 
 /* ==========================================================
@@ -592,6 +670,7 @@ function buildAdminHTML(userEmail, authMethod, token) {
     + '    <button class="sb-btn" data-tab="interest-list"><i class="fa-solid fa-list-check"></i> Interest List</button>'
     + '    <button class="sb-btn" data-tab="programs"><i class="fa-solid fa-building"></i> Programs</button>'
     + '    <button class="sb-btn" data-tab="properties"><i class="fa-solid fa-file-lines"></i> Property Submissions</button>'
+    + '    <button class="sb-btn" data-tab="listings"><i class="fa-solid fa-house-chimney-window"></i> Listings</button>'
     + '  </nav>'
     + '  <div class="sb-user">'
     + '    <i class="fa-solid fa-circle-user"></i>'
@@ -712,6 +791,81 @@ function buildAdminHTML(userEmail, authMethod, token) {
     + '    <div class="drawer-overlay" id="ps-drawer-overlay"></div>'
     + '  </section>'
 
+    /* ── Listings Tab ── */
+    + '  <section class="tab-panel" id="tab-listings">'
+    + '    <div class="toolbar" style="flex-wrap:wrap;gap:.75rem;">'
+    + '      <button class="btn-primary" id="lst-add-btn"><i class="fa-solid fa-plus"></i> Add Listing</button>'
+    + '      <div class="prog-filter-bar" id="lst-filter-bar">'
+    + '        <button class="prog-filter-btn" data-lf="active">Active</button>'
+    + '        <button class="prog-filter-btn" data-lf="inactive">Inactive</button>'
+    + '        <button class="prog-filter-btn" data-lf="all">All</button>'
+    + '      </div>'
+    + '    </div>'
+    + '    <div id="lst-area"><div class="loading-state"><i class="fa-solid fa-circle-notch fa-spin"></i><p>Loading\u2026</p></div></div>'
+    /* Listing form modal */
+    + '    <div class="modal-overlay" id="lst-modal" aria-hidden="true">'
+    + '      <div class="modal-panel" style="width:680px;">'
+    + '        <div class="modal-header">'
+    + '          <h2 id="lst-modal-title">Add Listing</h2>'
+    + '          <button class="drawer-close" id="lst-modal-close"><i class="fa-solid fa-xmark"></i></button>'
+    + '        </div>'
+    + '        <div class="modal-body">'
+    /* Section: Identity */
+    + '          <p style="font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:.35rem;">Property Identity</p>'
+    + '          <div class="form-row2"><div class="form-group"><label>Property ID / Name *</label><input id="lf-id" class="form-input" placeholder="e.g. Hillside Commons"></div>'
+    + '          <div class="form-group"><label>Display Name (for emails)</label><input id="lf-name" class="form-input" placeholder="Same as ID if blank"></div></div>'
+    + '          <div class="form-row2"><div class="form-group"><label>Active for Matching</label>'
+    + '            <select id="lf-active" class="form-input"><option value="YES">YES</option><option value="NO">NO</option></select></div>'
+    + '          <div class="form-group"><label>Listing Type</label>'
+    + '            <select id="lf-type" class="form-input"><option value="affordable">Affordable</option><option value="mls">MLS</option></select></div></div>'
+    /* Section: Property Info */
+    + '          <p style="font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#888;margin:.6rem 0 .35rem;">Property Details</p>'
+    + '          <div class="form-row2"><div class="form-group"><label>Address</label><input id="lf-address" class="form-input" placeholder="Street address"></div>'
+    + '          <div class="form-group"><label>City</label><input id="lf-city" class="form-input" placeholder="e.g. San Diego"></div></div>'
+    + '          <div class="form-row2"><div class="form-group"><label>Price</label><input id="lf-price" class="form-input" placeholder="e.g. $350,000"></div>'
+    + '          <div class="form-group"><label>Program Type</label><input id="lf-program-type" class="form-input" placeholder="e.g. City Affordable Housing"></div></div>'
+    + '          <div class="form-row2"><div class="form-group"><label>Bedrooms</label><input id="lf-beds" class="form-input" placeholder="e.g. 3"></div>'
+    + '          <div class="form-group"><label>Bathrooms</label><input id="lf-baths" class="form-input" placeholder="e.g. 2"></div></div>'
+    + '          <div class="form-row2"><div class="form-group"><label>Sqft</label><input id="lf-sqft" class="form-input" placeholder="e.g. 1200"></div>'
+    + '          <div class="form-group"><label>AMI %</label><input id="lf-ami" class="form-input" placeholder="e.g. 80%"></div></div>'
+    /* Section: Requirements */
+    + '          <p style="font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#888;margin:.6rem 0 .35rem;">Matching Requirements</p>'
+    + '          <div class="form-row2"><div class="form-group"><label>Min Credit Score</label><input id="lf-credit" class="form-input" placeholder="640"></div>'
+    + '          <div class="form-group"><label>Max DTI %</label><input id="lf-dti" class="form-input" placeholder="45"></div></div>'
+    + '          <div class="form-row2"><div class="form-group"><label>Max Monthly Debt</label><input id="lf-debt" class="form-input" placeholder="e.g. 2000"></div>'
+    + '          <div class="form-group"><label>Min Household Size</label><input id="lf-minhh" class="form-input" placeholder="1"></div></div>'
+    + '          <div class="form-row2"><div class="form-group"><label>Max Household Size</label><input id="lf-maxhh" class="form-input" placeholder="6"></div>'
+    + '          <div class="form-group"><label>First-Time Buyer Required</label>'
+    + '            <select id="lf-ftb" class="form-input"><option value="">Not specified</option><option value="YES">YES</option><option value="NO">NO</option></select></div></div>'
+    + '          <div class="form-row2"><div class="form-group"><label>SD County Residency Required</label>'
+    + '            <select id="lf-sdres" class="form-input"><option value="">Not specified</option><option value="YES">YES</option><option value="NO">NO</option></select></div>'
+    + '          <div class="form-group"><label>Max Income (1-person household)</label><input id="lf-inc1" class="form-input" placeholder="e.g. 62000"></div></div>'
+    + '          <div class="form-row2"><div class="form-group"><label>Max Income (4-person household)</label><input id="lf-inc4" class="form-input" placeholder="e.g. 88000"></div>'
+    + '          <div class="form-group"><label>Max Income (6-person household)</label><input id="lf-inc6" class="form-input" placeholder="e.g. 105000"></div></div>'
+    /* Section: Notes */
+    + '          <p style="font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#888;margin:.6rem 0 .35rem;">Notes</p>'
+    + '          <div class="form-group"><label>Program Notes (reference only — not used in matching)</label><input id="lf-prog-notes" class="form-input" placeholder="General notes about this program\u2026"></div>'
+    + '          <div class="form-group"><label>Internal Notes</label><input id="lf-int-notes" class="form-input" placeholder="Internal admin notes\u2026"></div>'
+    + '        </div>'
+    + '        <div class="modal-footer">'
+    + '          <button class="btn-secondary" id="lst-cancel-btn">Cancel</button>'
+    + '          <button class="btn-primary" id="lst-save-btn"><i class="fa-solid fa-floppy-disk"></i> Save Listing</button>'
+    + '        </div>'
+    + '      </div>'
+    + '    </div>'
+    /* Listing detail drawer */
+    + '    <div class="drawer" id="lst-drawer" aria-hidden="true">'
+    + '      <div class="drawer-inner">'
+    + '        <div class="drawer-header">'
+    + '          <h2 id="lst-drawer-title">Listing Details</h2>'
+    + '          <button class="drawer-close" id="lst-drawer-close"><i class="fa-solid fa-xmark"></i></button>'
+    + '        </div>'
+    + '        <div class="drawer-body" id="lst-drawer-body"></div>'
+    + '      </div>'
+    + '    </div>'
+    + '    <div class="drawer-overlay" id="lst-drawer-overlay"></div>'
+    + '  </section>'
+
     + '</div></div>' /* /main-wrap /app */
 
     /* Toast notification */
@@ -741,7 +895,7 @@ function getAdminCSS_() {
     + '.sidebar{width:220px;background:#1e3a2f;color:#fff;display:flex;flex-direction:column;flex-shrink:0;transition:transform .25s;}'
     + '.sb-logo{padding:1.25rem 1rem;display:flex;align-items:center;gap:.5rem;font-size:.95rem;font-weight:700;color:#a8d5be;border-bottom:1px solid rgba(255,255,255,.08);}'
     + '.sb-logo i{font-size:1.1rem;}'
-    + '.sb-nav{flex:1;padding:.75rem .5rem;display:flex;flex-direction:column;gap:.2rem;}'
+    + '.sb-nav{flex:1;padding:.75rem .5rem;display:flex;flex-direction:column;gap:.2rem;overflow-y:auto;}'
     + '.sb-btn{display:flex;align-items:center;gap:.65rem;padding:.65rem .85rem;border:none;background:none;color:rgba(255,255,255,.7);font-size:.875rem;font-family:inherit;border-radius:7px;cursor:pointer;text-align:left;transition:background .15s,color .15s;}'
     + '.sb-btn:hover{background:rgba(255,255,255,.08);color:#fff;}'
     + '.sb-btn.active{background:rgba(168,213,190,.15);color:#a8d5be;font-weight:600;}'
@@ -878,6 +1032,16 @@ function getAdminCSS_() {
     + '.prog-filter-btn{padding:.35rem .75rem;border:1.5px solid #ddd;border-radius:20px;background:#fff;font-size:.8rem;font-family:inherit;cursor:pointer;transition:background .12s,border-color .12s;}'
     + '.prog-filter-btn.active{background:#1e3a2f;color:#fff;border-color:#1e3a2f;}'
     + '.prog-filter-btn:hover:not(.active){background:#f0faf5;border-color:#2c5545;}'
+    + '.lst-card{background:#fff;border-radius:10px;padding:1.1rem 1.25rem;box-shadow:0 1px 4px rgba(0,0,0,.06);display:flex;flex-direction:column;gap:.55rem;cursor:pointer;transition:box-shadow .15s;}'
+    + '.lst-card:hover{box-shadow:0 3px 12px rgba(0,0,0,.1);}'
+    + '.lst-card--active{background:#f0faf5;}'
+    + '.lst-card--inactive{background:#f7f7f7;opacity:.85;}'
+    + '.lst-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;}'
+    + '.lst-card-name{font-weight:700;font-size:1.0rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;}'
+    + '.lst-card-addr{font-size:.8rem;color:#666;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'
+    + '.lst-card-meta{display:flex;flex-wrap:wrap;gap:.4rem .85rem;font-size:.8rem;color:#555;}'
+    + '.lst-meta-item{display:flex;align-items:center;gap:.3rem;}'
+    + '.lst-card-footer{display:flex;justify-content:flex-end;gap:.5rem;padding-top:.5rem;border-top:1px solid #f0f0eb;}'
     /* Responsive */
     + '@media(max-width:700px){'
     + '.sidebar{position:fixed;left:0;top:0;height:100%;z-index:150;transform:translateX(-100%);}'
@@ -914,6 +1078,7 @@ function getAdminJS_() {
   + '    if(tab==="interest-list"&&!ilData)loadInterestList();'
   + '    if(tab==="programs"&&!progData)loadPrograms();'
   + '    if(tab==="properties"&&!psData)loadProperties();'
+  + '    if(tab==="listings"&&!lstData)loadListings();'
   + '    /* close sidebar on mobile */'
   + '    document.getElementById("sidebar").classList.remove("open");'
   + '  });'
@@ -931,6 +1096,7 @@ function getAdminJS_() {
   + '  if(active==="interest-list"){ilData=null;loadInterestList();}'
   + '  if(active==="programs"){progData=null;loadPrograms();}'
   + '  if(active==="properties"){psData=null;loadProperties();}'
+  + '  if(active==="listings"){lstData=null;loadListings();}'
   + '});'
 
   /* ── Toast ── */
@@ -998,7 +1164,7 @@ function getAdminJS_() {
   + '  if(btn)btn.classList.add("active");'
   + '  document.querySelectorAll(".tab-panel").forEach(function(p){p.classList.remove("active");});'
   + '  document.getElementById("tab-"+tab).classList.add("active");'
-  + '  var titles={"dashboard":"Dashboard","interest-list":"Interest List","programs":"Programs","properties":"Property Submissions"};'
+  + '  var titles={"dashboard":"Dashboard","interest-list":"Interest List","programs":"Programs","properties":"Property Submissions","listings":"Listings"};'
   + '  document.getElementById("top-title").textContent=titles[tab]||tab;'
   + '  if(typeof statusF==="string"){'
   + '    if(tab==="interest-list"){document.getElementById("il-status-filter").value=statusF;}'
@@ -1007,6 +1173,7 @@ function getAdminJS_() {
   + '  if(tab==="interest-list"){if(!ilData)loadInterestList();else renderILTable(ilData);}'
   + '  if(tab==="programs"){if(!progData)loadPrograms();}'
   + '  if(tab==="properties"){if(!psData)loadProperties();else renderPSTable(psData);}'
+  + '  if(tab==="listings"){if(!lstData)loadListings();else renderListings(lstData);}'
   + '  document.getElementById("sidebar").classList.remove("open");'
   + '}'
 
@@ -1388,5 +1555,226 @@ function getAdminJS_() {
   + '}'
 
   /* ESC closes drawers */
-  + 'document.addEventListener("keydown",function(e){if(e.key==="Escape"){closeILDrawer();closePSDrawer();}});';
+  + 'document.addEventListener("keydown",function(e){if(e.key==="Escape"){closeILDrawer();closePSDrawer();closeLSTDrawer();}});'
+
+  /* =====================================================
+     LISTINGS
+     ===================================================== */
+  + 'var lstData=null,editingLstRow=null,lstFilterVal="active";'
+
+  + 'function loadListings(){'
+  + '  document.getElementById("lst-area").innerHTML=\'<div class="loading-state"><i class="fa-solid fa-circle-notch fa-spin"></i><p>Loading\u2026</p></div>\';'
+  + '  google.script.run'
+  + '    .withSuccessHandler(function(d){lstData=d;renderListings(d);})'
+  + '    .withFailureHandler(function(e){document.getElementById("lst-area").innerHTML=\'<div class="loading-state"><i class="fa-solid fa-triangle-exclamation"></i><p>\'+esc(e.message||"Error")+\'</p></div>\';;})'
+  + '    .adminGetListings(SESSION_TOKEN);'
+  + '}'
+
+  + 'function renderListings(d){'
+  + '  if(!d||!d.ok){document.getElementById("lst-area").innerHTML=\'<div class="empty-state"><p>\'+esc(d&&d.error||"Error")+\'</p></div>\';return;}'
+  + '  if(!d.rows||d.rows.length===0){document.getElementById("lst-area").innerHTML=\'<div class="empty-state"><i class="fa-solid fa-house-chimney-window"></i><p>No listings yet. Click "Add Listing" to create one.</p></div>\';return;}'
+  + '  var visible=d.rows.filter(function(r,i){r._displayIdx=i;'
+  + '    var a=(r.active||"").toString().trim().toUpperCase()==="YES";'
+  + '    if(lstFilterVal==="active")return a;'
+  + '    if(lstFilterVal==="inactive")return !a;'
+  + '    return true;'
+  + '  });'
+  + '  document.querySelectorAll(".prog-filter-btn[data-lf]").forEach(function(b){b.classList.toggle("active",b.dataset.lf===lstFilterVal);});'
+  + '  if(!visible.length){document.getElementById("lst-area").innerHTML=\'<div class="empty-state"><i class="fa-solid fa-filter"></i><p>No listings match this filter.</p></div>\';return;}'
+  + '  var html=\'<div class="prog-grid">\';'
+  + '  visible.forEach(function(r){'
+  + '    var i=r._displayIdx;'
+  + '    var isActive=(r.active||"").toString().trim().toUpperCase()==="YES";'
+  + '    var bgCls=isActive?"lst-card--active":"lst-card--inactive";'
+  + '    var badgeCls=isActive?"pill-active":"pill-expired";'
+  + '    var badgeLabel=isActive?"Active":"Inactive";'
+  + '    var addr=(r.address||"")+(r.city?", "+r.city:"");'
+  + '    html+=\'<div class="lst-card \'+bgCls+\'" onclick="openLSTDrawer(\'+i+\')">\''
+  + '       +\'<div class="lst-card-top"><div style="min-width:0;flex:1;"><div class="lst-card-name" title="\'+esc(r.listing_id||"")+\'">\'+esc(r.listing_id||"Unnamed")+\'</div>\''
+  + '         +\'<div class="lst-card-addr"><i class="fa-solid fa-location-dot" style="color:#888;font-size:.72rem;margin-right:.25rem;"></i>\'+esc(addr||"No address")+\'</div></div>\''
+  + '         +\'<span class="status-pill \'+badgeCls+\'" style="flex-shrink:0;">\'+badgeLabel+\'</span></div>\''
+  + '       +\'<div class="lst-card-meta">\''
+  + '         +(r.price?\'<span class="lst-meta-item"><i class="fa-solid fa-tag" style="color:#888;"></i>\'+esc(r.price)+\'</span>\':"")'
+  + '         +(r.bedrooms?\'<span class="lst-meta-item"><i class="fa-solid fa-bed" style="color:#888;"></i>\'+esc(r.bedrooms)+\' br</span>\':"")'
+  + '         +(r.bathrooms?\'<span class="lst-meta-item"><i class="fa-solid fa-bath" style="color:#888;"></i>\'+esc(r.bathrooms)+\' ba</span>\':"")'
+  + '         +(r.ami_percent?\'<span class="lst-meta-item"><i class="fa-solid fa-chart-bar" style="color:#888;"></i>\'+esc(r.ami_percent)+\' AMI</span>\':"")'
+  + '         +(r.min_credit_score?\'<span class="lst-meta-item"><i class="fa-solid fa-credit-card" style="color:#888;"></i>Credit \'+esc(r.min_credit_score)+\'+</span>\':"")'
+  + '       +\'</div>\''
+  + '       +\'<div class="lst-card-footer">\''
+  + '         +\'<button class="btn-secondary btn-sm" onclick="event.stopPropagation();editLst(\'+i+\')"><i class="fa-solid fa-pen"></i> Edit</button>\''
+  + '         +\'<button class="btn-danger btn-sm" onclick="event.stopPropagation();deleteLst(\'+i+\')"><i class="fa-solid fa-trash"></i> Delete</button>\''
+  + '       +\'</div>\''
+  + '       +\'</div>\';'
+  + '  });'
+  + '  html+=\'</div>\';'
+  + '  document.getElementById("lst-area").innerHTML=html;'
+  + '}'
+
+  /* Filter bar */
+  + 'document.getElementById("lst-filter-bar").addEventListener("click",function(e){'
+  + '  var btn=e.target.closest(".prog-filter-btn[data-lf]");'
+  + '  if(!btn)return;'
+  + '  lstFilterVal=btn.dataset.lf||"active";'
+  + '  if(lstData)renderListings(lstData);'
+  + '});'
+  + 'document.querySelectorAll(".prog-filter-btn[data-lf]").forEach(function(b){b.classList.toggle("active",b.dataset.lf===lstFilterVal);});'
+
+  /* Drawer open */
+  + 'function openLSTDrawer(idx){'
+  + '  if(!lstData)return;'
+  + '  var r=lstData.rows[idx];'
+  + '  document.getElementById("lst-drawer-title").textContent=(r.listing_id||r.listing_name||"Listing");'
+  + '  var sections=['
+  + '    {title:"Property Info",fields:["listing_id","listing_name","active","address","city","price","bedrooms","bathrooms","sqft","listing_type","program_type"]},'
+  + '    {title:"Income & AMI",fields:["ami_percent","max_income_1person","max_income_2person","max_income_3person","max_income_4person","max_income_5person","max_income_6person","min_income"]},'
+  + '    {title:"Household & Residency",fields:["min_household_size","max_household_size","household_together_months","first_time_buyer_required","no_ownership_years","sd_county_residency_required","sd_residency_months","sdhc_prior_purchase_allowed"]},'
+  + '    {title:"Credit & Debt",fields:["min_credit_score","max_dti_percent","max_monthly_debt"]},'
+  + '    {title:"Assets & Financing",fields:["min_assets","max_assets","min_down_payment_pct","max_down_payment_pct","min_employment_months"]},'
+  + '    {title:"Disclosures",fields:["foreclosure_allowed","foreclosure_min_years","bankruptcy_allowed","bankruptcy_min_years","judgments_allowed","citizenship_required","permanent_resident_acceptable"]},'
+  + '    {title:"Notes",fields:["program_notes","internal_notes"]}'
+  + '  ];'
+  + '  var body=\'<div><div class="field-group-title" style="border-radius:8px 8px 0 0;border:1px solid #f0f0eb;border-bottom:none;padding:.5rem .85rem;">Active for Matching</div>\''
+  + '    +\'<div style="border:1px solid #f0f0eb;border-radius:0 0 8px 8px;padding:.85rem;">\''
+  + '    +\'<div class="status-editor"><select id="lst-active-select"><option value="YES">YES — include in daily matching</option><option value="NO">NO — exclude from matching</option></select>\''
+  + '    +\'<button class="btn-primary btn-sm" onclick="saveLSTActive(\'+idx+\')"><i class="fa-solid fa-check"></i> Save</button></div>\''
+  + '    +\'<textarea class="notes-area" id="lst-note-input" placeholder="Add or edit internal notes\u2026" style="margin-top:.65rem;"></textarea>\''
+  + '    +\'</div></div>\';'
+  + '  sections.forEach(function(sec){'
+  + '    var rows2="";'
+  + '    sec.fields.forEach(function(f){'
+  + '      var v=r[f];if(!v&&v!==0)return;'
+  + '      var label=f.replace(/_/g," ").replace(/\b\w/g,function(c){return c.toUpperCase();});'
+  + '      var val=f==="internal_notes"?\'<span style="white-space:pre-wrap">\'+esc(v)+\'</span>\':esc(v);'
+  + '      rows2+=\'<div class="field-row"><span class="field-label">\'+esc(label)+\'</span><span class="field-value">\'+val+\'</span></div>\';'
+  + '    });'
+  + '    if(rows2)body+=\'<div class="field-group"><div class="field-group-title">\'+esc(sec.title)+\'</div>\'+rows2+\'</div>\';'
+  + '  });'
+  + '  document.getElementById("lst-drawer-body").innerHTML=body;'
+  + '  document.getElementById("lst-active-select").value=(r.active||"NO").toString().trim().toUpperCase()==="YES"?"YES":"NO";'
+  + '  document.getElementById("lst-note-input").value=r.internal_notes||"";'
+  + '  var drawer=document.getElementById("lst-drawer");'
+  + '  drawer.setAttribute("aria-hidden","false");'
+  + '  document.getElementById("lst-drawer-overlay").classList.add("active");'
+  + '  drawer._rowIdx=idx;'
+  + '}'
+
+  + 'document.getElementById("lst-drawer-close").addEventListener("click",closeLSTDrawer);'
+  + 'document.getElementById("lst-drawer-overlay").addEventListener("click",closeLSTDrawer);'
+  + 'function closeLSTDrawer(){document.getElementById("lst-drawer").setAttribute("aria-hidden","true");document.getElementById("lst-drawer-overlay").classList.remove("active");}'
+
+  /* Save active toggle + internal notes from drawer */
+  + 'function saveLSTActive(idx){'
+  + '  var newActive=document.getElementById("lst-active-select").value;'
+  + '  var note=document.getElementById("lst-note-input").value;'
+  + '  var listing=Object.assign({},lstData.rows[idx]);'
+  + '  listing.active=newActive;'
+  + '  listing.internal_notes=note;'
+  + '  var btn=document.querySelector(\'[onclick="saveLSTActive(\'+idx+\')"]\');'
+  + '  if(btn){btn.disabled=true;btn.innerHTML=\'<i class="fa-solid fa-circle-notch fa-spin"></i>\';}'
+  + '  google.script.run'
+  + '    .withSuccessHandler(function(r){'
+  + '      if(btn){btn.disabled=false;btn.innerHTML=\'<i class="fa-solid fa-check"></i> Save\';}'
+  + '      if(r&&r.ok){'
+  + '        toast("Listing updated.");'
+  + '        lstData.rows[idx].active=newActive;'
+  + '        lstData.rows[idx].internal_notes=note;'
+  + '        renderListings(lstData);'
+  + '        openLSTDrawer(idx);'
+  + '      } else { toast((r&&r.error)||"Failed to save.",true); }'
+  + '    })'
+  + '    .withFailureHandler(function(e){if(btn){btn.disabled=false;btn.innerHTML=\'<i class="fa-solid fa-check"></i> Save\';}toast("Error: "+(e.message||""),true);})'
+  + '    .adminSaveListing(SESSION_TOKEN,listing);'
+  + '}'
+
+  /* Add/Edit modal */
+  + 'document.getElementById("lst-add-btn").addEventListener("click",function(){openLSTModal(null);});'
+  + 'document.getElementById("lst-modal-close").addEventListener("click",closeLSTModal);'
+  + 'document.getElementById("lst-cancel-btn").addEventListener("click",closeLSTModal);'
+  + 'document.getElementById("lst-save-btn").addEventListener("click",saveListing);'
+
+  + 'function openLSTModal(r){'
+  + '  editingLstRow=r;'
+  + '  document.getElementById("lst-modal-title").textContent=r?"Edit Listing":"Add Listing";'
+  + '  document.getElementById("lf-id").value=r?r.listing_id||"":"";'
+  + '  document.getElementById("lf-name").value=r?r.listing_name||"":"";'
+  + '  document.getElementById("lf-active").value=r?(r.active||"NO").toString().trim().toUpperCase()==="YES"?"YES":"NO":"YES";'
+  + '  document.getElementById("lf-type").value=r?r.listing_type||"affordable":"affordable";'
+  + '  document.getElementById("lf-address").value=r?r.address||"":"";'
+  + '  document.getElementById("lf-city").value=r?r.city||"":"";'
+  + '  document.getElementById("lf-price").value=r?r.price||"":"";'
+  + '  document.getElementById("lf-program-type").value=r?r.program_type||"":"";'
+  + '  document.getElementById("lf-beds").value=r?r.bedrooms||"":"";'
+  + '  document.getElementById("lf-baths").value=r?r.bathrooms||"":"";'
+  + '  document.getElementById("lf-sqft").value=r?r.sqft||"":"";'
+  + '  document.getElementById("lf-ami").value=r?r.ami_percent||"":"";'
+  + '  document.getElementById("lf-credit").value=r?r.min_credit_score||"":"";'
+  + '  document.getElementById("lf-dti").value=r?r.max_dti_percent||"":"";'
+  + '  document.getElementById("lf-debt").value=r?r.max_monthly_debt||"":"";'
+  + '  document.getElementById("lf-minhh").value=r?r.min_household_size||"":"";'
+  + '  document.getElementById("lf-maxhh").value=r?r.max_household_size||"":"";'
+  + '  document.getElementById("lf-ftb").value=r?r.first_time_buyer_required||"":"";'
+  + '  document.getElementById("lf-sdres").value=r?r.sd_county_residency_required||"":"";'
+  + '  document.getElementById("lf-inc1").value=r?r.max_income_1person||"":"";'
+  + '  document.getElementById("lf-inc4").value=r?r.max_income_4person||"":"";'
+  + '  document.getElementById("lf-inc6").value=r?r.max_income_6person||"":"";'
+  + '  document.getElementById("lf-prog-notes").value=r?r.program_notes||"":"";'
+  + '  document.getElementById("lf-int-notes").value=r?r.internal_notes||"":"";'
+  + '  document.getElementById("lst-modal").classList.add("open");'
+  + '}'
+  + 'function closeLSTModal(){document.getElementById("lst-modal").classList.remove("open");editingLstRow=null;}'
+
+  + 'function editLst(i){if(!lstData||!lstData.rows)return;openLSTModal(lstData.rows[i]);}'
+
+  + 'function deleteLst(i){'
+  + '  if(!lstData||!lstData.rows)return;'
+  + '  var r=lstData.rows[i];'
+  + '  if(!confirm("Delete listing \\""+( r.listing_id||"this listing")+"\\"? This will also remove it from matching. Cannot be undone."))return;'
+  + '  google.script.run'
+  + '    .withSuccessHandler(function(r){if(r&&r.ok){toast("Listing deleted.");lstData=null;loadListings();}else{toast((r&&r.error)||"Failed.",true);}})'
+  + '    .withFailureHandler(function(e){toast("Error: "+(e.message||""),true);})'
+  + '    .adminDeleteListing(SESSION_TOKEN,lstData.rows[i]._rowIndex);'
+  + '}'
+
+  + 'function saveListing(){'
+  + '  var id=document.getElementById("lf-id").value.trim();'
+  + '  if(!id){toast("Property ID / Name is required.",true);return;}'
+  + '  var listing={'
+  + '    listing_id:id,'
+  + '    listing_name:document.getElementById("lf-name").value.trim()||id,'
+  + '    active:document.getElementById("lf-active").value,'
+  + '    ami_percent:document.getElementById("lf-ami").value.trim(),'
+  + '    min_credit_score:document.getElementById("lf-credit").value.trim(),'
+  + '    max_dti_percent:document.getElementById("lf-dti").value.trim(),'
+  + '    max_monthly_debt:document.getElementById("lf-debt").value.trim(),'
+  + '    min_household_size:document.getElementById("lf-minhh").value.trim(),'
+  + '    max_household_size:document.getElementById("lf-maxhh").value.trim(),'
+  + '    first_time_buyer_required:document.getElementById("lf-ftb").value,'
+  + '    sd_county_residency_required:document.getElementById("lf-sdres").value,'
+  + '    max_income_1person:document.getElementById("lf-inc1").value.trim(),'
+  + '    max_income_2person:"",max_income_3person:"",'
+  + '    max_income_4person:document.getElementById("lf-inc4").value.trim(),'
+  + '    max_income_5person:"",max_income_6person:document.getElementById("lf-inc6").value.trim(),'
+  + '    program_notes:document.getElementById("lf-prog-notes").value.trim(),'
+  + '    address:document.getElementById("lf-address").value.trim(),'
+  + '    city:document.getElementById("lf-city").value.trim(),'
+  + '    price:document.getElementById("lf-price").value.trim(),'
+  + '    bedrooms:document.getElementById("lf-beds").value.trim(),'
+  + '    bathrooms:document.getElementById("lf-baths").value.trim(),'
+  + '    sqft:document.getElementById("lf-sqft").value.trim(),'
+  + '    listing_type:document.getElementById("lf-type").value,'
+  + '    program_type:document.getElementById("lf-program-type").value.trim(),'
+  + '    internal_notes:document.getElementById("lf-int-notes").value.trim(),'
+  + '    _rowIndex:editingLstRow?editingLstRow._rowIndex:-1'
+  + '  };'
+  + '  var btn=document.getElementById("lst-save-btn");'
+  + '  btn.disabled=true;btn.innerHTML=\'<i class="fa-solid fa-circle-notch fa-spin"></i> Saving\u2026\';'
+  + '  google.script.run'
+  + '    .withSuccessHandler(function(r){'
+  + '      btn.disabled=false;btn.innerHTML=\'<i class="fa-solid fa-floppy-disk"></i> Save Listing\';'
+  + '      if(r&&r.ok){toast(editingLstRow?"Listing updated.":"Listing added.");closeLSTModal();lstData=null;loadListings();}else{toast((r&&r.error)||"Failed.",true);}'
+  + '    })'
+  + '    .withFailureHandler(function(e){btn.disabled=false;btn.innerHTML=\'<i class="fa-solid fa-floppy-disk"></i> Save Listing\';toast("Error: "+(e.message||""),true);})'
+  + '    .adminSaveListing(SESSION_TOKEN,listing);'
+  + '}'
+  ;
 }
