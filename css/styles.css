@@ -2741,3 +2741,189 @@ body.modal-open { overflow: hidden; }
   color: var(--color-sage);
   word-break: break-all;
 }
+
+/* ==========================================================
+   SECTION: Program Cards (programs.html)
+   ========================================================== */
+
+.programs-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 700px) {
+  .programs-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1100px) {
+  .programs-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.program-card {
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.program-card:hover {
+  box-shadow: 0 6px 20px rgba(0,0,0,0.09);
+  transform: translateY(-2px);
+}
+
+/* Card header: name + status badge */
+.pc-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.pc-title-block {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.pc-name {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem;
+  color: var(--color-text-dark);
+  line-height: 1.3;
+}
+
+.pc-area {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* Status badges */
+.pc-badge {
+  flex-shrink: 0;
+  display: inline-block;
+  padding: 0.2rem 0.65rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: var(--font-body);
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.pc-badge--available {
+  background: rgba(72, 144, 99, 0.12);
+  color: #2f7a50;
+}
+
+.pc-badge--soon {
+  background: rgba(120, 100, 60, 0.1);
+  color: #7a6030;
+}
+
+/* Tag row */
+.pc-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+/* Detail list */
+.pc-details {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  border-top: 1px solid var(--color-border);
+  padding-top: 1rem;
+}
+
+.pc-detail-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.pc-detail-label {
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.pc-detail-label .fa-solid {
+  color: var(--color-sage);
+  font-size: 0.75rem;
+  width: 14px;
+  text-align: center;
+}
+
+.pc-detail-value {
+  font-weight: 500;
+  color: var(--color-text-dark);
+  text-align: right;
+}
+
+/* Notes block */
+.pc-notes {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  background: var(--color-light-bg);
+  border-left: 3px solid var(--color-sage);
+  border-radius: 0 4px 4px 0;
+  padding: 0.6rem 0.75rem;
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  margin-top: auto;
+}
+
+.pc-notes .fa-solid {
+  color: var(--color-sage);
+  margin-top: 0.1rem;
+  flex-shrink: 0;
+}
+
+/* Loading / empty / error state */
+.programs-status {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 3rem 1.5rem;
+  color: var(--color-text-muted);
+}
+
+.programs-status .fa-solid {
+  font-size: 2.5rem;
+  color: var(--color-sage);
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.programs-status p {
+  font-size: 1rem;
+  max-width: 40ch;
+  margin: 0 auto;
+}
+
+.programs-status a {
+  color: var(--color-sage);
+  text-decoration: underline;
+}

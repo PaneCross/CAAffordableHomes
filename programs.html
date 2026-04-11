@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Browse available affordable housing programs in San Diego County. View program criteria, AMI requirements, bedroom counts, and eligibility requirements for each community.">
+  <title>Available Programs - CA Affordable Homes</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome 6 Free -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-Avb2QiuDEEvB4bZJYdft2mNjVShBftLdPG8FJ0V7irTLQ8Uo0qcPxh4Plq7G5tGm0rU+1SPhVotteLpBERwTkw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- SECTION: Navigation -->
+  <header>
+    <nav class="site-nav" aria-label="Main navigation">
+      <div class="nav-inner">
+        <a href="index.html" class="nav-logo" aria-label="CA Affordable Homes - Home">
+          CA <span>Affordable</span> Homes
+        </a>
+        <ul class="nav-links" role="list">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="programs.html" aria-current="page">Programs</a></li>
+          <li><a href="faq.html">FAQ</a></li>
+          <li><a href="contact.html">Contact</a></li>
+        </ul>
+        <a href="contact.html" class="btn btn-primary nav-cta">Join the Interest List</a>
+        <button
+          id="nav-hamburger"
+          class="nav-hamburger"
+          aria-expanded="false"
+          aria-controls="nav-mobile"
+          aria-label="Open navigation menu"
+        >
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+      <div id="nav-mobile" class="nav-mobile" role="dialog" aria-label="Mobile navigation">
+        <ul role="list">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="programs.html">Programs</a></li>
+          <li><a href="faq.html">FAQ</a></li>
+          <li><a href="contact.html">Contact</a></li>
+        </ul>
+        <a href="contact.html" class="btn btn-primary">Join the Interest List</a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+
+    <!-- SECTION: Page Header -->
+    <section class="page-header" aria-labelledby="page-title">
+      <div class="container">
+        <span class="section-label">Current Opportunities</span>
+        <h1 id="page-title">Available Programs</h1>
+        <p>Program eligibility criteria for the affordable housing communities we are currently working with.</p>
+      </div>
+    </section>
+
+    <!-- SECTION: Disclaimer callout -->
+    <section class="section section--light" aria-label="Program information notice" style="padding-top:2rem;padding-bottom:1.5rem;">
+      <div class="container">
+        <div class="disclaimer-block" role="note">
+          <i class="fa-solid fa-circle-info" style="color:var(--color-sage);margin-right:0.5rem;" aria-hidden="true"></i>
+          This page shows program eligibility criteria only. We do not publicly advertise specific addresses, prices, or available units. If your profile matches a community, Kacee will reach out to you directly. <a href="contact.html" style="color:var(--color-sage);text-decoration:underline;">Join the interest list</a> to be considered for any of the programs below.
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION: Programs Grid -->
+    <section class="section" aria-labelledby="programs-heading">
+      <div class="container">
+        <div class="section-header text-center">
+          <span class="section-label">Communities</span>
+          <h2 id="programs-heading">Program Criteria by Community</h2>
+          <hr class="accent-rule">
+          <p>Each row below represents one community. Requirements vary by program and property.</p>
+        </div>
+        <div class="programs-grid" id="programs-grid" role="list" aria-label="Available programs">
+          <!-- Populated by js/programs.js -->
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION: Fall preview callout -->
+    <section class="section section--sage" aria-label="Coming this fall">
+      <div class="container text-center">
+        <span class="section-label">Coming Fall 2025</span>
+        <h2>More Communities on the Way</h2>
+        <hr class="accent-rule">
+        <p>We have additional communities coming online this fall. Join the interest list now so your profile is on file when they become available.</p>
+        <div class="spacer--sm"></div>
+        <div class="btn-group" style="justify-content:center;">
+          <a href="contact.html" class="btn btn-secondary">Join the Interest List</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION: Final CTA -->
+    <section class="section section--dark cta-bar" aria-label="Call to action">
+      <div class="container">
+        <a href="contact.html" class="btn btn-primary">
+          Join the Interest List
+        </a>
+        <a href="faq.html" class="btn btn-secondary" style="border-color:rgba(255,255,255,0.4);color:var(--color-text-secondary);">
+          Common Questions
+        </a>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- SECTION: Footer -->
+  <footer class="site-footer" aria-label="Site footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <a href="index.html" class="footer-logo">CA <span>Affordable</span> Homes</a>
+          <p class="footer-tagline">Connecting qualified buyers with affordable homes.</p>
+          <div class="spacer--sm"></div>
+          <div class="social-links">
+            <a href="#" class="social-link" aria-label="Visit us on Facebook"><i class="fa-brands fa-facebook-f" aria-hidden="true"></i></a>
+            <a href="#" class="social-link" aria-label="Visit us on Instagram"><i class="fa-brands fa-instagram" aria-hidden="true"></i></a>
+          </div>
+        </div>
+        <div class="footer-col">
+          <h4>Navigation</h4>
+          <ul class="footer-nav-links" role="list">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="about.html">About</a></li>
+            <li><a href="programs.html">Available Programs</a></li>
+            <li><a href="faq.html">FAQ</a></li>
+            <li><a href="contact.html">Contact</a></li>
+          </ul>
+        </div>
+        <div class="footer-col footer-contact">
+          <h4>Contact</h4>
+          <p><a href="mailto:Info@CAAffordableHomes.com">Info@CAAffordableHomes.com</a></p>
+          <div class="spacer--sm"></div>
+          <p>Serving homebuyers and housing organizations throughout California.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Get Started</h4>
+          <ul class="footer-nav-links" role="list">
+            <li><a href="contact.html">Join the Interest List</a></li>
+            <li><a href="contact.html#partner-form">Partner With Us</a></li>
+            <li><a href="faq.html">Common Questions</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-eho-row">
+        <div class="footer-eho-logo-block">
+          <img src="img/eho-logo.png" alt="Equal Housing Opportunity" class="footer-eho-img" width="60" height="60">
+          <span class="footer-eho-label">Equal Housing<br>Opportunity</span>
+        </div>
+        <div class="footer-eho-text">
+          <p>Oceanfront Realty, a division of Ocean Mortgage Company - Broker DRE# 01238502</p>
+          <p>Kacee Wright - Realtor - DRE# 01244143</p>
+          <p style="margin-top:0.4rem;font-size:0.8rem;color:var(--color-text-muted);">CA Affordable Homes is committed to the principles of the Fair Housing Act and Equal Housing Opportunity. We do not discriminate on the basis of race, color, religion, sex, national origin, disability, familial status, or any other protected class.</p>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2025 CA Affordable Homes. All rights reserved.</p>
+        <p>We are not a lender. Joining the interest list is informational only.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+  <script src="js/programs.js"></script>
+</body>
+</html>
