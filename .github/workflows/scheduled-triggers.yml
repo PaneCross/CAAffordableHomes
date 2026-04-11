@@ -1,0 +1,35 @@
+# Triggers Supabase Edge Functions on a daily schedule
+# Replaces the Apps Script time-driven triggers
+
+name: Scheduled Triggers
+
+on:
+  schedule:
+    - cron: '0 14 * * *'   # 6 AM PST (UTC-8) = 14:00 UTC — daily matching
+    - cron: '0 15 * * *'   # 7 AM PST (UTC-8) = 15:00 UTC — expiry check
+  workflow_dispatch:        # allow manual run from GitHub Actions UI
+
+jobs:
+  daily-match:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 14 * * *'
+    steps:
+      - name: Run daily match engine
+        run: |
+          curl -X POST \
+            "https://monybdfujogcyseyjgfx.supabase.co/functions/v1/daily-match" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_KEY }}" \
+            -H "Content-Type: application/json" \
+            --fail-with-body
+
+  check-expiry:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 15 * * *'
+    steps:
+      - name: Run expiry checker
+        run: |
+          curl -X POST \
+            "https://monybdfujogcyseyjgfx.supabase.co/functions/v1/check-expiry" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_KEY }}" \
+            -H "Content-Type: application/json" \
+            --fail-with-body

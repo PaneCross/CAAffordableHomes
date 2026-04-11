@@ -5,8 +5,9 @@
 
 ## Project Status
 - **Phase 9 complete** — Major legal/compliance redesign: Available Homes page removed, listing exposure eliminated, area preference replaces listing interest, applicant match emails removed
+- **Phase 10 in progress** — Supabase migration: database, Edge Functions, new admin.html. Apps Script being retired.
 - **Not yet live** — currently hosted on GitHub Pages (test environment)
-- **Next up** — go-live prep (switch NOTIFY_EMAIL, add social links, replace hero image)
+- **Next up** — complete Supabase cutover (run schema SQL, deploy Edge Functions, set secrets), then go-live prep
 
 ## ⚠️ Legal Context — Why Homes Page Was Removed
 California MLS Clear Cooperation Policy (adopted by NAR and all major CA MLSs): any property publicly marketed must be submitted to the MLS within 1 business day. A public-facing Available Homes page with addresses/prices/photos constitutes public marketing. The compliant model is: Kacee maintains listings and requirements internally, the matching engine runs privately, and she reaches out manually when a match is identified. **Users must never see a specific address, price, or listing detail without Kacee initiating that contact.**
@@ -27,11 +28,17 @@ California MLS Clear Cooperation Policy (adopted by NAR and all major CA MLSs): 
 
 - **Frontend:** Static HTML/CSS/JS — no build tools, no frameworks
 - **Hosting:** GitHub Pages
-- **Backend/automation:** Google Apps Script (Web App) deployed from `notify-script.gs`
-- **Database:** Google Sheets (6 tabs — see below)
+- **Database:** Supabase (PostgreSQL) — replacing Google Sheets
+- **Backend/automation:** Supabase Edge Functions (Deno/TypeScript) — replacing Apps Script
+- **Admin portal:** `admin.html` + `js/admin.js` on GitHub Pages — replacing Apps Script HtmlService
+- **Email:** Resend API (called from Edge Functions)
+- **Cron:** GitHub Actions scheduled workflows — replacing Apps Script time triggers
 - **Fonts:** Cormorant Garamond + Inter (Google Fonts)
 - **Icons:** Font Awesome 6 Free (CDN)
-- **CSS:** Single file `css/styles.css`
+- **CSS:** `css/styles.css` (public site) + `css/admin.css` (admin)
+
+### ⚠️ Apps Script Status
+`notify-script.gs` and `admin-script.gs` are **retired** after Phase 10 cutover. Do not edit them. The old Apps Script web app URL no longer needs to be maintained.
 
 ---
 
@@ -42,25 +49,76 @@ California MLS Clear Cooperation Policy (adopted by NAR and all major CA MLSs): 
 ├── index.html          — Home page
 ├── about.html          — About page
 ├── services.html       — Services page (buyers + organizations)
-├── homes.html          — Available properties (dynamic from Sheets)
 ├── faq.html            — FAQ (accordion, buyers + partners)
-├── contact.html        — Interest List form (multi-section questionnaire)
+├── contact.html        — Interest List form (POSTs to submit-interest Edge Function)
 ├── thankyou.html       — Post-submission confirmation page
+├── admin.html          — Admin portal (Supabase auth, replaces Apps Script admin)
 ├── favicon.svg
 ├── css/
-│   └── styles.css      — All styles (single file)
+│   ├── styles.css      — All public site styles
+│   └── admin.css       — Admin portal styles
 ├── js/
 │   ├── main.js         — Nav hamburger, FAQ accordion, shared UI
-│   ├── listings.js     — Fetches + renders property cards + modal on homes.html
-│   └── testimonials.js — Fetches testimonials from Sheets, hidden until data exists
-└── notify-script.gs    — Google Apps Script source (must be deployed manually to Apps Script)
+│   ├── admin.js        — Admin app (Supabase client, all CRUD)
+│   ├── programs.js     — Fetches programs from Supabase REST, renders cards
+│   └── testimonials.js — Fetches testimonials from Supabase REST
+├── supabase/
+│   ├── config.toml     — Supabase CLI config
+│   ├── migrations/
+│   │   └── 001_schema.sql   — Full DB schema + RLS + upsert function (run once in SQL Editor)
+│   └── functions/
+│       ├── submit-interest/ — Form submission handler + welcome/notification emails
+│       ├── daily-match/     — Matching engine (13 checks) + digest email
+│       └── check-expiry/    — 11-month reminder + 12-month expiry
+└── .github/
+    └── workflows/
+        └── scheduled-triggers.yml — Cron: 6 AM daily-match, 7 AM check-expiry
 ```
 
 ---
 
-## Google Sheet
+## Supabase
+
+**Project URL:** `https://monybdfujogcyseyjgfx.supabase.co`
+**Publishable key (safe for frontend):** `sb_publishable_Y36wJc0oJ_0f9JOf3co6BA_Re749E7U`
+**Service role key:** in Supabase dashboard → Settings → API (never commit to repo)
+
+### Tables
+| Table | RLS |
+|-------|-----|
+| `interest_list` | anon INSERT (form), authenticated read/write |
+| `listings` | authenticated only |
+| `programs` | anon SELECT active rows, authenticated write |
+| `property_submissions` | anon INSERT, authenticated read/write |
+| `match_results` | authenticated only |
+| `testimonials` | anon SELECT active, authenticated write |
+
+### Edge Functions (deploy with Supabase CLI)
+```bash
+supabase functions deploy submit-interest --project-ref monybdfujogcyseyjgfx
+supabase functions deploy daily-match     --project-ref monybdfujogcyseyjgfx
+supabase functions deploy check-expiry    --project-ref monybdfujogcyseyjgfx
+```
+
+### Edge Function Secrets (set in Supabase dashboard → Edge Functions → Manage secrets)
+| Secret | Value |
+|--------|-------|
+| `SUPABASE_URL` | `https://monybdfujogcyseyjgfx.supabase.co` |
+| `SUPABASE_SERVICE_ROLE_KEY` | from Supabase dashboard |
+| `RESEND_API_KEY` | `re_UfJNumMf_Nxn2RBWMrNPZtivszS6Lgt9B` |
+| `NOTIFY_EMAIL` | `tj@nostos.tech` (switch to Kacee's at go-live) |
+
+### GitHub Actions Secret (repo Settings → Secrets → Actions)
+| Secret | Value |
+|--------|-------|
+| `SUPABASE_SERVICE_KEY` | service role key from Supabase dashboard |
+
+---
+
+## Google Sheet (RETIRED after Phase 10 cutover)
 
 **Spreadsheet ID:** `1YCdiFVSRTipvDD-Ylt7nv6Sq5coAG-Zjasnu9tIrmFw`
+*Keep as read-only archive. No new data writes after cutover.*
 
 ### Tab CSV Links (for monitoring/reference)
 
@@ -195,11 +253,21 @@ CLOSE_THRESHOLD = 2  // max failed fields to score "Close" (vs "Fail")
 
 ## Known Pending Items
 
-1. **Repeating block header renumbering bug** (from earlier session): `incBlockCount`/`empBlockCount` are ever-incrementing; removing and re-adding income/employment blocks shows wrong numbers. Needs `renumberIncomeBlocks()` and `renumberEmpBlocks()` functions in `contact.html`. Not yet implemented.
-2. **NOTIFY_EMAIL switch** — change `tj@nostos.tech` → Kacee's actual email before go-live (Phase 8).
-3. **Social links** — Facebook and Instagram hrefs in footer are currently `#` on all pages. Need real URLs when accounts are set up.
-4. **Copyright year** — footer shows `© 2025`. Update to current year or make dynamic at go-live.
-5. **Hero background image** — currently an Unsplash placeholder URL. Replace with owned/licensed image before go-live.
+### Phase 10 cutover (do when TJ returns)
+1. **Run schema SQL** — paste `supabase/migrations/001_schema.sql` into Supabase SQL Editor and run once.
+2. **Create admin user** — Supabase dashboard → Authentication → Users → Add user (email + password, auto-confirm).
+3. **Set Edge Function secrets** — Supabase dashboard → Edge Functions → Manage secrets (4 secrets: URL, service key, Resend key, notify email).
+4. **Deploy Edge Functions** — `supabase functions deploy submit-interest/daily-match/check-expiry --project-ref monybdfujogcyseyjgfx` (requires Supabase CLI: `npm i -g supabase`).
+5. **Add GitHub Actions secret** — repo Settings → Secrets → Actions → New: `SUPABASE_SERVICE_KEY`.
+6. **Verify Resend domain** — resend.com → Domains → add `caaffordablehomes.com` and add DNS records. Until then, send from `onboarding@resend.dev` (sandbox, limited to verified addresses).
+7. **Update FROM_EMAIL in Edge Functions** — change `noreply@caaffordablehomes.com` to `onboarding@resend.dev` for testing, then to verified domain at go-live.
+8. **Migrate existing Sheet data** — export each Sheets tab as CSV, import to Supabase via Table Editor or SQL INSERT.
+
+### Ongoing / go-live
+9. **Repeating block header renumbering bug** — income/employment block numbers go wrong when removing and re-adding. Needs `renumberIncomeBlocks()` / `renumberEmpBlocks()` in `contact.html`.
+10. **NOTIFY_EMAIL switch** — change `tj@nostos.tech` → Kacee's email in Supabase Edge Function secrets at go-live.
+11. **Social links** — footer Facebook/Instagram hrefs are `#` on all pages.
+12. **Hero background image** — Unsplash placeholder; replace with licensed image at go-live.
 
 ---
 

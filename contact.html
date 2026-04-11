@@ -1131,7 +1131,7 @@
   (function () {
 
     var COOLDOWN_MS = 2 * 60 * 1000; /* DEV: 2 min — set to 30 * 24 * 60 * 60 * 1000 at launch */
-    var SCRIPT_URL  = 'https://script.google.com/macros/s/AKfycbw0MOVFTvtDia4k_bcGVtgcwb-7EhWczMzSdLpaesRDUqV4ZmUpJ6CU75B09ee9tXHO/exec';
+    var SCRIPT_URL  = 'https://monybdfujogcyseyjgfx.supabase.co/functions/v1/submit-interest';
 
     /* Success panel — shown while cooldown is active */
     function successHTML(message) {
@@ -1270,7 +1270,7 @@
     var STORAGE_KEY  = 'caah_il_draft';
     var COOLDOWN_KEY = 'caah_buyer_submitted';
     var COOLDOWN_MS  = 2 * 60 * 1000; /* DEV: 2 min — set to 30 * 24 * 60 * 60 * 1000 at launch */
-    var SCRIPT_URL   = 'https://script.google.com/macros/s/AKfycbw0MOVFTvtDia4k_bcGVtgcwb-7EhWczMzSdLpaesRDUqV4ZmUpJ6CU75B09ee9tXHO/exec';
+    var SCRIPT_URL   = 'https://monybdfujogcyseyjgfx.supabase.co/functions/v1/submit-interest';
 
 
     var SECTION_NAMES = ['General Information', 'Income', 'Employment', 'Financial & Disclosures'];
@@ -1853,11 +1853,9 @@
 
       syncAreaPreference();
 
-      /* Apps Script Web Apps require Content-Type: text/plain to avoid a
-         CORS preflight — the server parses e.postData.contents as JSON. */
       fetch(SCRIPT_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(buildPayload())
       })
       .then(function (res) { return res.json(); })
@@ -1941,7 +1939,8 @@
      Property submission form
      --------------------------------------------------------- */
   (function () {
-    var SCRIPT_URL   = 'https://script.google.com/macros/s/AKfycbw0MOVFTvtDia4k_bcGVtgcwb-7EhWczMzSdLpaesRDUqV4ZmUpJ6CU75B09ee9tXHO/exec';
+    var SUPABASE_URL = 'https://monybdfujogcyseyjgfx.supabase.co';
+    var SUPABASE_KEY = 'sb_publishable_Y36wJc0oJ_0f9JOf3co6BA_Re749E7U';
     var MAX_FILES    = 3;
     var MAX_SIZE_MB  = 10;
     var ALLOWED_EXT  = ['pdf','doc','docx','xls','xlsx','jpg','jpeg','png'];
@@ -2120,13 +2119,34 @@
     });
 
     function send(payload) {
-      fetch(SCRIPT_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(payload) })
-        .then(function (r) { return r.json(); })
-        .then(function (d) {
-          if (d.ok) { form.hidden = true; successEl.hidden = false; successEl.scrollIntoView({ behavior:'smooth', block:'center' }); }
-          else { reset(); showSubmitError('Submission failed: ' + (d.error || 'unknown error')); }
+      /* Build a clean row from known PS columns only */
+      var allowed = ['contact_name','contact_org','contact_email','contact_phone',
+        'prop_address','affordable_count','bedrooms','bathrooms','move_in_date',
+        'marketing_start','ami_percent','affordable_price','hoa_fee','hoa_covers',
+        'prop_tax_pct','special_assessments','deed_restriction_years',
+        'solar','solar_included','solar_lease_amount','file_links'];
+      var row = { status: 'new' };
+      allowed.forEach(function (f) { if (payload[f] !== undefined && payload[f] !== '') row[f] = payload[f]; });
+
+      fetch(SUPABASE_URL + '/rest/v1/property_submissions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_KEY,
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify(row)
+      })
+        .then(function (r) {
+          if (r.ok || r.status === 201) {
+            form.hidden = true; successEl.hidden = false;
+            successEl.scrollIntoView({ behavior:'smooth', block:'center' });
+          } else {
+            return r.text().then(function (t) { throw new Error(t || r.status); });
+          }
         })
-        .catch(function () { reset(); showSubmitError('Unable to submit. Please check your connection and try again.'); });
+        .catch(function (err) { reset(); showSubmitError('Unable to submit. Please check your connection and try again.'); console.error(err); });
     }
 
     function reset() {

@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CA Affordable Homes — Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════
+     LOGIN
+══════════════════════════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">CA Affordable Homes</div>
+    <p class="login-sub">Admin Portal</p>
+    <form id="login-form" autocomplete="on">
+      <div class="form-group">
+        <label for="login-email">Email</label>
+        <input id="login-email" type="email" class="form-input" required autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label for="login-password">Password</label>
+        <input id="login-password" type="password" class="form-input" required autocomplete="current-password">
+      </div>
+      <div id="login-error" class="login-error" style="display:none;"></div>
+      <button type="submit" class="btn-primary" id="login-btn" style="width:100%;margin-top:.5rem;">
+        <i class="fa-solid fa-right-to-bracket"></i> Sign In
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     APP SHELL
+══════════════════════════════════════════════════════════ -->
+<div id="app" style="display:none;">
+
+  <!-- Sidebar -->
+  <nav class="admin-sidebar">
+    <div class="sb-logo">CA Affordable Homes</div>
+    <div class="sb-user" id="sb-user-email"></div>
+    <div class="sb-nav">
+      <button class="sb-btn active" data-tab="dashboard"><i class="fa-solid fa-gauge"></i> Dashboard</button>
+      <button class="sb-btn" data-tab="properties"><i class="fa-solid fa-inbox"></i> Submissions</button>
+      <button class="sb-btn" data-tab="listings"><i class="fa-solid fa-building"></i> Listings</button>
+      <button class="sb-btn" data-tab="programs"><i class="fa-solid fa-globe"></i> Programs</button>
+      <button class="sb-btn" data-tab="interest-list"><i class="fa-solid fa-users"></i> Interest List</button>
+    </div>
+    <div class="sb-footer">
+      <button class="sb-btn" id="refresh-btn"><i class="fa-solid fa-rotate"></i> Refresh</button>
+      <button class="sb-btn" id="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Sign Out</button>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <h1 class="admin-page-title" id="page-title">Dashboard</h1>
+    </div>
+
+    <!-- DASHBOARD -->
+    <section id="tab-dashboard" class="admin-tab active">
+      <div id="dashboard-area"><div class="loading-state"><i class="fa-solid fa-circle-notch fa-spin"></i><p>Loading...</p></div></div>
+    </section>
+
+    <!-- PROPERTY SUBMISSIONS -->
+    <section id="tab-properties" class="admin-tab" style="display:none;">
+      <div class="tab-toolbar">
+        <div class="filter-bar" id="ps-filter-bar">
+          <button class="filter-btn active" data-pf="all">All</button>
+          <button class="filter-btn" data-pf="new">New</button>
+          <button class="filter-btn" data-pf="reviewing">Reviewing</button>
+          <button class="filter-btn" data-pf="approved">Approved</button>
+          <button class="filter-btn" data-pf="declined">Declined</button>
+          <button class="filter-btn" data-pf="promoted">Promoted</button>
+        </div>
+        <button class="btn-primary btn-sm" id="ps-add-btn"><i class="fa-solid fa-plus"></i> Add Submission</button>
+      </div>
+      <div id="ps-area"><div class="loading-state"><i class="fa-solid fa-circle-notch fa-spin"></i><p>Loading...</p></div></div>
+    </section>
+
+    <!-- LISTINGS -->
+    <section id="tab-listings" class="admin-tab" style="display:none;">
+      <div class="tab-toolbar">
+        <div class="filter-bar" id="lst-filter-bar">
+          <button class="filter-btn active" data-lf="active">Active</button>
+          <button class="filter-btn" data-lf="all">All</button>
+          <button class="filter-btn" data-lf="inactive">Inactive</button>
+          <button class="filter-btn" data-lf="on-site">On Site</button>
+        </div>
+        <button class="btn-primary btn-sm" id="lst-add-btn"><i class="fa-solid fa-plus"></i> Add Listing</button>
+      </div>
+      <div id="lst-area"><div class="loading-state"><i class="fa-solid fa-circle-notch fa-spin"></i><p>Loading...</p></div></div>
+    </section>
+
+    <!-- PROGRAMS -->
+    <section id="tab-programs" class="admin-tab" style="display:none;">
+      <div class="tab-toolbar">
+        <div class="filter-bar" id="prog-filter-bar">
+          <button class="filter-btn active" data-prgf="active">Active</button>
+          <button class="filter-btn" data-prgf="all">All</button>
+          <button class="filter-btn" data-prgf="inactive">Inactive</button>
+        </div>
+        <button class="btn-primary btn-sm" id="prog-add-btn"><i class="fa-solid fa-plus"></i> Add Community</button>
+      </div>
+      <div id="prog-area"><div class="loading-state"><i class="fa-solid fa-circle-notch fa-spin"></i><p>Loading...</p></div></div>
+    </section>
+
+    <!-- INTEREST LIST -->
+    <section id="tab-interest-list" class="admin-tab" style="display:none;">
+      <div class="tab-toolbar">
+        <div class="filter-bar" id="il-filter-bar">
+          <button class="filter-btn active" data-ilf="all">All</button>
+          <button class="filter-btn" data-ilf="new">New</button>
+          <button class="filter-btn" data-ilf="reviewing">Reviewing</button>
+          <button class="filter-btn" data-ilf="active">Active</button>
+          <button class="filter-btn" data-ilf="matched">Matched</button>
+          <button class="filter-btn" data-ilf="expired">Expired</button>
+        </div>
+        <input type="search" id="il-search" class="form-input" placeholder="Search name or email..." style="width:220px;">
+      </div>
+      <div id="il-area"><div class="loading-state"><i class="fa-solid fa-circle-notch fa-spin"></i><p>Loading...</p></div></div>
+    </section>
+  </main>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     TOAST
+══════════════════════════════════════════════════════════ -->
+<div id="toast-container"></div>
+
+<!-- ══════════════════════════════════════════════════════════
+     LISTING DRAWER
+══════════════════════════════════════════════════════════ -->
+<div id="lst-drawer-overlay" class="drawer-overlay"></div>
+<aside id="lst-drawer" class="side-drawer" aria-hidden="true">
+  <div class="drawer-header">
+    <h2 class="drawer-title" id="lst-drawer-title">Listing Details</h2>
+    <button class="drawer-close" id="lst-drawer-close" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="drawer-body" id="lst-drawer-body"></div>
+</aside>
+
+<!-- ══════════════════════════════════════════════════════════
+     LISTING MODAL (add / edit)
+══════════════════════════════════════════════════════════ -->
+<div id="lst-modal-overlay" class="modal-overlay">
+  <div class="modal-box modal-lg">
+    <div class="modal-header">
+      <h2 id="lst-modal-title">Add Listing</h2>
+      <button class="modal-close" id="lst-modal-close"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-section-label">Identity</div>
+      <div class="form-row2">
+        <div class="form-group"><label>Property ID / Name *</label><input id="lf-id" class="form-input" placeholder="e.g. VILLA-001"></div>
+        <div class="form-group"><label>Display Name</label><input id="lf-name" class="form-input" placeholder="Villa Rosa"></div>
+      </div>
+      <div class="form-row2">
+        <div class="form-group"><label>Active for Matching</label>
+          <select id="lf-active" class="form-input"><option value="YES">YES</option><option value="NO">NO</option></select>
+        </div>
+        <div class="form-group"><label>Listing Type</label>
+          <select id="lf-type" class="form-input"><option value="affordable">Affordable</option><option value="mls">MLS</option></select>
+        </div>
+      </div>
+      <div class="form-section-label" style="margin-top:1rem;">Property Details</div>
+      <div class="form-row2">
+        <div class="form-group"><label>Address</label><input id="lf-address" class="form-input"></div>
+        <div class="form-group"><label>City</label><input id="lf-city" class="form-input"></div>
+      </div>
+      <div class="form-row3">
+        <div class="form-group"><label>Price</label><input id="lf-price" class="form-input" placeholder="450000"></div>
+        <div class="form-group"><label>Bedrooms</label><input id="lf-beds" class="form-input" type="number"></div>
+        <div class="form-group"><label>Bathrooms</label><input id="lf-baths" class="form-input" type="number" step="0.5"></div>
+      </div>
+      <div class="form-row2">
+        <div class="form-group"><label>Sqft</label><input id="lf-sqft" class="form-input" type="number"></div>
+        <div class="form-group"><label>Program Type</label><input id="lf-program-type" class="form-input" placeholder="e.g. Below Market Rate"></div>
+      </div>
+      <div class="form-section-label" style="margin-top:1rem;">Eligibility Requirements</div>
+      <div class="form-row2">
+        <div class="form-group"><label>AMI %</label><input id="lf-ami" class="form-input" type="number" placeholder="80"></div>
+        <div class="form-group"><label>Min Credit Score</label><input id="lf-credit" class="form-input" type="number" placeholder="640"></div>
+      </div>
+      <div class="form-row2">
+        <div class="form-group"><label>Max DTI %</label><input id="lf-dti" class="form-input" type="number" placeholder="45"></div>
+        <div class="form-group"><label>Max Monthly Debt ($)</label><input id="lf-debt" class="form-input" type="number"></div>
+      </div>
+      <div class="form-row3">
+        <div class="form-group"><label>Min Household Size</label><input id="lf-minhh" class="form-input" type="number"></div>
+        <div class="form-group"><label>Max Household Size</label><input id="lf-maxhh" class="form-input" type="number"></div>
+        <div class="form-group"><label>First-Time Buyer</label>
+          <select id="lf-ftb" class="form-input"><option value="">N/A</option><option value="YES">Required</option><option value="NO">Not Required</option></select>
+        </div>
+      </div>
+      <div class="form-row2">
+        <div class="form-group"><label>Max Income (1 person)</label><input id="lf-inc1" class="form-input" type="number"></div>
+        <div class="form-group"><label>Max Income (4 person)</label><input id="lf-inc4" class="form-input" type="number"></div>
+      </div>
+      <div class="form-row2">
+        <div class="form-group"><label>Max Income (6 person)</label><input id="lf-inc6" class="form-input" type="number"></div>
+        <div class="form-group"><label>SD County Residency Required</label>
+          <select id="lf-sdres" class="form-input"><option value="YES">YES</option><option value="NO">NO</option></select>
+        </div>
+      </div>
+      <div class="form-section-label" style="margin-top:1rem;">Notes</div>
+      <div class="form-group"><label>Program Notes (visible in matching)</label><textarea id="lf-prog-notes" class="form-input" rows="2"></textarea></div>
+      <div class="form-group"><label>Internal Notes</label><textarea id="lf-int-notes" class="form-input" rows="2"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <input type="hidden" id="lf-src-row">
+      <input type="hidden" id="lf-linked-prog">
+      <button class="btn-secondary" id="lst-cancel-btn">Cancel</button>
+      <button class="btn-primary" id="lst-save-btn"><i class="fa-solid fa-floppy-disk"></i> Save Listing</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     PROGRAM MODAL (add / edit)
+══════════════════════════════════════════════════════════ -->
+<div id="prog-modal-overlay" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2 id="prog-modal-title">Add Community</h2>
+      <button class="modal-close" id="prog-modal-close"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row2">
+        <div class="form-group"><label>Community Name *</label><input id="pf-name" class="form-input"></div>
+        <div class="form-group"><label>Area *</label><input id="pf-area" class="form-input" placeholder="e.g. North County Coastal"></div>
+      </div>
+      <div class="form-row2">
+        <div class="form-group"><label>Program Type</label><input id="pf-type" class="form-input"></div>
+        <div class="form-group"><label>AMI Range</label><input id="pf-ami" class="form-input" placeholder="e.g. 80% AMI"></div>
+      </div>
+      <div class="form-row2">
+        <div class="form-group"><label>Bedrooms</label><input id="pf-beds" class="form-input"></div>
+        <div class="form-group"><label>Household Size Limit</label><input id="pf-hh" class="form-input"></div>
+      </div>
+      <div class="form-row2">
+        <div class="form-group"><label>First-Time Buyer</label><input id="pf-ftb" class="form-input"></div>
+        <div class="form-group"><label>Price Range</label><input id="pf-price" class="form-input"></div>
+      </div>
+      <div class="form-row2">
+        <div class="form-group"><label>Status</label>
+          <select id="pf-status" class="form-input">
+            <option>Available</option>
+            <option>Coming Soon</option>
+            <option>Inactive</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Notes</label><input id="pf-notes" class="form-input"></div>
+      </div>
+      <input type="hidden" id="pf-src-listing">
+    </div>
+    <div class="modal-footer">
+      <div id="pf-linked-listings-label" style="flex:1;font-size:.78rem;color:#555;"></div>
+      <button class="btn-secondary" id="prog-cancel-btn">Cancel</button>
+      <button class="btn-primary" id="prog-save-btn"><i class="fa-solid fa-floppy-disk"></i> Save Community</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     PS MODAL (add / edit)
+══════════════════════════════════════════════════════════ -->
+<div id="ps-modal-overlay" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2 id="ps-modal-title">Add Submission</h2>
+      <button class="modal-close" id="ps-modal-close"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-section-label">Contact</div>
+      <div class="form-row2">
+        <div class="form-group"><label>Name</label><input id="psf-name" class="form-input"></div>
+        <div class="form-group"><label>Organization</label><input id="psf-org" class="form-input"></div>
+      </div>
+      <div class="form-row2">
+        <div class="form-group"><label>Email</label><input id="psf-email" class="form-input" type="email"></div>
+        <div class="form-group"><label>Phone</label><input id="psf-phone" class="form-input" type="tel"></div>
+      </div>
+      <div class="form-section-label" style="margin-top:1rem;">Property</div>
+      <div class="form-group"><label>Address</label><input id="psf-address" class="form-input"></div>
+      <div class="form-row3">
+        <div class="form-group"><label>Affordable Units</label><input id="psf-count" class="form-input" type="number"></div>
+        <div class="form-group"><label>Bedrooms</label><input id="psf-beds" class="form-input"></div>
+        <div class="form-group"><label>Bathrooms</label><input id="psf-baths" class="form-input"></div>
+      </div>
+      <div class="form-row2">
+        <div class="form-group"><label>Move-in Date</label><input id="psf-movein" class="form-input" type="date"></div>
+        <div class="form-group"><label>AMI %</label><input id="psf-ami" class="form-input" type="number"></div>
+      </div>
+      <div class="form-row2">
+        <div class="form-group"><label>Affordable Price</label><input id="psf-price" class="form-input" type="number"></div>
+        <div class="form-group"><label>HOA Fee</label><input id="psf-hoa" class="form-input" type="number"></div>
+      </div>
+      <div class="form-group"><label>File Links</label><textarea id="psf-files" class="form-input" rows="2" placeholder="Paste document links..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" id="ps-cancel-btn">Cancel</button>
+      <button class="btn-primary" id="ps-save-btn"><i class="fa-solid fa-floppy-disk"></i> Save Submission</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     IL DETAIL MODAL (read-only view)
+══════════════════════════════════════════════════════════ -->
+<div id="il-modal-overlay" class="modal-overlay">
+  <div class="modal-box modal-lg">
+    <div class="modal-header">
+      <h2 id="il-modal-title">Applicant Detail</h2>
+      <button class="modal-close" id="il-modal-close"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body" id="il-modal-body"></div>
+    <div class="modal-footer">
+      <div style="flex:1;">
+        <label style="font-size:.82rem;font-weight:500;margin-right:.5rem;">Status:</label>
+        <select id="il-status-select" class="form-input" style="width:auto;display:inline-block;">
+          <option value="new">new</option>
+          <option value="reviewing">reviewing</option>
+          <option value="active">active</option>
+          <option value="matched">matched</option>
+          <option value="expired">expired</option>
+        </select>
+        <button class="btn-primary btn-sm" id="il-status-save-btn" style="margin-left:.5rem;">
+          <i class="fa-solid fa-check"></i> Save Status
+        </button>
+      </div>
+      <button class="btn-secondary" id="il-modal-close2">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>
