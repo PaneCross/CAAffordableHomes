@@ -58,6 +58,10 @@ function doGet(e) {
   var authMethod = '';
   var token      = (e && e.parameter && e.parameter.token) ? e.parameter.token : '';
 
+  /* Get the deployed URL so we can pass it to the login page for the account-chooser link */
+  var scriptUrl = '';
+  try { scriptUrl = ScriptApp.getService().getUrl(); } catch (err) {}
+
   /* --- Google account auth --- */
   try {
     userEmail = Session.getActiveUser().getEmail();
@@ -80,9 +84,9 @@ function doGet(e) {
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   }
 
-  /* --- Show login page --- */
+  /* --- Show login page (pass scriptUrl so the Google button can use AccountChooser) --- */
   return HtmlService
-    .createHtmlOutput(buildLoginHTML())
+    .createHtmlOutput(buildLoginHTML(scriptUrl))
     .setTitle('CA Affordable Homes Admin — Sign In')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
@@ -416,7 +420,14 @@ function adminUpdatePropertyStatus(token, rowIndex, newStatus) {
 /* ==========================================================
    HTML — Login Page
    ========================================================== */
-function buildLoginHTML() {
+function buildLoginHTML(scriptUrl) {
+  /* Build the Google AccountChooser URL so the user can pick any signed-in account.
+     After selection Google redirects back to scriptUrl with that account active,
+     and doGet will then see the correct Session.getActiveUser().getEmail(). */
+  var accountChooserUrl = scriptUrl
+    ? 'https://accounts.google.com/AccountChooser?continue=' + encodeURIComponent(scriptUrl)
+    : '';
+
   return '<!DOCTYPE html><html lang="en"><head>'
     + '<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
     + '<base target="_top">'
@@ -437,9 +448,8 @@ function buildLoginHTML() {
     + 'label{display:block;font-size:.82rem;font-weight:500;color:#444;margin-bottom:.3rem;}'
     + 'input{width:100%;padding:.65rem .85rem;border:1px solid #ddd;border-radius:7px;font-size:.9rem;font-family:inherit;outline:none;transition:border-color .15s;}'
     + 'input:focus{border-color:#2c5545;}'
-    + '.btn-google{display:flex;align-items:center;justify-content:center;gap:.6rem;width:100%;padding:.7rem;background:#fff;border:1.5px solid #ddd;border-radius:7px;font-size:.9rem;font-weight:500;cursor:pointer;color:#333;transition:background .15s;font-family:inherit;}'
+    + '.btn-google{display:flex;align-items:center;justify-content:center;gap:.6rem;width:100%;padding:.7rem;background:#fff;border:1.5px solid #ddd;border-radius:7px;font-size:.9rem;font-weight:500;cursor:pointer;color:#333;transition:background .15s;font-family:inherit;text-decoration:none;box-sizing:border-box;}'
     + '.btn-google:hover{background:#fafafa;}'
-    + '.btn-google img{width:18px;height:18px;}'
     + '.btn-primary{width:100%;padding:.7rem;background:#2c5545;color:#fff;border:none;border-radius:7px;font-size:.9rem;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s;}'
     + '.btn-primary:hover{background:#3a6b59;}'
     + '.btn-primary:disabled{background:#9bb5ad;cursor:not-allowed;}'
@@ -456,12 +466,15 @@ function buildLoginHTML() {
     + '  <h1>Admin Sign In</h1>'
     + '  <p class="login-sub">Restricted access. Authorized users only.</p>'
 
-    /* Google sign-in option */
-    + '  <button class="btn-google" onclick="googleSignIn()">'
+    /* Google sign-in — links through AccountChooser so any signed-in Google account
+       can be selected, including secondary accounts in Chrome profiles. */
+    + '  <a class="btn-google" href="' + accountChooserUrl + '" target="_top"'
+    + (accountChooserUrl ? '' : ' onclick="alert(\'Admin URL not available yet — deploy the script first, then reload.\');return false;"')
+    + '>'
     + '    <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>'
     + '    Sign in with Google'
-    + '  </button>'
-    + '  <p class="google-note">Sign in with the Google account associated with this admin panel.<br>tj@nostos.tech or the authorized team email.</p>'
+    + '  </a>'
+    + '  <p class="google-note">A Google account picker will open. Choose <strong>tj@nostos.tech</strong> or the authorized admin email.<br>You can switch accounts or add one from the picker.</p>'
 
     + '  <div class="divider">or use a one-time code</div>'
 
@@ -488,13 +501,6 @@ function buildLoginHTML() {
     + '</div>'
 
     + '<script>'
-    + 'function googleSignIn(){'
-    + '  google.script.run.withSuccessHandler(function(){'
-    + '    window.location.reload();'
-    + '  }).adminRequestOTP("dummy_to_force_reload");'
-    + '  /* Google auth is automatic — reloading re-triggers doGet which checks Session.getActiveUser() */'
-    + '  window.location.reload();'
-    + '}'
     + 'function sendOTP(){'
     + '  var email=document.getElementById("otp-email").value.trim();'
     + '  if(!email){showMsg("otp1-msg","Please enter your email address.","error");return;}'
