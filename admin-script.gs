@@ -13,9 +13,17 @@
       - Click Deploy → New deployment
       - Type: Web App
       - Description: CA Affordable Homes Admin UI
-      - Execute as: Me
+      - Execute as: User accessing the web app   ← CRITICAL: must be this, NOT "Me"
       - Who has access: Anyone with Google account
       - Click Deploy → Authorize → Copy the new Web App URL
+
+      WHY "User accessing the web app":
+      With "Execute as: Me", Session.getActiveUser().getEmail() returns empty
+      for visitors because they never go through OAuth consent. With "Execute as:
+      User accessing the web app", Apps Script forces the OAuth consent screen on
+      first visit, which is what makes getActiveUser() return the visitor's email.
+      TJ and Kacee must both have edit access to the spreadsheet for this to work
+      (they do, since it is Kacee's sheet and TJ has been granted access).
 
    6. GIVE THAT URL ONLY TO TJ AND KACEE — do not publish it publicly.
       Bookmark it. The URL format will be:
