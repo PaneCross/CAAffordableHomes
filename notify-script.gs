@@ -9,47 +9,23 @@
    3. Delete the default empty function
    4. Paste this entire file and click Save (disk icon)
 
-   5. INTEREST LIST TAB — no manual setup needed:
-      - The "Interest List" tab is created automatically on the first form submission.
-      - Column headers are written by the script. Do not rename or reorder them.
-      - Set status values manually: "new" (default) → "reviewing" → "matched" → "expired".
+   5. SPREADSHEET TABS — run setupAllSheets() once to create all tabs with
+      correct headers automatically. You can also run seedAllData() to insert
+      realistic test data. Both functions are at the bottom of this file.
 
-   6. REQUIREMENTS TAB — create manually before running matching:
-      - Add a new tab named exactly: Requirements
-      - Row 1 must have these exact column headers in this order:
-        listing_id, listing_name, active, ami_percent,
-        min_household_size, max_household_size,
-        max_income_1person, max_income_2person, max_income_3person,
-        max_income_4person, max_income_5person, max_income_6person,
-        min_income, min_credit_score, max_dti_percent, max_monthly_debt,
-        first_time_buyer_required, no_ownership_years,
-        sd_county_residency_required, sd_residency_months,
-        household_together_months, sdhc_prior_purchase_allowed,
-        foreclosure_allowed, foreclosure_min_years,
-        bankruptcy_allowed, bankruptcy_min_years,
-        judgments_allowed, citizenship_required,
-        permanent_resident_acceptable, min_assets, max_assets,
-        min_down_payment_pct, max_down_payment_pct,
-        min_employment_months, program_notes
-      - Fill in only the fields that apply to each listing. Leave others blank.
-      - Set "active" to YES for any listing you want included in matching.
-
-   7. MATCH RESULTS TAB — created automatically on first match run.
-      - Do not rename or delete it.
-      - Columns: listing_id, listing_name, applicant_email, applicant_name,
-                 applicant_phone, match_status (Pass/Close/Fail),
-                 failed_fields, run_at
-
-   8. DEPLOY / UPDATE:
+   6. DEPLOY / UPDATE this script (notify-script):
       - If first time: Click Deploy → New deployment → Web App
         Execute as: Me | Who has access: Anyone → Deploy → Authorize
       - If updating: Click Deploy → Manage deployments → Edit (pencil icon)
         Set Version to "New version" → Deploy
         The Web App URL stays the same after first deployment.
 
-   9. SET UP TRIGGERS (do this once in the Triggers panel):
+   7. DEPLOY the admin UI (admin-script) — separate deployment:
+      See setup instructions at the top of admin-script.gs.
 
-      TRIGGER A — Re-run matching when Requirements sheet is edited:
+   8. SET UP TRIGGERS (do this once in the Triggers panel):
+
+      TRIGGER A — Re-run matching when the Listings sheet is edited:
       - In Apps Script editor, click the clock icon (Triggers) on the left sidebar
       - Click "+ Add Trigger" (bottom right)
       - Choose function: onRequirementsEdit
@@ -57,7 +33,7 @@
       - Event type: On edit
       - Click Save
 
-      TRIGGER B — Run full matching every morning at 7 AM:
+      TRIGGER B — Run full matching every morning:
       - Click "+ Add Trigger" again
       - Choose function: runMatchingForAllListings
       - Event source: Time-driven
@@ -66,7 +42,7 @@
       - Click Save
       (The daily trigger also auto-rebuilds the Dashboard after matching runs.)
 
-      TRIGGER C — Check expiry dates every morning at 8 AM:
+      TRIGGER C — Check expiry dates every morning:
       - Click "+ Add Trigger" again
       - Choose function: checkExpiryDates
       - Event source: Time-driven
@@ -75,30 +51,26 @@
       - Click Save
       (Sends 11-month renewal reminder emails and marks 12-month-old rows as expired.)
 
-  10. DASHBOARD TAB — created automatically by the script:
+   9. DASHBOARD TAB — created automatically by the script:
       - In Apps Script editor, select rebuildDashboard → click Run (do this once manually)
       - After that it rebuilds automatically every morning after matching (Trigger B above)
-      - The tab is read-only for Kacee — DO NOT edit it manually; it gets overwritten on each run
-      - To protect it from accidental editing:
-          Open the sheet → right-click the "Dashboard" tab → Protect sheet
-          Set "Show a warning when editing this range" or restrict to yourself only
+      - The tab is read-only — DO NOT edit it manually; it gets overwritten on each run
 
    ========================================================== */
 
 /* ── Configuration ── */
 var SPREADSHEET_ID = '1YCdiFVSRTipvDD-Ylt7nv6Sq5coAG-Zjasnu9tIrmFw';
-var LISTINGS_SHEET  = 'Listings';  /* master tab — merges old Listings + Requirements */
+var LISTINGS_SHEET  = 'Listings';  /* master Listings tab — managed via admin UI */
 var SITE_URL       = 'https://caaffordablehomes.com/homes.html'; /* update when domain is live */
 var SCRIPT_URL     = 'https://script.google.com/macros/s/AKfycbw0MOVFTvtDia4k_bcGVtgcwb-7EhWczMzSdLpaesRDUqV4ZmUpJ6CU75B09ee9tXHO/exec';
 var FROM_NAME      = 'CA Affordable Homes Team';
 var REPLY_TO       = 'Info@CAAffordableHomes.com';
 
 /* ── Matching configuration ── */
-/* LISTINGS_SHEET removed — matching engine now reads from LISTINGS_SHEET */
 var MATCH_RESULTS_SHEET = 'Match Results';
 var DASHBOARD_SHEET     = 'Dashboard';
 var CLOSE_THRESHOLD     = 2;  /* applicants with <= this many failed fields are "Close" */
-var NOTIFY_EMAIL        = 'tj@nostos.tech'; /* switch to Kacee's address at Phase 8 launch */
+var NOTIFY_EMAIL        = 'kcaffordablehomes@gmail.com'; /* switch to Kacee's final email at go-live */
 
 /* ── Interest List sheet name ── */
 var IL_SHEET = 'Interest List';
