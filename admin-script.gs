@@ -69,7 +69,8 @@ var LISTINGS_COLUMNS = [
   'min_employment_months','program_notes',
   'address','city','price','bedrooms','bathrooms','sqft',
   'listing_type','program_type','internal_notes',
-  'source_submission_row'  /* index of originating PS row (-1 if created manually) */
+  'source_submission_row', /* index of originating PS row (-1 if created manually) */
+  'linked_program_id'      /* Community Name of the site program this listing is linked to */
 ];
 
 /* Programs sheet column headers — must match exactly */
@@ -255,31 +256,29 @@ function adminGetDashboard(token) {
   /* Listings counts */
   var lstSheet2 = ss.getSheetByName(ADMIN_LISTINGS_SHEET);
   var lstTotal = 0, lstActive = 0, lstOnSite = 0;
-  var linkedListingIds = {};
   if (lstSheet2 && lstSheet2.getLastRow() > 1) {
-    var lstVals = lstSheet2.getRange(2, 1, lstSheet2.getLastRow() - 1, LISTINGS_COLUMNS.length).getValues();
-    var activeCol = LISTINGS_COLUMNS.indexOf('active');
+    var lstVals     = lstSheet2.getRange(2, 1, lstSheet2.getLastRow() - 1, LISTINGS_COLUMNS.length).getValues();
+    var activeCol   = LISTINGS_COLUMNS.indexOf('active');
+    var linkProgCol = LISTINGS_COLUMNS.indexOf('linked_program_id');
     lstTotal = lstVals.length;
     lstVals.forEach(function(r) {
       if ((r[activeCol] || '').toString().trim().toUpperCase() === 'YES') lstActive++;
+      if (linkProgCol >= 0 && r[linkProgCol]) lstOnSite++;
     });
   }
 
-  /* Programs counts + which listings are on site */
+  /* Programs counts */
   var progSheet = ss.getSheetByName(ADMIN_PROG_SHEET);
   var progAvailable = 0, progComingSoon = 0, progTotal2 = 0;
   if (progSheet && progSheet.getLastRow() > 1) {
     var progVals = progSheet.getRange(2, 1, progSheet.getLastRow() - 1, PROG_COLUMNS.length).getValues();
     var progStatusCol = PROG_COLUMNS.indexOf('Status');
-    var progSrcCol    = PROG_COLUMNS.indexOf('source_listing_id');
     progTotal2 = progVals.length;
     progVals.forEach(function(r) {
       var s = (r[progStatusCol] || '').toLowerCase();
       if (s === 'available') progAvailable++;
       if (s === 'coming soon') progComingSoon++;
-      if (progSrcCol >= 0 && r[progSrcCol]) linkedListingIds[r[progSrcCol]] = true;
     });
-    lstOnSite = Object.keys(linkedListingIds).length;
   }
 
   /* PS promoted count */
@@ -443,9 +442,9 @@ function getOrCreateListingsSheet_(ss) {
 }
 
 /* ==========================================================
-   ADMIN DATA — Link / unlink a listing to an existing program
-   Sets source_listing_id on the chosen program row, clears it
-   from any other program row that previously pointed here.
+   ADMIN DATA — Link / unlink a listing to a site program
+   Stores the program's Community Name in linked_program_id
+   on the Listing row, allowing multiple listings per program.
    Pass progRowIndex = -1 to unlink only.
    ========================================================== */
 function adminLinkListingToProgram(token, listingId, progRowIndex) {
@@ -453,29 +452,39 @@ function adminLinkListingToProgram(token, listingId, progRowIndex) {
     var auth = requireAdmin_(token);
     if (!auth.ok) return { ok: false, error: auth.error };
 
-    var ss    = SpreadsheetApp.openById(ADMIN_SS_ID);
-    var sheet = ss.getSheetByName(ADMIN_PROG_SHEET);
-    if (!sheet || sheet.getLastRow() < 2) return { ok: false, error: 'Programs sheet not found or empty.' };
+    var ss = SpreadsheetApp.openById(ADMIN_SS_ID);
 
-    var srcCol = PROG_COLUMNS.indexOf('source_listing_id') + 1;
-    if (srcCol < 1) return { ok: false, error: 'source_listing_id column not found.' };
+    /* Determine the program name to store (empty string = unlink) */
+    var progName = '';
+    if (typeof progRowIndex === 'number' && progRowIndex >= 0) {
+      var progSheet = ss.getSheetByName(ADMIN_PROG_SHEET);
+      if (!progSheet || progSheet.getLastRow() < 2) return { ok: false, error: 'Programs sheet not found or empty.' };
+      var nameCol = PROG_COLUMNS.indexOf('Community Name') + 1;
+      progName = String(progSheet.getRange(progRowIndex + 2, nameCol).getValue()).trim();
+      if (!progName) return { ok: false, error: 'Program not found at row ' + progRowIndex + '.' };
+    }
 
-    var lastRow = sheet.getLastRow();
-    var colData = sheet.getRange(2, srcCol, lastRow - 1, 1).getValues();
+    /* Find the listing row and write linked_program_id */
+    var lstSheet = getOrCreateListingsSheet_(ss);
+    if (lstSheet.getLastRow() < 2) return { ok: false, error: 'Listing not found.' };
 
-    /* Clear any existing link pointing to this listing */
-    for (var i = 0; i < colData.length; i++) {
-      if (String(colData[i][0]).trim() === String(listingId).trim()) {
-        sheet.getRange(i + 2, srcCol).setValue('');
+    var idCol   = LISTINGS_COLUMNS.indexOf('listing_id') + 1;
+    var linkCol = LISTINGS_COLUMNS.indexOf('linked_program_id') + 1;
+    if (idCol < 1 || linkCol < 1) return { ok: false, error: 'Column not found in Listings sheet.' };
+
+    var lastRow = lstSheet.getLastRow();
+    var idVals  = lstSheet.getRange(2, idCol, lastRow - 1, 1).getValues();
+    var found   = false;
+    for (var i = 0; i < idVals.length; i++) {
+      if (String(idVals[i][0]).trim() === String(listingId).trim()) {
+        lstSheet.getRange(i + 2, linkCol).setValue(progName);
+        found = true;
+        break;
       }
     }
 
-    /* Set the new link */
-    if (typeof progRowIndex === 'number' && progRowIndex >= 0) {
-      sheet.getRange(progRowIndex + 2, srcCol).setValue(listingId);
-    }
-
-    return { ok: true };
+    if (!found) return { ok: false, error: 'Listing ID not found: ' + listingId };
+    return { ok: true, progName: progName };
   } catch (e) {
     return { ok: false, error: e.message || String(e) };
   }
@@ -589,6 +598,24 @@ function adminSaveProgram(token, prog) {
     /* Append new row */
     sheet.appendRow(row);
   }
+
+  /* If pushed from a listing, also write linked_program_id on that listing row */
+  var srcListingId = (prog['source_listing_id'] || '').trim();
+  if (srcListingId) {
+    var lstSheet = getOrCreateListingsSheet_(ss);
+    var idCol   = LISTINGS_COLUMNS.indexOf('listing_id') + 1;
+    var linkCol = LISTINGS_COLUMNS.indexOf('linked_program_id') + 1;
+    if (idCol >= 1 && linkCol >= 1 && lstSheet.getLastRow() > 1) {
+      var idVals = lstSheet.getRange(2, idCol, lstSheet.getLastRow() - 1, 1).getValues();
+      for (var i = 0; i < idVals.length; i++) {
+        if (String(idVals[i][0]).trim() === srcListingId) {
+          lstSheet.getRange(i + 2, linkCol).setValue((prog['Community Name'] || '').trim());
+          break;
+        }
+      }
+    }
+  }
+
   return { ok: true };
 }
 
@@ -1623,6 +1650,12 @@ function getAdminJS_() {
   + '  /* Highlight active filter button */'
   + '  document.querySelectorAll(".prog-filter-btn").forEach(function(b){b.classList.toggle("active",b.dataset.pf===progFilterVal);});'
   + '  if(!visible.length){document.getElementById("prog-area").innerHTML=\'<div class="empty-state"><i class="fa-solid fa-filter"></i><p>No communities match this filter.</p></div>\';return;}'
+  + '  /* Build prog-name to linked listing names map from lstData */'
+  + '  var progToListings={};'
+  + '  if(lstData&&lstData.rows){lstData.rows.forEach(function(lr){'
+  + '    var pn=lr.linked_program_id;'
+  + '    if(pn){if(!progToListings[pn])progToListings[pn]=[];progToListings[pn].push(lr.listing_name||lr.listing_id||"Listing");}'
+  + '  });}'
   + '  var html=\'<div class="prog-grid">\';'
   + '  visible.forEach(function(prog){'
   + '    var i=prog._displayIdx;'
@@ -1639,9 +1672,9 @@ function getAdminJS_() {
   + '      if(prog[f[0]])html+=\'<div class="prog-detail"><span class="prog-detail-label"><i class="fa-solid \'+f[1]+\'" style="width:14px;color:#888;margin-right:.3rem;"></i>\'+esc(f[0])+\'</span><span class="prog-detail-value">\'+esc(prog[f[0]])+\'</span></div>\';'
   + '    });'
   + '    if(prog["Notes"])html+=\'<div style="font-size:.78rem;color:#888;background:rgba(0,0,0,.04);border-radius:6px;padding:.45rem .6rem;margin-top:.2rem;">\'+esc(prog["Notes"])+\'</div>\';'
-  + '    var srcLst=prog["source_listing_id"];'
-  + '    if(srcLst)html+=\'<div class="prog-link-note"><i class="fa-solid fa-link"></i> From listing: \'+esc(srcLst)+\'</div>\';'
-  + '    else html+=\'<div class="prog-link-note" style="color:#bbb;"><i class="fa-solid fa-unlink"></i> No linked listing</div>\';'
+  + '    var lnkLst=progToListings[prog["Community Name"]||""]||[];'
+  + '    if(lnkLst.length)html+=\'<div class="prog-link-note"><i class="fa-solid fa-link"></i> \'+lnkLst.length+\' linked listing\'+(lnkLst.length===1?"":"s")+\': \'+esc(lnkLst.join(", "))+\'</div>\';'
+  + '    else html+=\'<div class="prog-link-note" style="color:#bbb;"><i class="fa-solid fa-unlink"></i> No linked listings</div>\';'
   + '    html+=\'</div><div class="prog-card-footer"><button class="btn-secondary btn-sm" onclick="editProg(\'+i+\')"><i class="fa-solid fa-pen"></i> Edit</button><button class="btn-danger btn-sm" onclick="deleteProg(\'+i+\')"><i class="fa-solid fa-trash"></i> Delete</button></div>\''
   + '       +\'</div>\';'
   + '  });'
@@ -1920,13 +1953,13 @@ function getAdminJS_() {
      ===================================================== */
   + 'var lstData=null,editingLstRow=null,lstFilterVal="active";'
 
-  /* Build a listing_id → program name map from progData if available */
+  /* Build a listing_id → program name map from lstData */
   + 'function getProgLinkMap(){'
   + '  var map={};'
-  + '  if(!progData||!progData.rows)return map;'
-  + '  progData.rows.forEach(function(p){'
-  + '    var src=p["source_listing_id"];'
-  + '    if(src)map[src]=p["Community Name"]||"Program";'
+  + '  if(!lstData||!lstData.rows)return map;'
+  + '  lstData.rows.forEach(function(r){'
+  + '    var prog=r.linked_program_id;'
+  + '    if(prog)map[r.listing_id]=prog;'
   + '  });'
   + '  return map;'
   + '}'
@@ -2024,12 +2057,13 @@ function getAdminJS_() {
   /* Build program options for the link selector */
   + '  var progOpts=\'<option value="-1">-- Select a program --</option>\';'
   + '  var linkedProgIdx=-1;'
+  + '  var currentLink=r.linked_program_id||"";'
   + '  if(progData&&progData.rows){progData.rows.forEach(function(p,pi){'
-  + '    var selected=p["source_listing_id"]===r.listing_id;'
+  + '    var selected=!!(currentLink&&p["Community Name"]===currentLink);'
   + '    if(selected)linkedProgIdx=pi;'
   + '    progOpts+=\'<option value="\'+pi+\'"\'+( selected?" selected":"")+\'>\'+esc(p["Community Name"]||"Program "+pi)+\'</option>\';'
   + '  });}'
-  + '  var linkedProgName=linkedProgIdx>=0?(progData.rows[linkedProgIdx]["Community Name"]||"Program"):"";'
+  + '  var linkedProgName=currentLink;'
   + '  var body=\'<div class="drawer-action-row">\''
   + '    +\'<div class="drawer-action-title"><i class="fa-solid fa-globe"></i> Site Program</div>\''
   + '    +(linkedProgName?\'<div style="font-size:.84rem;color:#2c5545;margin-bottom:.55rem;"><i class="fa-solid fa-circle-check" style="margin-right:.35rem;"></i>Linked to: <strong>\'+esc(linkedProgName)+\'</strong></div>\':\'<div style="font-size:.82rem;color:#999;margin-bottom:.55rem;">Not linked to any site program</div>\')'
@@ -2068,8 +2102,12 @@ function getAdminJS_() {
   + '    linkBtn.disabled=true;linkBtn.innerHTML=\'<i class="fa-solid fa-circle-notch fa-spin"></i>\';'
   + '    google.script.run'
   + '      .withSuccessHandler(function(res){'
-  + '        if(res&&res.ok){toast("Linked to program.");progData=null;loadPrograms();renderListings(lstData);}else{toast((res&&res.error)||"Failed.",true);}'
   + '        linkBtn.disabled=false;linkBtn.innerHTML=\'<i class="fa-solid fa-link"></i> Link\';'
+  + '        if(res&&res.ok){'
+  + '          toast("Linked to program.");'
+  + '          if(lstData&&lstData.rows&&lstData.rows[idx])lstData.rows[idx].linked_program_id=res.progName||"";'
+  + '          renderListings(lstData);openLSTDrawer(idx);'
+  + '        }else{toast((res&&res.error)||"Failed.",true);}'
   + '      })'
   + '      .withFailureHandler(function(e){toast("Error: "+(e.message||""),true);linkBtn.disabled=false;linkBtn.innerHTML=\'<i class="fa-solid fa-link"></i> Link\';})'
   + '      .adminLinkListingToProgram(SESSION_TOKEN,r.listing_id,pi);'
@@ -2080,8 +2118,12 @@ function getAdminJS_() {
   + '    unlinkBtn.disabled=true;'
   + '    google.script.run'
   + '      .withSuccessHandler(function(res){'
-  + '        if(res&&res.ok){toast("Unlinked.");progData=null;loadPrograms();renderListings(lstData);}else{toast((res&&res.error)||"Failed.",true);}'
   + '        unlinkBtn.disabled=false;'
+  + '        if(res&&res.ok){'
+  + '          toast("Unlinked.");'
+  + '          if(lstData&&lstData.rows&&lstData.rows[idx])lstData.rows[idx].linked_program_id="";'
+  + '          renderListings(lstData);openLSTDrawer(idx);'
+  + '        }else{toast((res&&res.error)||"Failed.",true);}'
   + '      })'
   + '      .withFailureHandler(function(e){toast("Error: "+(e.message||""),true);unlinkBtn.disabled=false;})'
   + '      .adminLinkListingToProgram(SESSION_TOKEN,r.listing_id,-1);'
@@ -2224,6 +2266,7 @@ function getAdminJS_() {
   + '    program_type:document.getElementById("lf-program-type").value.trim(),'
   + '    internal_notes:document.getElementById("lf-int-notes").value.trim(),'
   + '    source_submission_row:typeof window._promotingPsRowIndex==="number"?window._promotingPsRowIndex:"",'
+  + '    linked_program_id:editingLstRow?(editingLstRow.linked_program_id||""):"",'
   + '    _rowIndex:editingLstRow?editingLstRow._rowIndex:-1'
   + '  };'
   + '  var btn=document.getElementById("lst-save-btn");'
