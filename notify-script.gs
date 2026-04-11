@@ -1595,3 +1595,438 @@ function migrateToMasterListings() {
     Logger.log('Migration: no data found in old Requirements tab. Master Listings tab created with headers only.');
   }
 }
+
+/* ==========================================================
+   SPREADSHEET SETUP UTILITIES
+   Run these from the Apps Script editor (select function, click Run).
+
+   setupAllSheets()       — creates every tab with correct headers (safe on existing data)
+   resetSheet(name)       — wipes all data rows from a single named tab, keeps header
+   resetAllDataSheets()   — wipes data rows from all tabs except Dashboard (keeps headers)
+   ========================================================== */
+
+/* Testimonials tab column headers (must match what testimonials.js expects) */
+var TESTIMONIALS_SHEET   = 'Testimonials';
+var TESTIMONIALS_COLUMNS = ['Quote', 'Attribution', 'Status'];
+
+/* Programs columns also defined in admin-script.gs; duplicated here for setup utility */
+var PROG_SHEET   = 'Programs';
+var PROG_COLS    = ['Community Name', 'Area', 'Program Type', 'AMI Range',
+                    'Bedrooms', 'Household Size Limit', 'First-Time Buyer',
+                    'Price Range', 'Status', 'Notes'];
+
+function setupAllSheets() {
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  _ensureSheet(ss, IL_SHEET,             IL_COLUMNS);
+  _ensureSheet(ss, LISTINGS_SHEET,       LISTINGS_COLUMNS);
+  _ensureSheet(ss, PROG_SHEET,           PROG_COLS);
+  _ensureSheet(ss, PS_SHEET,             PS_COLUMNS);
+  _ensureSheet(ss, MATCH_RESULTS_SHEET,  MR_COLUMNS);
+  _ensureSheet(ss, TESTIMONIALS_SHEET,   TESTIMONIALS_COLUMNS);
+  Logger.log('setupAllSheets: all tabs verified/created.');
+}
+
+/* Creates the tab if missing, or adds any new header columns that don't exist yet.
+   Never removes columns or touches data rows. */
+function _ensureSheet(ss, name, columns) {
+  var sheet = ss.getSheetByName(name);
+  if (!sheet) {
+    sheet = ss.insertSheet(name);
+    sheet.getRange(1, 1, 1, columns.length).setValues([columns]);
+    sheet.setFrozenRows(1);
+    Logger.log('  Created: ' + name + ' (' + columns.length + ' columns)');
+    return;
+  }
+  /* Sheet exists — check if any columns are missing (append only) */
+  var existing = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]
+                      .map(function (h) { return String(h).trim(); });
+  var added = 0;
+  columns.forEach(function (col) {
+    if (existing.indexOf(col) === -1) {
+      sheet.getRange(1, sheet.getLastColumn() + 1).setValue(col);
+      added++;
+    }
+  });
+  if (added > 0) {
+    sheet.setFrozenRows(1);
+    Logger.log('  Updated: ' + name + ' (added ' + added + ' missing column(s))');
+  } else {
+    Logger.log('  OK: ' + name);
+  }
+}
+
+/* Wipe all data rows from one named tab, keeping the header row */
+function resetSheet(name) {
+  var ss    = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName(name);
+  if (!sheet) { Logger.log('resetSheet: tab not found — ' + name); return; }
+  var last = sheet.getLastRow();
+  if (last > 1) {
+    sheet.deleteRows(2, last - 1);
+    Logger.log('resetSheet: cleared ' + (last - 1) + ' data row(s) from ' + name);
+  } else {
+    Logger.log('resetSheet: ' + name + ' already empty');
+  }
+}
+
+/* Wipe data rows from all tabs (except Dashboard which is auto-rebuilt) */
+function resetAllDataSheets() {
+  [IL_SHEET, LISTINGS_SHEET, PROG_SHEET, PS_SHEET, MATCH_RESULTS_SHEET, TESTIMONIALS_SHEET]
+    .forEach(function (name) { resetSheet(name); });
+  Logger.log('resetAllDataSheets complete.');
+}
+
+/* ==========================================================
+   SEEDING UTILITIES
+   Run these from the Apps Script editor to populate realistic
+   test data.  Requires the tabs to exist first (run setupAllSheets).
+
+   seedAllData()              — seeds every tab
+   seedInterestList()         — 6 test applicants (various statuses)
+   seedListings()             — 3 test listings (2 active, 1 inactive)
+   seedPrograms()             — 3 test programs (available + coming soon)
+   seedPropertySubmissions()  — 2 test property submissions
+   seedTestimonials()         — 3 test testimonials (2 active, 1 inactive)
+   ========================================================== */
+
+function seedAllData() {
+  seedListings();
+  seedPrograms();
+  seedInterestList();
+  seedPropertySubmissions();
+  seedTestimonials();
+  Logger.log('seedAllData complete.');
+}
+
+/* ── Interest List seed ── */
+function seedInterestList() {
+  var ss    = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName(IL_SHEET);
+  if (!sheet) { Logger.log('seedInterestList: Interest List tab not found. Run setupAllSheets first.'); return; }
+
+  var now   = new Date();
+  var ago   = function (days) { var d = new Date(now); d.setDate(d.getDate() - days); return d; };
+
+  /* Helper: build a sparse IL row from a plain object of field values */
+  function ilRow(fields) {
+    var row = new Array(IL_COLUMNS.length).fill('');
+    for (var k in fields) {
+      var idx = IL_COLUMNS.indexOf(k);
+      if (idx > -1) row[idx] = fields[k];
+    }
+    return row;
+  }
+
+  var rows = [
+    /* 1 — New applicant, likely eligible */
+    ilRow({
+      submitted_at: ago(3), status: 'new', updated_at: ago(3),
+      full_name: 'Maria Garcia', phone: '(619) 555-0101', email: 'maria.garcia.test@example.com',
+      owned_real_estate: 'No', household_size: 2, lived_together_12mo: 'Yes',
+      live_in_sd_county: 'Yes', credit_score_self: 720, credit_score_coborrower: 695,
+      monthly_rent: 1850, rent_subsidized: 'No',
+      worked_lived_sd_2yr: 'Yes', sdhc_prior_purchase: 'No',
+      income_1_name: 'Maria', income_1_relationship: 'Self', income_1_annual: 62000,
+      income_2_name: 'Carlos', income_2_relationship: 'Spouse or Partner', income_2_annual: 48000,
+      tax_year_labels: '2024,2023,2022', tax_1_total: 108000, tax_2_total: 105000, tax_3_total: 98000,
+      non_taxable_income: 'No', agent_yn: 'No',
+      emp_1_name: 'Maria', emp_1_relationship: 'Self', emp_1_employer: 'City of San Diego', emp_1_status: 'Current',
+      emp_1_income_type: 'Salary', emp_1_annual_salary: 62000,
+      monthly_debt_payments: 420, foreclosure: 'No', bankruptcy: 'No', judgments: 'No',
+      us_citizen: 'Yes', permanent_resident: '',
+      asset_checking: 8000, asset_savings: 22000, asset_401k: 15000, asset_other: 0,
+      loan_signers: 'Both', household_members: 'Maria Garcia, Carlos Garcia',
+      area_preference: 'South Bay, Central San Diego',
+      renewal_reminder_sent: '', original_signup_at: ago(3)
+    }),
+
+    /* 2 — Under review, borderline credit */
+    ilRow({
+      submitted_at: ago(14), status: 'reviewing', updated_at: ago(7),
+      full_name: 'David Kim', phone: '(619) 555-0202', email: 'david.kim.test@example.com',
+      owned_real_estate: 'No', household_size: 3, lived_together_12mo: 'Yes',
+      live_in_sd_county: 'Yes', credit_score_self: 642, credit_score_coborrower: '',
+      monthly_rent: 2200, rent_subsidized: 'No',
+      worked_lived_sd_2yr: 'Yes', sdhc_prior_purchase: 'No',
+      income_1_name: 'David', income_1_relationship: 'Self', income_1_annual: 72000,
+      income_2_name: 'Jin', income_2_relationship: 'Spouse or Partner', income_2_annual: 38000,
+      income_3_name: 'Grace', income_3_relationship: 'Child', income_3_annual: 0,
+      tax_year_labels: '2024,2023,2022', tax_1_total: 108000, tax_2_total: 104000, tax_3_total: 99000,
+      non_taxable_income: 'No', agent_yn: 'Yes',
+      emp_1_name: 'David', emp_1_relationship: 'Self', emp_1_employer: 'Qualcomm', emp_1_status: 'Current',
+      emp_1_income_type: 'Salary', emp_1_annual_salary: 72000,
+      monthly_debt_payments: 680, foreclosure: 'No', bankruptcy: 'No', judgments: 'No',
+      us_citizen: 'Yes', permanent_resident: '',
+      asset_checking: 5000, asset_savings: 30000, asset_401k: 45000, asset_other: 0,
+      loan_signers: 'Both', household_members: 'David Kim, Jin Kim, Grace Kim',
+      area_preference: 'North County Inland, East County',
+      renewal_reminder_sent: '', original_signup_at: ago(14)
+    }),
+
+    /* 3 — Active, strong profile */
+    ilRow({
+      submitted_at: ago(60), status: 'active', updated_at: ago(60),
+      full_name: 'Sarah Johnson', phone: '(858) 555-0303', email: 'sarah.johnson.test@example.com',
+      owned_real_estate: 'No', household_size: 4, lived_together_12mo: 'Yes',
+      live_in_sd_county: 'Yes', credit_score_self: 712, credit_score_coborrower: 698,
+      monthly_rent: 2600, rent_subsidized: 'No',
+      worked_lived_sd_2yr: 'Yes', sdhc_prior_purchase: 'No',
+      income_1_name: 'Sarah', income_1_relationship: 'Self', income_1_annual: 58000,
+      income_2_name: 'Tom', income_2_relationship: 'Spouse or Partner', income_2_annual: 64000,
+      income_3_name: 'Emma', income_3_relationship: 'Child', income_3_annual: 0,
+      income_4_name: 'Liam', income_4_relationship: 'Child', income_4_annual: 0,
+      tax_year_labels: '2024,2023,2022', tax_1_total: 120000, tax_2_total: 115000, tax_3_total: 108000,
+      non_taxable_income: 'No', agent_yn: 'No',
+      emp_1_name: 'Sarah', emp_1_relationship: 'Self', emp_1_employer: 'Sharp Healthcare', emp_1_status: 'Current',
+      emp_1_income_type: 'Salary', emp_1_annual_salary: 58000,
+      emp_2_name: 'Tom', emp_2_relationship: 'Spouse or Partner', emp_2_employer: 'SDGE', emp_2_status: 'Current',
+      emp_2_income_type: 'Salary', emp_2_annual_salary: 64000,
+      monthly_debt_payments: 550, foreclosure: 'No', bankruptcy: 'No', judgments: 'No',
+      us_citizen: 'Yes', permanent_resident: '',
+      asset_checking: 12000, asset_savings: 45000, asset_401k: 62000, asset_other: 0,
+      loan_signers: 'Both', household_members: 'Sarah Johnson, Tom Johnson, Emma Johnson, Liam Johnson',
+      area_preference: 'South Bay',
+      renewal_reminder_sent: '', original_signup_at: ago(60)
+    }),
+
+    /* 4 — Matched, process complete */
+    ilRow({
+      submitted_at: ago(180), status: 'matched', updated_at: ago(30),
+      full_name: 'Robert Chen', phone: '(619) 555-0404', email: 'robert.chen.test@example.com',
+      owned_real_estate: 'No', household_size: 1, lived_together_12mo: 'Yes',
+      live_in_sd_county: 'Yes', credit_score_self: 755, credit_score_coborrower: '',
+      monthly_rent: 1600, rent_subsidized: 'No',
+      worked_lived_sd_2yr: 'Yes', sdhc_prior_purchase: 'No',
+      income_1_name: 'Robert', income_1_relationship: 'Self', income_1_annual: 56000,
+      tax_year_labels: '2024,2023,2022', tax_1_total: 56000, tax_2_total: 53000, tax_3_total: 50000,
+      non_taxable_income: 'No', agent_yn: 'No',
+      emp_1_name: 'Robert', emp_1_relationship: 'Self', emp_1_employer: 'UC San Diego', emp_1_status: 'Current',
+      emp_1_income_type: 'Salary', emp_1_annual_salary: 56000,
+      monthly_debt_payments: 280, foreclosure: 'No', bankruptcy: 'No', judgments: 'No',
+      us_citizen: 'Yes', permanent_resident: '',
+      asset_checking: 9000, asset_savings: 35000, asset_401k: 28000, asset_other: 0,
+      loan_signers: 'Self only', household_members: 'Robert Chen',
+      area_preference: 'City of San Diego - Urban Core',
+      renewal_reminder_sent: '', original_signup_at: ago(180)
+    }),
+
+    /* 5 — Expired, over 12 months old */
+    ilRow({
+      submitted_at: ago(390), status: 'expired', updated_at: ago(1),
+      full_name: 'Lisa Torres', phone: '(760) 555-0505', email: 'lisa.torres.test@example.com',
+      owned_real_estate: 'No', household_size: 2, lived_together_12mo: 'Yes',
+      live_in_sd_county: 'Yes', credit_score_self: 678, credit_score_coborrower: '',
+      monthly_rent: 1750, rent_subsidized: 'No',
+      worked_lived_sd_2yr: 'Yes', sdhc_prior_purchase: 'No',
+      income_1_name: 'Lisa', income_1_relationship: 'Self', income_1_annual: 48000,
+      income_2_name: 'Ana', income_2_relationship: 'Parent', income_2_annual: 18000,
+      tax_year_labels: '2023,2022,2021', tax_1_total: 65000, tax_2_total: 62000, tax_3_total: 60000,
+      non_taxable_income: 'No', agent_yn: 'No',
+      emp_1_name: 'Lisa', emp_1_relationship: 'Self', emp_1_employer: 'San Diego Unified', emp_1_status: 'Current',
+      emp_1_income_type: 'Salary', emp_1_annual_salary: 48000,
+      monthly_debt_payments: 350, foreclosure: 'No', bankruptcy: 'No', judgments: 'No',
+      us_citizen: 'Yes', permanent_resident: '',
+      asset_checking: 3000, asset_savings: 8000, asset_401k: 5000, asset_other: 0,
+      loan_signers: 'Self only', household_members: 'Lisa Torres, Ana Torres',
+      area_preference: 'North County Coastal',
+      renewal_reminder_sent: 'Yes', original_signup_at: ago(390)
+    }),
+
+    /* 6 — New, has prior foreclosure (tests Close/Fail path) */
+    ilRow({
+      submitted_at: ago(1), status: 'new', updated_at: ago(1),
+      full_name: 'Michael Brown', phone: '(619) 555-0606', email: 'michael.brown.test@example.com',
+      owned_real_estate: 'No', household_size: 5, lived_together_12mo: 'Yes',
+      live_in_sd_county: 'Yes', credit_score_self: 622, credit_score_coborrower: 610,
+      monthly_rent: 2800, rent_subsidized: 'No',
+      worked_lived_sd_2yr: 'Yes', sdhc_prior_purchase: 'No',
+      income_1_name: 'Michael', income_1_relationship: 'Self', income_1_annual: 55000,
+      income_2_name: 'Angela', income_2_relationship: 'Spouse or Partner', income_2_annual: 42000,
+      income_3_name: 'Tyler', income_3_relationship: 'Child', income_3_annual: 0,
+      income_4_name: 'Madison', income_4_relationship: 'Child', income_4_annual: 0,
+      income_5_name: 'Jake', income_5_relationship: 'Child', income_5_annual: 0,
+      tax_year_labels: '2024,2023,2022', tax_1_total: 96000, tax_2_total: 90000, tax_3_total: 85000,
+      non_taxable_income: 'No', agent_yn: 'No',
+      emp_1_name: 'Michael', emp_1_relationship: 'Self', emp_1_employer: 'Pacific Building Co', emp_1_status: 'Current',
+      emp_1_income_type: 'Hourly', emp_1_hourly_rate: 28, emp_1_hours_per_week: 40,
+      monthly_debt_payments: 920, foreclosure: 'Yes', foreclosure_date: '2021-06-01',
+      bankruptcy: 'No', judgments: 'No',
+      us_citizen: 'Yes', permanent_resident: '',
+      asset_checking: 2000, asset_savings: 5000, asset_401k: 0, asset_other: 0,
+      loan_signers: 'Both', household_members: 'Michael Brown, Angela Brown, Tyler Brown, Madison Brown, Jake Brown',
+      area_preference: 'South Bay, East County',
+      renewal_reminder_sent: '', original_signup_at: ago(1)
+    })
+  ];
+
+  sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, IL_COLUMNS.length).setValues(rows);
+  Logger.log('seedInterestList: inserted ' + rows.length + ' test applicants.');
+}
+
+/* ── Listings seed ── */
+function seedListings() {
+  var ss    = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName(LISTINGS_SHEET);
+  if (!sheet) { Logger.log('seedListings: Listings tab not found. Run setupAllSheets first.'); return; }
+
+  /* Build a sparse listing row from a plain object */
+  function lstRow(fields) {
+    var row = new Array(LISTINGS_COLUMNS.length).fill('');
+    for (var k in fields) {
+      var idx = LISTINGS_COLUMNS.indexOf(k);
+      if (idx > -1) row[idx] = fields[k];
+    }
+    return row;
+  }
+
+  var rows = [
+    /* Community 1 — Active, 80% AMI, South Bay */
+    lstRow({
+      listing_id: 'chula-vista-terrace', listing_name: 'Chula Vista Terrace', active: 'YES',
+      ami_percent: 80, min_household_size: 2, max_household_size: 6,
+      max_income_1person: 75000, max_income_2person: 85700, max_income_3person: 96400,
+      max_income_4person: 107050, max_income_5person: 115600, max_income_6person: 124150,
+      min_income: 40000, min_credit_score: 640, max_dti_percent: 45, max_monthly_debt: 1800,
+      first_time_buyer_required: 'YES', no_ownership_years: 3,
+      sd_county_residency_required: 'YES', sd_residency_months: 24,
+      household_together_months: 12, sdhc_prior_purchase_allowed: 'NO',
+      foreclosure_allowed: 'YES', foreclosure_min_years: 4,
+      bankruptcy_allowed: 'YES', bankruptcy_min_years: 4,
+      judgments_allowed: 'NO', citizenship_required: 'NO', permanent_resident_acceptable: 'YES',
+      min_assets: 5000, max_assets: 0, min_down_payment_pct: 3, max_down_payment_pct: 20,
+      min_employment_months: 24,
+      program_notes: 'San Diego Housing Commission program. Requires buyer education completion prior to close.',
+      address: '(Contact for address)', city: 'Chula Vista', price: 479000,
+      bedrooms: 3, bathrooms: 2, sqft: 1420, listing_type: 'affordable', program_type: 'SDHC Low-Income',
+      internal_notes: 'Seed data - 4 units available, move-in ready Q3 2025'
+    }),
+
+    /* Community 2 — Active, 100% AMI, Central San Diego */
+    lstRow({
+      listing_id: 'north-park-row-homes', listing_name: 'North Park Row Homes', active: 'YES',
+      ami_percent: 100, min_household_size: 1, max_household_size: 4,
+      max_income_1person: 93750, max_income_2person: 107150, max_income_3person: 120550,
+      max_income_4person: 133900, max_income_5person: 144600, max_income_6person: 155200,
+      min_income: 50000, min_credit_score: 660, max_dti_percent: 45, max_monthly_debt: 2200,
+      first_time_buyer_required: 'YES', no_ownership_years: 3,
+      sd_county_residency_required: 'YES', sd_residency_months: 12,
+      household_together_months: 12, sdhc_prior_purchase_allowed: 'NO',
+      foreclosure_allowed: 'YES', foreclosure_min_years: 5,
+      bankruptcy_allowed: 'YES', bankruptcy_min_years: 4,
+      judgments_allowed: 'NO', citizenship_required: 'NO', permanent_resident_acceptable: 'YES',
+      min_assets: 8000, max_assets: 0, min_down_payment_pct: 3, max_down_payment_pct: 15,
+      min_employment_months: 24,
+      program_notes: 'City of San Diego affordable ownership program. HOA covers exterior maintenance.',
+      address: '(Contact for address)', city: 'San Diego', price: 580000,
+      bedrooms: 2, bathrooms: 2, sqft: 1180, listing_type: 'affordable', program_type: 'City Affordable',
+      internal_notes: 'Seed data - 2 units remaining, strong interest list pipeline'
+    }),
+
+    /* Community 3 — Inactive (coming fall), East County */
+    lstRow({
+      listing_id: 'spring-valley-family-homes', listing_name: 'Spring Valley Family Homes', active: 'NO',
+      ami_percent: 80, min_household_size: 2, max_household_size: 6,
+      max_income_1person: 75000, max_income_2person: 85700, max_income_3person: 96400,
+      max_income_4person: 107050, max_income_5person: 115600, max_income_6person: 124150,
+      min_income: 38000, min_credit_score: 640, max_dti_percent: 45, max_monthly_debt: 1800,
+      first_time_buyer_required: 'YES', no_ownership_years: 3,
+      sd_county_residency_required: 'YES', sd_residency_months: 24,
+      household_together_months: 12, sdhc_prior_purchase_allowed: 'NO',
+      foreclosure_allowed: 'YES', foreclosure_min_years: 4,
+      bankruptcy_allowed: 'YES', bankruptcy_min_years: 4,
+      judgments_allowed: 'NO', citizenship_required: 'NO', permanent_resident_acceptable: 'YES',
+      min_assets: 5000, max_assets: 0, min_down_payment_pct: 3, max_down_payment_pct: 20,
+      min_employment_months: 24,
+      program_notes: 'Developer-direct affordable program, 8 homes planned. Lottery selection process expected.',
+      address: '(Contact for address)', city: 'Spring Valley', price: 465000,
+      bedrooms: 4, bathrooms: 2, sqft: 1650, listing_type: 'affordable', program_type: 'Developer Affordable',
+      internal_notes: 'Seed data - coming fall. Begin marketing July 2025. Confirm developer timeline.'
+    })
+  ];
+
+  sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, LISTINGS_COLUMNS.length).setValues(rows);
+  Logger.log('seedListings: inserted ' + rows.length + ' test listings.');
+}
+
+/* ── Programs seed ── */
+function seedPrograms() {
+  var ss    = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName(PROG_SHEET);
+  if (!sheet) {
+    /* Auto-create with headers if missing */
+    sheet = ss.insertSheet(PROG_SHEET);
+    sheet.getRange(1, 1, 1, PROG_COLS.length).setValues([PROG_COLS]);
+    sheet.setFrozenRows(1);
+  }
+
+  var rows = [
+    ['Chula Vista Terrace',       'South Bay',              'SDHC Low-Income', '80% AMI', '3',   '2-6',  'Yes', '$479,000',  'Available',   'Buyer education required. 4 units ready Q3 2025.'],
+    ['North Park Row Homes',      'Central San Diego',      'City Affordable',  '100% AMI','2',   '1-4',  'Yes', '$580,000',  'Available',   'HOA covers exterior maintenance. 2 units remaining.'],
+    ['Spring Valley Family Homes','East County',            'Developer Affordable','80% AMI','3-4','2-6', 'Yes', '$465,000',  'Coming Soon', 'Lottery selection expected. 8 homes planned fall 2025.']
+  ];
+
+  sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, PROG_COLS.length).setValues(rows);
+  Logger.log('seedPrograms: inserted ' + rows.length + ' test programs.');
+}
+
+/* ── Property Submissions seed ── */
+function seedPropertySubmissions() {
+  var ss    = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName(PS_SHEET);
+  if (!sheet) { Logger.log('seedPropertySubmissions: Property Submissions tab not found. Run setupAllSheets first.'); return; }
+
+  var now = new Date();
+  var ago = function (days) { var d = new Date(now); d.setDate(d.getDate() - days); return d; };
+
+  function psRow(fields) {
+    var row = new Array(PS_COLUMNS.length).fill('');
+    PS_COLUMNS.forEach(function (col, i) {
+      if (fields[col] !== undefined) row[i] = fields[col];
+    });
+    return row;
+  }
+
+  var rows = [
+    psRow({
+      submitted_at: ago(5), status: 'new',
+      contact_name: 'James Reyes', contact_org: 'South Bay Development Group', contact_email: 'jreyes.test@example.com', contact_phone: '(619) 555-0701',
+      prop_address: '(Chula Vista — address available upon request)', affordable_count: 4, bedrooms: 3, bathrooms: 2,
+      move_in_date: '2025-09-01', marketing_start: '2025-07-15', ami_percent: 80, affordable_price: 479000,
+      hoa_fee: 220, hoa_covers: 'Exterior maintenance, landscaping, trash', prop_tax_pct: 1.1,
+      special_assessments: 'None', deed_restriction_years: 45, solar: 'Yes', solar_included: 'Yes', solar_lease_amount: 0,
+      file_links: ''
+    }),
+    psRow({
+      submitted_at: ago(12), status: 'reviewing',
+      contact_name: 'Patricia Nguyen', contact_org: 'City of San Diego Housing Division', contact_email: 'pnguyen.test@example.com', contact_phone: '(619) 555-0802',
+      prop_address: '(North Park — address available upon request)', affordable_count: 2, bedrooms: 2, bathrooms: 2,
+      move_in_date: '2025-08-01', marketing_start: '2025-06-01', ami_percent: 100, affordable_price: 580000,
+      hoa_fee: 310, hoa_covers: 'Roof, exterior, water, trash, common areas', prop_tax_pct: 1.0,
+      special_assessments: 'None', deed_restriction_years: 55, solar: 'No', solar_included: 'No', solar_lease_amount: 0,
+      file_links: ''
+    })
+  ];
+
+  sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, PS_COLUMNS.length).setValues(rows);
+  Logger.log('seedPropertySubmissions: inserted ' + rows.length + ' test submissions.');
+}
+
+/* ── Testimonials seed ── */
+function seedTestimonials() {
+  var ss    = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName(TESTIMONIALS_SHEET);
+  if (!sheet) {
+    sheet = ss.insertSheet(TESTIMONIALS_SHEET);
+    sheet.getRange(1, 1, 1, TESTIMONIALS_COLUMNS.length).setValues([TESTIMONIALS_COLUMNS]);
+    sheet.setFrozenRows(1);
+  }
+
+  var rows = [
+    ['Before finding this site, I didn\'t think I qualified for anything. The interest list process was simple, and I finally understood what I could realistically afford. It gave me confidence to move forward.', 'First-Time Buyer', 'active'],
+    ['The breakdown of monthly costs and debt ratios was extremely helpful. There was no pressure, just clear information. That made all the difference.', 'Affordable Housing Buyer', 'active'],
+    ['We needed a better way to identify qualified buyers for our affordable units. The structured screening process saved us time and ensured we were working with eligible applicants.', 'Developer Partner', 'inactive']
+  ];
+
+  sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, TESTIMONIALS_COLUMNS.length).setValues(rows);
+  Logger.log('seedTestimonials: inserted ' + rows.length + ' test testimonials (2 active, 1 inactive).');
+}
