@@ -406,17 +406,21 @@ function adminGetPrograms(token) {
   var auth = requireAdmin_(token);
   if (!auth.ok) return { ok: false, error: auth.error };
 
-  var ss    = SpreadsheetApp.openById(ADMIN_SS_ID);
-  var sheet = getOrCreateProgSheet_(ss);
-  if (sheet.getLastRow() < 2) return { ok: true, rows: [] };
+  try {
+    var ss    = SpreadsheetApp.openById(ADMIN_SS_ID);
+    var sheet = getOrCreateProgSheet_(ss);
+    if (sheet.getLastRow() < 2) return { ok: true, rows: [] };
 
-  var data = sheet.getRange(2, 1, sheet.getLastRow() - 1, PROG_COLUMNS.length).getValues();
-  var rows = data.map(function(row, i) {
-    var obj = { _rowIndex: i };
-    PROG_COLUMNS.forEach(function(col, j) { obj[col] = row[j]; });
-    return obj;
-  });
-  return { ok: true, rows: rows };
+    var data = sheet.getRange(2, 1, sheet.getLastRow() - 1, PROG_COLUMNS.length).getValues();
+    var rows = data.map(function(row, i) {
+      var obj = { _rowIndex: i };
+      PROG_COLUMNS.forEach(function(col, j) { obj[col] = row[j]; });
+      return obj;
+    });
+    return { ok: true, rows: rows };
+  } catch (e) {
+    return { ok: false, error: e.message || String(e) };
+  }
 }
 
 /* Save (insert or update) a program row */
@@ -705,16 +709,16 @@ function buildAdminHTML(userEmail, authMethod, token) {
 
     /* ── Interest List Tab ── */
     + '  <section class="tab-panel" id="tab-interest-list">'
-    + '    <div class="toolbar">'
+    + '    <div class="toolbar" style="flex-wrap:wrap;gap:.75rem;">'
     + '      <input type="search" id="il-search" class="search-input" placeholder="Search by name, email\u2026">'
-    + '      <select id="il-status-filter" class="select-input">'
-    + '        <option value="">All statuses</option>'
-    + '        <option value="new">New</option>'
-    + '        <option value="reviewing">Reviewing</option>'
-    + '        <option value="active">Active</option>'
-    + '        <option value="matched">Matched</option>'
-    + '        <option value="expired">Expired</option>'
-    + '      </select>'
+    + '    </div>'
+    + '    <div class="prog-filter-bar" id="il-filter-bar" style="padding:0 1.5rem .25rem;">'
+    + '      <button class="prog-filter-btn" data-ilf="">All</button>'
+    + '      <button class="prog-filter-btn" data-ilf="new">New</button>'
+    + '      <button class="prog-filter-btn" data-ilf="reviewing">Reviewing</button>'
+    + '      <button class="prog-filter-btn" data-ilf="active">Active</button>'
+    + '      <button class="prog-filter-btn" data-ilf="matched">Matched</button>'
+    + '      <button class="prog-filter-btn" data-ilf="expired">Expired</button>'
     + '    </div>'
     + '    <div class="table-wrap"><div id="il-table-area" class="loading-state"><i class="fa-solid fa-circle-notch fa-spin"></i><p>Loading\u2026</p></div></div>'
     /* Detail drawer */
@@ -774,8 +778,12 @@ function buildAdminHTML(userEmail, authMethod, token) {
 
     /* ── Property Submissions Tab ── */
     + '  <section class="tab-panel" id="tab-properties">'
-    + '    <div class="toolbar">'
-    + '      <select id="ps-status-filter" class="select-input"><option value="">All statuses</option><option value="new">New</option><option value="reviewing">Reviewing</option><option value="approved">Approved</option><option value="declined">Declined</option></select>'
+    + '    <div class="prog-filter-bar" id="ps-filter-bar" style="padding:.75rem 1.5rem .25rem;">'
+    + '      <button class="prog-filter-btn" data-psf="">All</button>'
+    + '      <button class="prog-filter-btn" data-psf="new">New</button>'
+    + '      <button class="prog-filter-btn" data-psf="reviewing">Reviewing</button>'
+    + '      <button class="prog-filter-btn" data-psf="approved">Approved</button>'
+    + '      <button class="prog-filter-btn" data-psf="declined">Declined</button>'
     + '    </div>'
     + '    <div class="table-wrap"><div id="ps-table-area" class="loading-state"><i class="fa-solid fa-circle-notch fa-spin"></i><p>Loading\u2026</p></div></div>'
     /* Property detail drawer */
@@ -878,6 +886,8 @@ function buildAdminHTML(userEmail, authMethod, token) {
     + 'var editingProgRow=null;'
     + 'var ilSortCol=-1,ilSortDir=1,psSortCol=-1,psSortDir=1;'
     + 'var progFilterVal="active";'
+    + 'var ilFilterVal="";'
+    + 'var psFilterVal="";'
     + getAdminJS_()
     + '<\/script>'
     + '</body></html>';
@@ -1073,8 +1083,8 @@ function getAdminJS_() {
   + '    document.getElementById("tab-"+tab).classList.add("active");'
   + '    document.getElementById("top-title").textContent={'
   + '      "dashboard":"Dashboard","interest-list":"Interest List",'
-  + '      "programs":"Programs","properties":"Property Submissions"'
-  + '    }[tab];'
+  + '      "programs":"Programs","properties":"Property Submissions","listings":"Listings"'
+  + '    }[tab]||"";'
   + '    if(tab==="interest-list"&&!ilData)loadInterestList();'
   + '    if(tab==="programs"&&!progData)loadPrograms();'
   + '    if(tab==="properties"&&!psData)loadProperties();'
@@ -1167,8 +1177,8 @@ function getAdminJS_() {
   + '  var titles={"dashboard":"Dashboard","interest-list":"Interest List","programs":"Programs","properties":"Property Submissions","listings":"Listings"};'
   + '  document.getElementById("top-title").textContent=titles[tab]||tab;'
   + '  if(typeof statusF==="string"){'
-  + '    if(tab==="interest-list"){document.getElementById("il-status-filter").value=statusF;}'
-  + '    if(tab==="properties"){document.getElementById("ps-status-filter").value=statusF;}'
+  + '    if(tab==="interest-list"){ilFilterVal=statusF;document.querySelectorAll("#il-filter-bar .prog-filter-btn").forEach(function(b){b.classList.toggle("active",b.dataset.ilf===ilFilterVal);});}'
+  + '    if(tab==="properties"){psFilterVal=statusF;document.querySelectorAll("#ps-filter-bar .prog-filter-btn").forEach(function(b){b.classList.toggle("active",b.dataset.psf===psFilterVal);});}'
   + '  }'
   + '  if(tab==="interest-list"){if(!ilData)loadInterestList();else renderILTable(ilData);}'
   + '  if(tab==="programs"){if(!progData)loadPrograms();}'
@@ -1195,7 +1205,7 @@ function getAdminJS_() {
   + '      si=h.indexOf("status"),di=h.indexOf("submitted_at"),ai=h.indexOf("area_preference"),'
   + '      hhi=h.indexOf("household_size"),csi=h.indexOf("credit_score_self"),noti=h.indexOf("admin_notes");'
   + '  var search=(document.getElementById("il-search").value||"").toLowerCase();'
-  + '  var statusF=(document.getElementById("il-status-filter").value||"").toLowerCase();'
+  + '  var statusF=ilFilterVal.toLowerCase();'
   + '  var rows=d.rows.filter(function(r){'
   + '    var match=!search||(r[ni]||"").toLowerCase().indexOf(search)>-1||(r[ei]||"").toLowerCase().indexOf(search)>-1;'
   + '    var st=!statusF||(r[si]||"").toLowerCase()===statusF;'
@@ -1236,7 +1246,13 @@ function getAdminJS_() {
 
   /* Search/filter listeners */
   + 'document.getElementById("il-search").addEventListener("input",function(){if(ilData)renderILTable(ilData);});'
-  + 'document.getElementById("il-status-filter").addEventListener("change",function(){if(ilData)renderILTable(ilData);});'
+  + 'document.getElementById("il-filter-bar").addEventListener("click",function(e){'
+  + '  var btn=e.target.closest(".prog-filter-btn");if(!btn)return;'
+  + '  ilFilterVal=btn.dataset.ilf;'
+  + '  document.querySelectorAll("#il-filter-bar .prog-filter-btn").forEach(function(b){b.classList.toggle("active",b.dataset.ilf===ilFilterVal);});'
+  + '  if(ilData)renderILTable(ilData);'
+  + '});'
+  + 'document.querySelectorAll("#il-filter-bar .prog-filter-btn").forEach(function(b){b.classList.toggle("active",b.dataset.ilf===ilFilterVal);});'
 
   /* Drawer open */
   + 'function openILDrawer(idx){'
@@ -1457,11 +1473,16 @@ function getAdminJS_() {
   + '    .adminGetPropertySubmissions(SESSION_TOKEN);'
   + '}'
 
-  + 'document.getElementById("ps-status-filter").addEventListener("change",function(){if(psData)renderPSTable(psData);});'
+  + 'document.getElementById("ps-filter-bar").addEventListener("click",function(e){'
+  + '  var btn=e.target.closest(".prog-filter-btn");if(!btn)return;'
+  + '  psFilterVal=btn.dataset.psf;'
+  + '  document.querySelectorAll("#ps-filter-bar .prog-filter-btn").forEach(function(b){b.classList.toggle("active",b.dataset.psf===psFilterVal);});'
+  + '  if(psData)renderPSTable(psData);'
+  + '});'
 
   + 'function renderPSTable(d){'
   + '  if(!d||!d.ok||!d.rows||d.rows.length===0){document.getElementById("ps-table-area").innerHTML=\'<div class="empty-state"><i class="fa-solid fa-inbox"></i><p>No property submissions yet.</p></div>\';return;}'
-  + '  var statusF=(document.getElementById("ps-status-filter").value||"").toLowerCase();'
+  + '  var statusF=psFilterVal.toLowerCase();'
   + '  var rows=d.rows.filter(function(r){return!statusF||(r.status||"").toLowerCase()===statusF;});'
   + '  if(psSortCol>=0){'
   + '    var psKeys=["submitted_at","prop_address","contact_name","affordable_count","ami_percent","status"];'
