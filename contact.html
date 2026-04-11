@@ -76,10 +76,11 @@
           <div class="contact-form-panel" id="buyer-form">
             <span class="section-label">For Homebuyers</span>
             <h2>Join the Interest List</h2>
-            <p class="il-note" style="margin-bottom:1rem;">
-              <i class="fa-solid fa-house" aria-hidden="true"></i>
-              <strong>This list is for affordable home purchase only</strong>, not rentals. If you are looking for rental housing, please contact your local housing authority.
-            </p>
+            <div class="il-note" style="margin-bottom:1rem;">
+              <p><i class="fa-solid fa-house" aria-hidden="true"></i>
+              <strong>This list is for affordable home purchase only</strong>, not rentals. If you are looking for rental housing, please contact your local housing authority.</p>
+              <p style="margin-top:0.6rem;">This program is administered directly with applicants. Broker participation, compensation, referral fees, or cooperating brokerage arrangements are not required and vary by property based on applicable program or ownership requirements. By submitting this form, you confirm you are applying on behalf of your household as the primary contact.</p>
+            </div>
 
             <!-- Step 0: Document callout (shown first) -->
             <div id="il-callout" class="il-callout">
@@ -331,43 +332,12 @@
 
                 <!-- Real estate agent -->
                 <div class="form-group">
-                  <label class="form-label">Are you currently working with a licensed Real Estate Agent?</label>
+                  <label class="form-label">Are you currently working with a real estate agent?</label>
                   <div class="il-radio-group">
-                    <label class="il-radio-label">
-                      <input type="radio" name="agent_yn" value="Yes" required
-                        data-shows="il-cond-agent" data-show-when="Yes"> Yes
-                    </label>
-                    <label class="il-radio-label">
-                      <input type="radio" name="agent_yn" value="No"
-                        data-shows="il-cond-agent" data-show-when="Yes"> No
-                    </label>
+                    <label class="il-radio-label"><input type="radio" name="agent_yn" value="Yes" required> Yes</label>
+                    <label class="il-radio-label"><input type="radio" name="agent_yn" value="No"> No</label>
                   </div>
-                  <div class="il-conditional" id="il-cond-agent">
-                    <p class="il-note" style="margin-bottom:0.75rem;">
-                      <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
-                      Please provide your agent's contact information. DRE# is optional if you don't have it on hand.
-                    </p>
-                    <div class="form-row">
-                      <div class="form-group">
-                        <label class="form-label">Agent Name</label>
-                        <input type="text" name="agent_name" class="form-control" placeholder="Full name" data-req>
-                      </div>
-                      <div class="form-group">
-                        <label class="form-label">Agent Email Address</label>
-                        <input type="email" name="agent_email" class="form-control" placeholder="agent@example.com" data-req>
-                      </div>
-                    </div>
-                    <div class="form-row">
-                      <div class="form-group">
-                        <label class="form-label">Agent Phone Number</label>
-                        <input type="tel" name="agent_phone" class="form-control" placeholder="(555) 000-0000" data-req>
-                      </div>
-                      <div class="form-group">
-                        <label class="form-label">Agent DRE# <span class="optional">(optional)</span></label>
-                        <input type="text" name="agent_dre" class="form-control" placeholder="e.g. 01234567">
-                      </div>
-                    </div>
-                  </div>
+                  <p style="margin-top:0.6rem;font-size:0.82rem;color:var(--color-text-muted);">This information is collected for administrative purposes only and does not affect eligibility or participation in this program.</p>
                 </div>
 
               </div><!-- /section-2 -->
