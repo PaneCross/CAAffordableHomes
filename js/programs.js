@@ -25,7 +25,7 @@
    Rows with status "Inactive" or blank will be hidden.
    ========================================================= */
 
-var PROGRAMS_CSV_URL = 'PASTE_YOUR_PROGRAMS_TAB_CSV_URL_HERE';
+var PROGRAMS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSLIxTKpwY7klY87Ac612ZDTJJg8AxTD35MPPjLATKp5qoAenw7j4SEhT4S9KnMrEP5cjbvwNEYu1Nb/pub?gid=1381683569&single=true&output=csv';
 
 /* ---------------------------------------------------------
    Init
