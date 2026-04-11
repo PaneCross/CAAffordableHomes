@@ -599,7 +599,8 @@ var PS_COLUMNS = [
   'move_in_date', 'marketing_start', 'ami_percent', 'affordable_price',
   'hoa_fee', 'hoa_covers', 'prop_tax_pct', 'special_assessments',
   'deed_restriction_years', 'solar', 'solar_included', 'solar_lease_amount',
-  'file_links'
+  'file_links',
+  'promoted_to'  /* listing_id this submission was promoted to (set by admin) */
 ];
 
 function handlePropertySubmission(data) {

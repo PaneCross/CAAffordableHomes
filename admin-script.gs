@@ -68,14 +68,16 @@ var LISTINGS_COLUMNS = [
   'min_assets','max_assets','min_down_payment_pct','max_down_payment_pct',
   'min_employment_months','program_notes',
   'address','city','price','bedrooms','bathrooms','sqft',
-  'listing_type','program_type','internal_notes'
+  'listing_type','program_type','internal_notes',
+  'source_submission_row'  /* index of originating PS row (-1 if created manually) */
 ];
 
 /* Programs sheet column headers — must match exactly */
 var PROG_COLUMNS = [
   'Community Name', 'Area', 'Program Type', 'AMI Range',
   'Bedrooms', 'Household Size Limit', 'First-Time Buyer',
-  'Price Range', 'Status', 'Notes'
+  'Price Range', 'Status', 'Notes',
+  'source_listing_id'  /* listing_id of the Listing this program was pushed from (empty if created manually) */
 ];
 
 /* ==========================================================
@@ -250,9 +252,50 @@ function adminGetDashboard(token) {
     result.ps = { new:0, reviewing:0, approved:0, declined:0, total:0 };
   }
 
-  /* Programs count */
+  /* Listings counts */
+  var lstSheet2 = ss.getSheetByName(ADMIN_LISTINGS_SHEET);
+  var lstTotal = 0, lstActive = 0, lstOnSite = 0;
+  var linkedListingIds = {};
+  if (lstSheet2 && lstSheet2.getLastRow() > 1) {
+    var lstVals = lstSheet2.getRange(2, 1, lstSheet2.getLastRow() - 1, LISTINGS_COLUMNS.length).getValues();
+    var activeCol = LISTINGS_COLUMNS.indexOf('active');
+    lstTotal = lstVals.length;
+    lstVals.forEach(function(r) {
+      if ((r[activeCol] || '').toString().trim().toUpperCase() === 'YES') lstActive++;
+    });
+  }
+
+  /* Programs counts + which listings are on site */
   var progSheet = ss.getSheetByName(ADMIN_PROG_SHEET);
-  result.programs = (progSheet && progSheet.getLastRow() > 1) ? progSheet.getLastRow() - 1 : 0;
+  var progAvailable = 0, progComingSoon = 0, progTotal2 = 0;
+  if (progSheet && progSheet.getLastRow() > 1) {
+    var progVals = progSheet.getRange(2, 1, progSheet.getLastRow() - 1, PROG_COLUMNS.length).getValues();
+    var progStatusCol = PROG_COLUMNS.indexOf('Status');
+    var progSrcCol    = PROG_COLUMNS.indexOf('source_listing_id');
+    progTotal2 = progVals.length;
+    progVals.forEach(function(r) {
+      var s = (r[progStatusCol] || '').toLowerCase();
+      if (s === 'available') progAvailable++;
+      if (s === 'coming soon') progComingSoon++;
+      if (progSrcCol >= 0 && r[progSrcCol]) linkedListingIds[r[progSrcCol]] = true;
+    });
+    lstOnSite = Object.keys(linkedListingIds).length;
+  }
+
+  /* PS promoted count */
+  var psPromoted = 0;
+  if (result.ps && result.ps.total > 0) {
+    var psSheet2 = ss.getSheetByName(ADMIN_PS_SHEET);
+    if (psSheet2 && psSheet2.getLastRow() > 1) {
+      var psFull = psSheet2.getRange(2, 1, psSheet2.getLastRow() - 1, 2).getValues();
+      psFull.forEach(function(r) {
+        if ((r[1] || '').toString().trim().toLowerCase() === 'promoted') psPromoted++;
+      });
+    }
+  }
+  result.ps.promoted = psPromoted;
+  result.listings  = { total: lstTotal, active: lstActive, on_site: lstOnSite };
+  result.programs  = { total: progTotal2, available: progAvailable, coming_soon: progComingSoon };
 
   /* Last match run — read from Dashboard tab if it exists */
   var dashSheet = ss.getSheetByName(ADMIN_DASH_SHEET);
@@ -397,6 +440,66 @@ function getOrCreateListingsSheet_(ss) {
     sheet.setFrozenRows(1);
   }
   return sheet;
+}
+
+/* ==========================================================
+   ADMIN DATA — Promote PS to Listing (atomic)
+   ========================================================== */
+function adminPromoteToListing(token, psRowIndex, listing) {
+  try {
+    var auth = requireAdmin_(token);
+    if (!auth.ok) return { ok: false, error: auth.error };
+
+    var ss = SpreadsheetApp.openById(ADMIN_SS_ID);
+
+    /* Save the listing */
+    var lstSheet = getOrCreateListingsSheet_(ss);
+    var lstRow   = LISTINGS_COLUMNS.map(function(col) { return listing[col] !== undefined ? listing[col] : ''; });
+    lstSheet.appendRow(lstRow);
+
+    /* Update PS row — set status + promoted_to */
+    var psSheet = ss.getSheetByName(ADMIN_PS_SHEET);
+    if (psSheet && typeof psRowIndex === 'number' && psRowIndex >= 0) {
+      var rowNum   = psRowIndex + 2;
+      psSheet.getRange(rowNum, 2).setValue('promoted');
+      var ptIdx = PS_COLUMNS.indexOf('promoted_to');
+      if (ptIdx >= 0) psSheet.getRange(rowNum, ptIdx + 1).setValue(listing.listing_id || '');
+    }
+
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.message || String(e) };
+  }
+}
+
+/* ==========================================================
+   ADMIN DATA — Save manual Property Submission
+   ========================================================== */
+function adminSavePropertySubmission(token, submission) {
+  try {
+    var auth = requireAdmin_(token);
+    if (!auth.ok) return { ok: false, error: auth.error };
+
+    var ss    = SpreadsheetApp.openById(ADMIN_SS_ID);
+    var sheet = ss.getSheetByName(ADMIN_PS_SHEET);
+    if (!sheet) {
+      sheet = ss.insertSheet(ADMIN_PS_SHEET);
+      sheet.getRange(1, 1, 1, PS_COLUMNS.length).setValues([PS_COLUMNS]);
+      sheet.setFrozenRows(1);
+    }
+
+    var row = new Array(PS_COLUMNS.length).fill('');
+    PS_COLUMNS.forEach(function(col, i) {
+      if (col === 'submitted_at') { row[i] = new Date(); return; }
+      if (col === 'status')       { row[i] = 'new'; return; }
+      if (submission[col] !== undefined) row[i] = submission[col];
+    });
+
+    sheet.appendRow(row);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.message || String(e) };
+  }
 }
 
 /* ==========================================================
@@ -678,10 +781,10 @@ function buildAdminHTML(userEmail, authMethod, token) {
     + '  <div class="sb-logo"><i class="fa-solid fa-house-chimney"></i><span>CA Affordable Homes</span></div>'
     + '  <nav class="sb-nav">'
     + '    <button class="sb-btn active" data-tab="dashboard"><i class="fa-solid fa-gauge"></i> Dashboard</button>'
-    + '    <button class="sb-btn" data-tab="interest-list"><i class="fa-solid fa-list-check"></i> Interest List</button>'
-    + '    <button class="sb-btn" data-tab="programs"><i class="fa-solid fa-building"></i> Programs</button>'
-    + '    <button class="sb-btn" data-tab="properties"><i class="fa-solid fa-file-lines"></i> Property Submissions</button>'
+    + '    <button class="sb-btn" data-tab="properties"><i class="fa-solid fa-file-lines"></i> Submissions</button>'
     + '    <button class="sb-btn" data-tab="listings"><i class="fa-solid fa-house-chimney-window"></i> Listings</button>'
+    + '    <button class="sb-btn" data-tab="programs"><i class="fa-solid fa-globe"></i> Programs</button>'
+    + '    <button class="sb-btn" data-tab="interest-list"><i class="fa-solid fa-list-check"></i> Interest List</button>'
     + '  </nav>'
     + '  <div class="sb-user">'
     + '    <i class="fa-solid fa-circle-user"></i>'
@@ -701,15 +804,18 @@ function buildAdminHTML(userEmail, authMethod, token) {
 
     /* ── Dashboard Tab ── */
     + '  <section class="tab-panel active" id="tab-dashboard">'
-    + '    <div class="stat-grid" id="dash-stats"><div class="loading-state"><i class="fa-solid fa-circle-notch fa-spin"></i><p>Loading\u2026</p></div></div>'
-    + '    <div class="dash-row" id="dash-bottom" style="display:none">'
-    + '      <div class="card">'
-    + '        <div class="card-header"><h3>Interest List Breakdown</h3></div>'
-    + '        <div class="card-body" id="dash-il-detail"></div>'
-    + '      </div>'
-    + '      <div class="card">'
-    + '        <div class="card-header"><h3>Property Submissions</h3></div>'
-    + '        <div class="card-body" id="dash-ps-detail"></div>'
+    + '    <div id="dash-stats"><div class="loading-state"><i class="fa-solid fa-circle-notch fa-spin"></i><p>Loading\u2026</p></div></div>'
+    + '    <div id="dash-bottom" style="display:none">'
+    + '      <div class="dash-pipeline-wrap" id="dash-pipeline"></div>'
+    + '      <div class="dash-row">'
+    + '        <div class="card">'
+    + '          <div class="card-header"><h3>Interest List</h3></div>'
+    + '          <div class="card-body" id="dash-il-detail"></div>'
+    + '        </div>'
+    + '        <div class="card">'
+    + '          <div class="card-header"><h3>Property Submissions</h3></div>'
+    + '          <div class="card-body" id="dash-ps-detail"></div>'
+    + '        </div>'
     + '      </div>'
     + '    </div>'
     + '  </section>'
@@ -774,8 +880,10 @@ function buildAdminHTML(userEmail, authMethod, token) {
     + '          <div class="form-row2"><div class="form-group"><label>Status</label>'
     + '            <select id="pf-status" class="form-input"><option>Available</option><option>Coming Soon</option><option>Inactive</option></select></div>'
     + '          <div class="form-group"><label>Notes</label><input id="pf-notes" class="form-input" placeholder="Any special requirements\u2026"></div></div>'
+    + '          <input type="hidden" id="pf-src-listing">'
     + '        </div>'
     + '        <div class="modal-footer">'
+    + '          <div id="pf-src-label" style="font-size:.78rem;color:#888;flex:1;"></div>'
     + '          <button class="btn-secondary" id="prog-cancel-btn">Cancel</button>'
     + '          <button class="btn-primary" id="prog-save-btn"><i class="fa-solid fa-floppy-disk"></i> Save Community</button>'
     + '        </div>'
@@ -785,12 +893,16 @@ function buildAdminHTML(userEmail, authMethod, token) {
 
     /* ── Property Submissions Tab ── */
     + '  <section class="tab-panel" id="tab-properties">'
-    + '    <div class="prog-filter-bar" id="ps-filter-bar" style="padding:.75rem 1.5rem .25rem;">'
-    + '      <button class="prog-filter-btn" data-psf="">All</button>'
-    + '      <button class="prog-filter-btn" data-psf="new">New</button>'
-    + '      <button class="prog-filter-btn" data-psf="reviewing">Reviewing</button>'
-    + '      <button class="prog-filter-btn" data-psf="approved">Approved</button>'
-    + '      <button class="prog-filter-btn" data-psf="declined">Declined</button>'
+    + '    <div class="toolbar" style="flex-wrap:wrap;gap:.75rem;">'
+    + '      <button class="btn-primary" id="ps-add-btn"><i class="fa-solid fa-plus"></i> Add Submission</button>'
+    + '      <div class="prog-filter-bar" id="ps-filter-bar">'
+    + '        <button class="prog-filter-btn" data-psf="">All</button>'
+    + '        <button class="prog-filter-btn" data-psf="new">New</button>'
+    + '        <button class="prog-filter-btn" data-psf="reviewing">Reviewing</button>'
+    + '        <button class="prog-filter-btn" data-psf="approved">Approved</button>'
+    + '        <button class="prog-filter-btn" data-psf="declined">Declined</button>'
+    + '        <button class="prog-filter-btn" data-psf="promoted">Promoted</button>'
+    + '      </div>'
     + '    </div>'
     + '    <div class="table-wrap"><div id="ps-table-area" class="loading-state"><i class="fa-solid fa-circle-notch fa-spin"></i><p>Loading\u2026</p></div></div>'
     /* Property detail drawer */
@@ -804,6 +916,37 @@ function buildAdminHTML(userEmail, authMethod, token) {
     + '      </div>'
     + '    </div>'
     + '    <div class="drawer-overlay" id="ps-drawer-overlay"></div>'
+    /* Manual entry modal */
+    + '    <div class="modal-overlay" id="ps-modal" aria-hidden="true">'
+    + '      <div class="modal-panel">'
+    + '        <div class="modal-header">'
+    + '          <h2 id="ps-modal-title">Add Property Submission</h2>'
+    + '          <button class="drawer-close" id="ps-modal-close"><i class="fa-solid fa-xmark"></i></button>'
+    + '        </div>'
+    + '        <div class="modal-body">'
+    + '          <p class="form-section-label">Contact</p>'
+    + '          <div class="form-row2"><div class="form-group"><label>Contact Name</label><input id="psf-name" class="form-input" placeholder="Developer or agent name"></div>'
+    + '          <div class="form-group"><label>Organization</label><input id="psf-org" class="form-input" placeholder="Company name"></div></div>'
+    + '          <div class="form-row2"><div class="form-group"><label>Email</label><input id="psf-email" class="form-input" type="email"></div>'
+    + '          <div class="form-group"><label>Phone</label><input id="psf-phone" class="form-input"></div></div>'
+    + '          <p class="form-section-label">Property</p>'
+    + '          <div class="form-row2"><div class="form-group"><label>Property Address</label><input id="psf-address" class="form-input" placeholder="Full street address"></div>'
+    + '          <div class="form-group"><label>Affordable Unit Count</label><input id="psf-count" class="form-input" type="number" placeholder="e.g. 4"></div></div>'
+    + '          <div class="form-row2"><div class="form-group"><label>Bedrooms</label><input id="psf-beds" class="form-input" placeholder="e.g. 3"></div>'
+    + '          <div class="form-group"><label>Bathrooms</label><input id="psf-baths" class="form-input" placeholder="e.g. 2"></div></div>'
+    + '          <div class="form-row2"><div class="form-group"><label>AMI %</label><input id="psf-ami" class="form-input" placeholder="e.g. 80"></div>'
+    + '          <div class="form-group"><label>Affordable Price ($)</label><input id="psf-price" class="form-input" placeholder="e.g. 479000"></div></div>'
+    + '          <div class="form-row2"><div class="form-group"><label>Move-In Date</label><input id="psf-movein" class="form-input" type="date"></div>'
+    + '          <div class="form-group"><label>Deed Restriction Years</label><input id="psf-deed" class="form-input" type="number" placeholder="e.g. 45"></div></div>'
+    + '          <div class="form-row2"><div class="form-group"><label>HOA Fee / mo ($)</label><input id="psf-hoa" class="form-input" placeholder="e.g. 250"></div>'
+    + '          <div class="form-group"><label>HOA Covers</label><input id="psf-hoacovers" class="form-input" placeholder="e.g. Exterior, trash"></div></div>'
+    + '        </div>'
+    + '        <div class="modal-footer">'
+    + '          <button class="btn-secondary" id="ps-cancel-btn">Cancel</button>'
+    + '          <button class="btn-primary" id="ps-save-btn"><i class="fa-solid fa-floppy-disk"></i> Save Submission</button>'
+    + '        </div>'
+    + '      </div>'
+    + '    </div>'
     + '  </section>'
 
     /* ── Listings Tab ── */
@@ -1059,6 +1202,36 @@ function getAdminCSS_() {
     + '.lst-card-meta{display:flex;flex-wrap:wrap;gap:.4rem .85rem;font-size:.8rem;color:#555;}'
     + '.lst-meta-item{display:flex;align-items:center;gap:.3rem;}'
     + '.lst-card-footer{display:flex;justify-content:flex-end;gap:.5rem;padding-top:.5rem;border-top:1px solid #f0f0eb;}'
+    /* Pipeline dashboard */
+    + '.dash-pipeline-wrap{padding:1.5rem 1.5rem .5rem;}'
+    + '.pipeline-flow{display:flex;align-items:stretch;gap:.75rem;background:#fff;border:1px solid #f0f0eb;border-radius:12px;padding:1.25rem;margin-bottom:1rem;box-shadow:0 1px 4px rgba(0,0,0,.05);}'
+    + '.pipeline-stage{flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;padding:1rem .75rem;border-radius:10px;border:1px solid #f0f0eb;background:#fafaf8;cursor:pointer;transition:background .15s,border-color .15s;}'
+    + '.pipeline-stage:hover{background:#f5f0e8;border-color:#c8a96e;}'
+    + '.pipeline-step{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#c8a96e;margin-bottom:.4rem;}'
+    + '.pipeline-icon{font-size:1.6rem;color:#6b5b3e;margin-bottom:.45rem;}'
+    + '.pipeline-label{font-size:.88rem;font-weight:600;color:#2d2d2d;margin-bottom:.35rem;}'
+    + '.pipeline-nums{font-size:.78rem;color:#666;line-height:1.5;}'
+    + '.pipeline-highlight{font-size:1.15rem;font-weight:700;color:#c8a96e;}'
+    + '.pipeline-arrow{display:flex;align-items:center;font-size:1.1rem;color:#ccc;flex-shrink:0;padding:0 .25rem;}'
+    + '.pipeline-applicants{display:flex;gap:.75rem;flex-wrap:wrap;margin-top:0;}'
+    + '.pipeline-appl-card{flex:1;min-width:130px;display:flex;align-items:center;gap:.65rem;padding:.8rem .95rem;background:#fff;border:1px solid #f0f0eb;border-radius:10px;cursor:pointer;transition:background .15s,border-color .15s;}'
+    + '.pipeline-appl-card:hover{background:#f5f0e8;border-color:#c8a96e;}'
+    + '.pipeline-appl-card>i{font-size:1.2rem;color:#c8a96e;flex-shrink:0;}'
+    + '.pipeline-appl-num{font-size:1.2rem;font-weight:700;color:#2d2d2d;line-height:1.1;}'
+    + '.pipeline-appl-label{font-size:.7rem;color:#888;}'
+    /* Status pills */
+    + '.pill-promoted{background:#ede9fe;color:#6d28d9;}'
+    /* Program badge on listing cards */
+    + '.prog-badge{display:inline-flex;align-items:center;gap:.3rem;padding:.15rem .55rem;border-radius:20px;font-size:.7rem;font-weight:600;background:#e0f2fe;color:#0369a1;}'
+    + '.prog-badge--none{background:#f0f0f0;color:#999;}'
+    + '.prog-badge i{font-size:.65rem;}'
+    /* Linked listing note on program cards */
+    + '.prog-link-note{font-size:.72rem;color:#888;background:rgba(0,0,0,.04);border-radius:5px;padding:.25rem .5rem;margin-top:.2rem;display:inline-flex;align-items:center;gap:.3rem;}'
+    /* Push-to-site / promote action buttons in drawers */
+    + '.drawer-action-row{padding:.85rem;border:1px solid #f0f0eb;border-radius:8px;margin-bottom:.75rem;}'
+    + '.drawer-action-title{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#888;margin-bottom:.55rem;}'
+    /* Form section label */
+    + '.form-section-label{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#888;margin:.65rem 0 .35rem;}'
     /* Responsive */
     + '@media(max-width:700px){'
     + '.sidebar{position:fixed;left:0;top:0;height:100%;z-index:150;transform:translateX(-100%);}'
@@ -1066,6 +1239,9 @@ function getAdminCSS_() {
     + '.menu-btn{display:block;}'
     + '.dash-row{grid-template-columns:1fr;}'
     + '.form-row2{grid-template-columns:1fr;}'
+    + '.pipeline-flow{flex-direction:column;}'
+    + '.pipeline-arrow{transform:rotate(90deg);align-self:center;}'
+    + '.pipeline-applicants{grid-template-columns:1fr 1fr;}'
     + '}'
     + '</style>';
 }
@@ -1089,8 +1265,8 @@ function getAdminJS_() {
   + '    document.querySelectorAll(".tab-panel").forEach(function(p){p.classList.remove("active");});'
   + '    document.getElementById("tab-"+tab).classList.add("active");'
   + '    document.getElementById("top-title").textContent={'
-  + '      "dashboard":"Dashboard","interest-list":"Interest List",'
-  + '      "programs":"Programs","properties":"Property Submissions","listings":"Listings"'
+  + '      "dashboard":"Dashboard","properties":"Property Submissions",'
+  + '      "listings":"Listings","programs":"Programs","interest-list":"Interest List"'
   + '    }[tab]||"";'
   + '    if(tab==="interest-list"&&!ilData)loadInterestList();'
   + '    if(tab==="programs"&&!progData)loadPrograms();'
@@ -1131,7 +1307,7 @@ function getAdminJS_() {
   + 'function fmtDate(v){if(!v)return"";var d=new Date(v);return isNaN(d)?v:d.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});}'
 
   /* ── Status pill ── */
-  + 'function pill(s){var cls={"new":"pill-new","reviewing":"pill-reviewing","active":"pill-active","matched":"pill-matched","expired":"pill-expired","approved":"pill-approved","declined":"pill-declined"}[s.toLowerCase()]||"pill-expired";return\'<span class="status-pill \'+cls+\'">\'+esc(s)+\'</span>\';}'
+  + 'function pill(s){var cls={"new":"pill-new","reviewing":"pill-reviewing","active":"pill-active","matched":"pill-matched","expired":"pill-expired","approved":"pill-approved","declined":"pill-declined","promoted":"pill-promoted"}[(s||"").toLowerCase()]||"pill-expired";return\'<span class="status-pill \'+cls+\'">\'+esc(s)+\'</span>\';}'
 
   /* =====================================================
      DASHBOARD
@@ -1146,30 +1322,54 @@ function getAdminJS_() {
   + '}'
   + 'function renderDashboard(d){'
   + '  if(!d||!d.ok){document.getElementById("dash-stats").innerHTML=\'<div class="loading-state"><p>\'+esc(d&&d.error||"Error")+\'</p></div>\';return;}'
-  + '  var il=d.il.counts;var ps=d.ps;'
-  + '  var sc=il,ps2=ps,rc=d.il.recent7Days,pc=d.programs;'
-  + '  document.getElementById("dash-stats").innerHTML='
-  + '    \'<div class="stat-card clickable" data-nav="il:" title="View all applicants"><div class="stat-label">Total Applicants</div><div class="stat-value">\'+sc.total+\'</div><div class="stat-sub">View all \u2192</div></div>\''
-  + '   +\'<div class="stat-card highlight clickable" data-nav="il:new" title="Review new applicants"><div class="stat-label">Needs Review</div><div class="stat-value">\'+sc.new+\'</div><div class="stat-sub">Review now \u2192</div></div>\''
-  + '   +\'<div class="stat-card clickable" data-nav="il:active"><div class="stat-label">Active</div><div class="stat-value">\'+sc.active+\'</div><div class="stat-sub">View active \u2192</div></div>\''
-  + '   +\'<div class="stat-card clickable" data-nav="il:matched"><div class="stat-label">Matched</div><div class="stat-value">\'+sc.matched+\'</div><div class="stat-sub">View matched \u2192</div></div>\''
-  + '   +\'<div class="stat-card clickable" data-nav="il:"><div class="stat-label">New (7 days)</div><div class="stat-value">\'+rc+\'</div><div class="stat-sub">View list \u2192</div></div>\''
-  + '   +\'<div class="stat-card \'+( ps2.new>0?"highlight":"")+\' clickable" data-nav="ps:new"><div class="stat-label">Property Queue</div><div class="stat-value">\'+ps2.new+\'</div><div class="stat-sub">Review queue \u2192</div></div>\''
-  + '   +\'<div class="stat-card clickable" data-nav="prog:"><div class="stat-label">Programs</div><div class="stat-value">\'+pc+\'</div><div class="stat-sub">Manage \u2192</div></div>\';'
-  + '  document.querySelectorAll("#dash-stats .clickable[data-nav]").forEach(function(el){'
-  + '    el.addEventListener("click",function(){'
-  + '      var nav=(this.dataset.nav||"").split(":");'
-  + '      var t=nav[0],f=nav[1]||"";'
-  + '      if(t==="il")switchToTab("interest-list",f);'
-  + '      else if(t==="ps")switchToTab("properties",f);'
-  + '      else if(t==="prog")switchToTab("programs","");'
-  + '    });'
-  + '  });'
-  + '  var ilDetail=["new","reviewing","active","matched","expired"].map(function(s){return\'<div class="status-row"><span>\'+s.charAt(0).toUpperCase()+s.slice(1)+\'</span>\'+pill(s)+\'<strong>\'+il[s]+\'</strong></div>\';}).join("");'
-  + '  document.getElementById("dash-il-detail").innerHTML=ilDetail;'
-  + '  var psDetail=["new","reviewing","approved","declined"].map(function(s){return\'<div class="status-row"><span>\'+s.charAt(0).toUpperCase()+s.slice(1)+\'</span>\'+pill(s)+\'<strong>\'+ps[s]+\'</strong></div>\';}).join("");'
+  + '  var il=d.il.counts,ps=d.ps,lst=d.listings||{},prog=d.programs||{};'
+  /* Hide loading spinner — pipeline renders into dash-pipeline */
+  + '  document.getElementById("dash-stats").innerHTML="";'
+  /* Pipeline stages */
+  + '  var pipe='
+  + '    \'<div class="pipeline-flow">\''
+  + '    +\'<div class="pipeline-stage" onclick="switchToTab(\'properties\',\'new\')">\''
+  + '      +\'<div class="pipeline-step">Step 1</div>\''
+  + '      +\'<div class="pipeline-icon"><i class="fa-solid fa-file-lines"></i></div>\''
+  + '      +\'<div class="pipeline-label">Submissions</div>\''
+  + '      +\'<div class="pipeline-nums"><span class="pipeline-highlight">\'+( ps.new||0)+\'</span> new</div>\''
+  + '      +\'<div class="pipeline-nums">\'+( ps.total||0)+\' total &bull; \'+( ps.promoted||0)+\' promoted</div>\''
+  + '    +\'</div>\''
+  + '    +\'<div class="pipeline-arrow"><i class="fa-solid fa-chevron-right"></i></div>\''
+  + '    +\'<div class="pipeline-stage" onclick="switchToTab(\'listings\',\'\')">\''
+  + '      +\'<div class="pipeline-step">Step 2</div>\''
+  + '      +\'<div class="pipeline-icon"><i class="fa-solid fa-house-chimney-window"></i></div>\''
+  + '      +\'<div class="pipeline-label">Listings</div>\''
+  + '      +\'<div class="pipeline-nums"><span class="pipeline-highlight">\'+( lst.active||0)+\'</span> active</div>\''
+  + '      +\'<div class="pipeline-nums">\'+( lst.total||0)+\' total &bull; \'+( lst.on_site||0)+\' on site</div>\''
+  + '    +\'</div>\''
+  + '    +\'<div class="pipeline-arrow"><i class="fa-solid fa-chevron-right"></i></div>\''
+  + '    +\'<div class="pipeline-stage" onclick="switchToTab(\'programs\',\'\')">\''
+  + '      +\'<div class="pipeline-step">Step 3</div>\''
+  + '      +\'<div class="pipeline-icon"><i class="fa-solid fa-globe"></i></div>\''
+  + '      +\'<div class="pipeline-label">On Site</div>\''
+  + '      +\'<div class="pipeline-nums"><span class="pipeline-highlight">\'+( prog.available||0)+\'</span> available</div>\''
+  + '      +\'<div class="pipeline-nums">\'+( prog.coming_soon||0)+\' coming soon</div>\''
+  + '    +\'</div>\''
+  + '    +\'</div>\''
+  /* Applicant cards below pipeline */
+  + '    +\'<div class="pipeline-applicants">\''
+  + '      +\'<div class="pipeline-appl-card" onclick="switchToTab(\'interest-list\',\'new\')">\''
+  + '        +\'<i class="fa-solid fa-user-clock"></i><div><div class="pipeline-appl-num">\'+il.new+\'</div><div class="pipeline-appl-label">New Applicants</div></div></div>\''
+  + '      +\'<div class="pipeline-appl-card" onclick="switchToTab(\'interest-list\',\'active\')">\''
+  + '        +\'<i class="fa-solid fa-list-check"></i><div><div class="pipeline-appl-num">\'+il.active+\'</div><div class="pipeline-appl-label">Active</div></div></div>\''
+  + '      +\'<div class="pipeline-appl-card" onclick="switchToTab(\'interest-list\',\'matched\')">\''
+  + '        +\'<i class="fa-solid fa-handshake"></i><div><div class="pipeline-appl-num">\'+il.matched+\'</div><div class="pipeline-appl-label">Matched</div></div></div>\''
+  + '      +\'<div class="pipeline-appl-card" onclick="switchToTab(\'interest-list\',\'\')">\''
+  + '        +\'<i class="fa-solid fa-users"></i><div><div class="pipeline-appl-num">\'+il.total+\'</div><div class="pipeline-appl-label">Total Applicants</div></div></div>\''
+  + '    +\'</div>\';'
+  + '  document.getElementById("dash-pipeline").innerHTML=pipe;'
+  /* Detail breakdown cards */
+  + '  var ilDetail=["new","reviewing","active","matched","expired"].map(function(s){return\'<div class="status-row"><span>\'+s.charAt(0).toUpperCase()+s.slice(1)+\'</span>\'+pill(s)+\'<strong>\'+(il[s]||0)+\'</strong></div>\';}).join("");'
+  + '  document.getElementById("dash-il-detail").innerHTML=ilDetail+\'<div class="status-row" style="border-top:1px solid #f0f0eb;padding-top:.45rem;margin-top:.3rem;"><span>New (7 days)</span><span style="font-size:.78rem;color:#888">\'+d.il.recent7Days+\'</span></div>\';'
+  + '  var psDetail=["new","reviewing","approved","declined","promoted"].map(function(s){return\'<div class="status-row"><span>\'+s.charAt(0).toUpperCase()+s.slice(1)+\'</span>\'+pill(s)+\'<strong>\'+(ps[s]||0)+\'</strong></div>\';}).join("");'
   + '  document.getElementById("dash-ps-detail").innerHTML=psDetail;'
-  + '  document.getElementById("dash-bottom").style.display="grid";'
+  + '  document.getElementById("dash-bottom").style.display="block";'
   + '}'
 
   /* =====================================================
@@ -1181,7 +1381,7 @@ function getAdminJS_() {
   + '  if(btn)btn.classList.add("active");'
   + '  document.querySelectorAll(".tab-panel").forEach(function(p){p.classList.remove("active");});'
   + '  document.getElementById("tab-"+tab).classList.add("active");'
-  + '  var titles={"dashboard":"Dashboard","interest-list":"Interest List","programs":"Programs","properties":"Property Submissions","listings":"Listings"};'
+  + '  var titles={"dashboard":"Dashboard","properties":"Property Submissions","listings":"Listings","programs":"Programs","interest-list":"Interest List"};'
   + '  document.getElementById("top-title").textContent=titles[tab]||tab;'
   + '  if(typeof statusF==="string"){'
   + '    if(tab==="interest-list"){ilFilterVal=statusF;document.querySelectorAll("#il-filter-bar .prog-filter-btn").forEach(function(b){b.classList.toggle("active",b.dataset.ilf===ilFilterVal);});}'
@@ -1358,7 +1558,7 @@ function getAdminJS_() {
   + 'function loadPrograms(){'
   + '  document.getElementById("prog-area").innerHTML=\'<div class="loading-state"><i class="fa-solid fa-circle-notch fa-spin"></i><p>Loading\u2026</p></div>\';'
   + '  google.script.run'
-  + '    .withSuccessHandler(function(d){progData=d;renderPrograms(d);})'
+  + '    .withSuccessHandler(function(d){progData=d;renderPrograms(d);if(lstData&&document.getElementById("tab-listings").classList.contains("active"))renderListings(lstData);})'
   + '    .withFailureHandler(function(e){document.getElementById("prog-area").innerHTML=\'<div class="loading-state"><i class="fa-solid fa-triangle-exclamation"></i><p>Script error: \'+esc(e.message||e.name||String(e)||"unknown")+\'</p></div>\';;})'
   + '    .adminGetPrograms(SESSION_TOKEN);'
   + '}'
@@ -1393,6 +1593,9 @@ function getAdminJS_() {
   + '      if(prog[f[0]])html+=\'<div class="prog-detail"><span class="prog-detail-label"><i class="fa-solid \'+f[1]+\'" style="width:14px;color:#888;margin-right:.3rem;"></i>\'+esc(f[0])+\'</span><span class="prog-detail-value">\'+esc(prog[f[0]])+\'</span></div>\';'
   + '    });'
   + '    if(prog["Notes"])html+=\'<div style="font-size:.78rem;color:#888;background:rgba(0,0,0,.04);border-radius:6px;padding:.45rem .6rem;margin-top:.2rem;">\'+esc(prog["Notes"])+\'</div>\';'
+  + '    var srcLst=prog["source_listing_id"];'
+  + '    if(srcLst)html+=\'<div class="prog-link-note"><i class="fa-solid fa-link"></i> From listing: \'+esc(srcLst)+\'</div>\';'
+  + '    else html+=\'<div class="prog-link-note" style="color:#bbb;"><i class="fa-solid fa-unlink"></i> No linked listing</div>\';'
   + '    html+=\'</div><div class="prog-card-footer"><button class="btn-secondary btn-sm" onclick="editProg(\'+i+\')"><i class="fa-solid fa-pen"></i> Edit</button><button class="btn-danger btn-sm" onclick="deleteProg(\'+i+\')"><i class="fa-solid fa-trash"></i> Delete</button></div>\''
   + '       +\'</div>\';'
   + '  });'
@@ -1414,19 +1617,23 @@ function getAdminJS_() {
   + 'document.getElementById("prog-cancel-btn").addEventListener("click",closeProgModal);'
   + 'document.getElementById("prog-save-btn").addEventListener("click",saveProg);'
 
-  + 'function openProgModal(prog){'
+  + 'function openProgModal(prog,prefill){'
   + '  editingProgRow=prog;'
-  + '  document.getElementById("prog-modal-title").textContent=prog?"Edit Community":"Add Community";'
-  + '  document.getElementById("pf-name").value=prog?prog["Community Name"]||"":"";'
-  + '  document.getElementById("pf-area").value=prog?prog["Area"]||"":"";'
-  + '  document.getElementById("pf-type").value=prog?prog["Program Type"]||"":"";'
-  + '  document.getElementById("pf-ami").value=prog?prog["AMI Range"]||"":"";'
-  + '  document.getElementById("pf-beds").value=prog?prog["Bedrooms"]||"":"";'
-  + '  document.getElementById("pf-hh").value=prog?prog["Household Size Limit"]||"":"";'
-  + '  document.getElementById("pf-ftb").value=prog?prog["First-Time Buyer"]||"":"";'
-  + '  document.getElementById("pf-price").value=prog?prog["Price Range"]||"":"";'
-  + '  document.getElementById("pf-status").value=prog?prog["Status"]||"Available":"Available";'
-  + '  document.getElementById("pf-notes").value=prog?prog["Notes"]||"":"";'
+  + '  var p=prog||prefill||{};'
+  + '  document.getElementById("prog-modal-title").textContent=prog?"Edit Community":(prefill?"Push to Site":"Add Community");'
+  + '  document.getElementById("pf-name").value=p["Community Name"]||"";'
+  + '  document.getElementById("pf-area").value=p["Area"]||"";'
+  + '  document.getElementById("pf-type").value=p["Program Type"]||"";'
+  + '  document.getElementById("pf-ami").value=p["AMI Range"]||"";'
+  + '  document.getElementById("pf-beds").value=p["Bedrooms"]||"";'
+  + '  document.getElementById("pf-hh").value=p["Household Size Limit"]||"";'
+  + '  document.getElementById("pf-ftb").value=p["First-Time Buyer"]||"";'
+  + '  document.getElementById("pf-price").value=p["Price Range"]||"";'
+  + '  document.getElementById("pf-status").value=p["Status"]||"Available";'
+  + '  document.getElementById("pf-notes").value=p["Notes"]||"";'
+  + '  var srcId=p["source_listing_id"]||"";'
+  + '  document.getElementById("pf-src-listing").value=srcId;'
+  + '  document.getElementById("pf-src-label").textContent=srcId?"Linked listing: "+srcId:"";'
   + '  document.getElementById("prog-modal").classList.add("open");'
   + '}'
   + 'function closeProgModal(){document.getElementById("prog-modal").classList.remove("open");editingProgRow=null;}'
@@ -1456,6 +1663,7 @@ function getAdminJS_() {
   + '    "Price Range":document.getElementById("pf-price").value.trim(),'
   + '    "Status":document.getElementById("pf-status").value,'
   + '    "Notes":document.getElementById("pf-notes").value.trim(),'
+  + '    "source_listing_id":document.getElementById("pf-src-listing").value.trim(),'
   + '    "_rowIndex":editingProgRow?editingProgRow._rowIndex:-1'
   + '  };'
   + '  var btn=document.getElementById("prog-save-btn");'
@@ -1537,9 +1745,16 @@ function getAdminJS_() {
   /* Status editor */
   + '  body+=\'<div><div class="field-group-title" style="border-radius:8px 8px 0 0;border:1px solid #f0f0eb;border-bottom:none;padding:.5rem .85rem;">Update Status</div>\''
   + '  +\'<div style="border:1px solid #f0f0eb;border-radius:0 0 8px 8px;padding:.85rem;">\''
-  + '  +\'<div class="status-editor"><select id="ps-status-select"><option value="new">New</option><option value="reviewing">Reviewing</option><option value="approved">Approved</option><option value="declined">Declined</option></select>\''
+  + '  +\'<div class="status-editor"><select id="ps-status-select"><option value="new">New</option><option value="reviewing">Reviewing</option><option value="approved">Approved</option><option value="declined">Declined</option><option value="promoted">Promoted</option></select>\''
   + '  +\'<button class="btn-primary btn-sm" onclick="savePSStatus(\'+idx+\')"><i class="fa-solid fa-check"></i> Save Status</button></div>\''
   + '  +\'</div></div>\';'
+  /* Promote to Listing pipeline action */
+  + '  var promotedTo=r.promoted_to||"";'
+  + '  body+=\'<div class="drawer-action-row"><div class="drawer-action-title"><i class="fa-solid fa-arrow-right-to-bracket"></i> Pipeline</div>\''
+  + '       +(promotedTo'
+  + '         ?\'<div style="font-size:.84rem;color:#2c5545;"><i class="fa-solid fa-circle-check" style="margin-right:.35rem;"></i>Promoted to listing: <strong>\'+esc(promotedTo)+\'</strong></div>\''
+  + '         :\'<button class="btn-primary btn-sm" style="margin-top:.35rem;" onclick="promoteToListing(\'+idx+\')"><i class="fa-solid fa-house-chimney-window"></i> Promote to Listing</button>\')'
+  + '       +\'</div>\';'
   + '  sections.forEach(function(sec){'
   + '    var rows2="";'
   + '    sec.fields.forEach(function(f){'
@@ -1582,18 +1797,98 @@ function getAdminJS_() {
   + '    .adminUpdatePropertyStatus(SESSION_TOKEN,psData.rows[idx]._rowIndex,newStatus);'
   + '}'
 
+  /* Promote PS to Listing — opens listing modal pre-filled with PS data */
+  + 'function promoteToListing(psIdx){'
+  + '  if(!psData||!psData.rows)return;'
+  + '  var r=psData.rows[psIdx];'
+  + '  var prefill={'
+  + '    listing_id:r.prop_address||"",'
+  + '    listing_name:r.prop_address||"",'
+  + '    address:r.prop_address||"",'
+  + '    bedrooms:r.bedrooms||"",'
+  + '    bathrooms:r.bathrooms||"",'
+  + '    ami_percent:r.ami_percent||"",'
+  + '    price:r.affordable_price||"",'
+  + '    internal_notes:"From submission by "+(r.contact_name||r.contact_org||"unknown"),'
+  + '    source_submission_row:psData.rows[psIdx]._rowIndex'
+  + '  };'
+  + '  closePSDrawer();'
+  + '  switchToTab("listings","");'
+  + '  if(!lstData){loadListings();}'
+  + '  setTimeout(function(){'
+  + '    var m=openLSTModal(null,prefill);'
+  /* Patch saveListing to call adminPromoteToListing instead */
+  + '    window._promotingPsIdx=psIdx;'
+  + '    window._promotingPsRowIndex=psData.rows[psIdx]._rowIndex;'
+  + '  },lstData?0:800);'
+  + '}'
+
+  /* PS manual entry modal */
+  + 'document.getElementById("ps-add-btn").addEventListener("click",function(){openPSModal();});'
+  + 'document.getElementById("ps-modal-close").addEventListener("click",closePSModal);'
+  + 'document.getElementById("ps-cancel-btn").addEventListener("click",closePSModal);'
+  + 'document.getElementById("ps-save-btn").addEventListener("click",savePSSubmission);'
+
+  + 'function openPSModal(){'
+  + '  ["psf-name","psf-org","psf-email","psf-phone","psf-address","psf-beds","psf-baths","psf-ami","psf-price","psf-movein","psf-deed","psf-hoa","psf-hoacovers"].forEach(function(id){'
+  + '    document.getElementById(id).value="";'
+  + '  });'
+  + '  document.getElementById("psf-count").value="";'
+  + '  document.getElementById("ps-modal").classList.add("open");'
+  + '}'
+  + 'function closePSModal(){document.getElementById("ps-modal").classList.remove("open");}'
+
+  + 'function savePSSubmission(){'
+  + '  var sub={'
+  + '    contact_name:document.getElementById("psf-name").value.trim(),'
+  + '    contact_org:document.getElementById("psf-org").value.trim(),'
+  + '    contact_email:document.getElementById("psf-email").value.trim(),'
+  + '    contact_phone:document.getElementById("psf-phone").value.trim(),'
+  + '    prop_address:document.getElementById("psf-address").value.trim(),'
+  + '    affordable_count:document.getElementById("psf-count").value.trim(),'
+  + '    bedrooms:document.getElementById("psf-beds").value.trim(),'
+  + '    bathrooms:document.getElementById("psf-baths").value.trim(),'
+  + '    ami_percent:document.getElementById("psf-ami").value.trim(),'
+  + '    affordable_price:document.getElementById("psf-price").value.trim(),'
+  + '    move_in_date:document.getElementById("psf-movein").value,'
+  + '    deed_restriction_years:document.getElementById("psf-deed").value.trim(),'
+  + '    hoa_fee:document.getElementById("psf-hoa").value.trim(),'
+  + '    hoa_covers:document.getElementById("psf-hoacovers").value.trim()'
+  + '  };'
+  + '  var btn=document.getElementById("ps-save-btn");'
+  + '  btn.disabled=true;btn.innerHTML=\'<i class="fa-solid fa-circle-notch fa-spin"></i> Saving\u2026\';'
+  + '  google.script.run'
+  + '    .withSuccessHandler(function(r){'
+  + '      btn.disabled=false;btn.innerHTML=\'<i class="fa-solid fa-floppy-disk"></i> Save Submission\';'
+  + '      if(r&&r.ok){toast("Submission added.");closePSModal();psData=null;loadProperties();}else{toast((r&&r.error)||"Failed.",true);}'
+  + '    })'
+  + '    .withFailureHandler(function(e){btn.disabled=false;btn.innerHTML=\'<i class="fa-solid fa-floppy-disk"></i> Save Submission\';toast("Error: "+(e.message||""),true);})'
+  + '    .adminSavePropertySubmission(SESSION_TOKEN,sub);'
+  + '}'
+
   /* ESC closes drawers */
-  + 'document.addEventListener("keydown",function(e){if(e.key==="Escape"){closeILDrawer();closePSDrawer();closeLSTDrawer();}});'
+  + 'document.addEventListener("keydown",function(e){if(e.key==="Escape"){closeILDrawer();closePSDrawer();closeLSTDrawer();closePSModal();}});'
 
   /* =====================================================
      LISTINGS
      ===================================================== */
   + 'var lstData=null,editingLstRow=null,lstFilterVal="active";'
 
+  /* Build a listing_id → program name map from progData if available */
+  + 'function getProgLinkMap(){'
+  + '  var map={};'
+  + '  if(!progData||!progData.rows)return map;'
+  + '  progData.rows.forEach(function(p){'
+  + '    var src=p["source_listing_id"];'
+  + '    if(src)map[src]=p["Community Name"]||"Program";'
+  + '  });'
+  + '  return map;'
+  + '}'
+
   + 'function loadListings(){'
   + '  document.getElementById("lst-area").innerHTML=\'<div class="loading-state"><i class="fa-solid fa-circle-notch fa-spin"></i><p>Loading\u2026</p></div>\';'
   + '  google.script.run'
-  + '    .withSuccessHandler(function(d){lstData=d;renderListings(d);})'
+  + '    .withSuccessHandler(function(d){lstData=d;if(!progData){loadPrograms();}renderListings(d);})'
   + '    .withFailureHandler(function(e){document.getElementById("lst-area").innerHTML=\'<div class="loading-state"><i class="fa-solid fa-triangle-exclamation"></i><p>\'+esc(e.message||"Error")+\'</p></div>\';;})'
   + '    .adminGetListings(SESSION_TOKEN);'
   + '}'
@@ -1609,6 +1904,7 @@ function getAdminJS_() {
   + '  });'
   + '  document.querySelectorAll(".prog-filter-btn[data-lf]").forEach(function(b){b.classList.toggle("active",b.dataset.lf===lstFilterVal);});'
   + '  if(!visible.length){document.getElementById("lst-area").innerHTML=\'<div class="empty-state"><i class="fa-solid fa-filter"></i><p>No listings match this filter.</p></div>\';return;}'
+  + '  var progMap=getProgLinkMap();'
   + '  var html=\'<div class="prog-grid">\';'
   + '  visible.forEach(function(r){'
   + '    var i=r._displayIdx;'
@@ -1617,10 +1913,15 @@ function getAdminJS_() {
   + '    var badgeCls=isActive?"pill-active":"pill-expired";'
   + '    var badgeLabel=isActive?"Active":"Inactive";'
   + '    var addr=(r.address||"")+(r.city?", "+r.city:"");'
+  + '    var progName=progMap[r.listing_id||""];'
+  + '    var progBadge=progName'
+  + '      ?\'<span class="prog-badge"><i class="fa-solid fa-globe"></i>\'+esc(progName)+\'</span>\''
+  + '      :\'<span class="prog-badge prog-badge--none"><i class="fa-solid fa-eye-slash"></i>Not on site</span>\';'
   + '    html+=\'<div class="lst-card \'+bgCls+\'" onclick="openLSTDrawer(\'+i+\')">\''
   + '       +\'<div class="lst-card-top"><div style="min-width:0;flex:1;"><div class="lst-card-name" title="\'+esc(r.listing_id||"")+\'">\'+esc(r.listing_id||"Unnamed")+\'</div>\''
   + '         +\'<div class="lst-card-addr"><i class="fa-solid fa-location-dot" style="color:#888;font-size:.72rem;margin-right:.25rem;"></i>\'+esc(addr||"No address")+\'</div></div>\''
   + '         +\'<span class="status-pill \'+badgeCls+\'" style="flex-shrink:0;">\'+badgeLabel+\'</span></div>\''
+  + '       +\'<div style="margin:.15rem 0;">\'+progBadge+\'</div>\''
   + '       +\'<div class="lst-card-meta">\''
   + '         +(r.price?\'<span class="lst-meta-item"><i class="fa-solid fa-tag" style="color:#888;"></i>\'+esc(r.price)+\'</span>\':"")'
   + '         +(r.bedrooms?\'<span class="lst-meta-item"><i class="fa-solid fa-bed" style="color:#888;"></i>\'+esc(r.bedrooms)+\' br</span>\':"")'
@@ -1629,6 +1930,7 @@ function getAdminJS_() {
   + '         +(r.min_credit_score?\'<span class="lst-meta-item"><i class="fa-solid fa-credit-card" style="color:#888;"></i>Credit \'+esc(r.min_credit_score)+\'+</span>\':"")'
   + '       +\'</div>\''
   + '       +\'<div class="lst-card-footer">\''
+  + '         +(progName?"":(\'<button class="btn-primary btn-sm" onclick="event.stopPropagation();pushToSite(\'+i+\')"><i class="fa-solid fa-globe"></i> Push to Site</button>\'))'
   + '         +\'<button class="btn-secondary btn-sm" onclick="event.stopPropagation();editLst(\'+i+\')"><i class="fa-solid fa-pen"></i> Edit</button>\''
   + '         +\'<button class="btn-danger btn-sm" onclick="event.stopPropagation();deleteLst(\'+i+\')"><i class="fa-solid fa-trash"></i> Delete</button>\''
   + '       +\'</div>\''
@@ -1721,38 +2023,61 @@ function getAdminJS_() {
   + 'document.getElementById("lst-cancel-btn").addEventListener("click",closeLSTModal);'
   + 'document.getElementById("lst-save-btn").addEventListener("click",saveListing);'
 
-  + 'function openLSTModal(r){'
+  + 'function openLSTModal(r,prefill){'
   + '  editingLstRow=r;'
-  + '  document.getElementById("lst-modal-title").textContent=r?"Edit Listing":"Add Listing";'
-  + '  document.getElementById("lf-id").value=r?r.listing_id||"":"";'
-  + '  document.getElementById("lf-name").value=r?r.listing_name||"":"";'
-  + '  document.getElementById("lf-active").value=r?(r.active||"NO").toString().trim().toUpperCase()==="YES"?"YES":"NO":"YES";'
-  + '  document.getElementById("lf-type").value=r?r.listing_type||"affordable":"affordable";'
-  + '  document.getElementById("lf-address").value=r?r.address||"":"";'
-  + '  document.getElementById("lf-city").value=r?r.city||"":"";'
-  + '  document.getElementById("lf-price").value=r?r.price||"":"";'
-  + '  document.getElementById("lf-program-type").value=r?r.program_type||"":"";'
-  + '  document.getElementById("lf-beds").value=r?r.bedrooms||"":"";'
-  + '  document.getElementById("lf-baths").value=r?r.bathrooms||"":"";'
-  + '  document.getElementById("lf-sqft").value=r?r.sqft||"":"";'
-  + '  document.getElementById("lf-ami").value=r?r.ami_percent||"":"";'
-  + '  document.getElementById("lf-credit").value=r?r.min_credit_score||"":"";'
-  + '  document.getElementById("lf-dti").value=r?r.max_dti_percent||"":"";'
-  + '  document.getElementById("lf-debt").value=r?r.max_monthly_debt||"":"";'
-  + '  document.getElementById("lf-minhh").value=r?r.min_household_size||"":"";'
-  + '  document.getElementById("lf-maxhh").value=r?r.max_household_size||"":"";'
-  + '  document.getElementById("lf-ftb").value=r?r.first_time_buyer_required||"":"";'
-  + '  document.getElementById("lf-sdres").value=r?r.sd_county_residency_required||"":"";'
-  + '  document.getElementById("lf-inc1").value=r?r.max_income_1person||"":"";'
-  + '  document.getElementById("lf-inc4").value=r?r.max_income_4person||"":"";'
-  + '  document.getElementById("lf-inc6").value=r?r.max_income_6person||"":"";'
-  + '  document.getElementById("lf-prog-notes").value=r?r.program_notes||"":"";'
-  + '  document.getElementById("lf-int-notes").value=r?r.internal_notes||"":"";'
+  + '  var p=r||prefill||{};'
+  + '  document.getElementById("lst-modal-title").textContent=r?"Edit Listing":(prefill?"Promote to Listing":"Add Listing");'
+  + '  document.getElementById("lf-id").value=p.listing_id||"";'
+  + '  document.getElementById("lf-name").value=p.listing_name||"";'
+  + '  document.getElementById("lf-active").value=(p.active||"NO").toString().trim().toUpperCase()==="YES"?"YES":"YES";'
+  + '  document.getElementById("lf-type").value=p.listing_type||"affordable";'
+  + '  document.getElementById("lf-address").value=p.address||"";'
+  + '  document.getElementById("lf-city").value=p.city||"";'
+  + '  document.getElementById("lf-price").value=p.price||"";'
+  + '  document.getElementById("lf-program-type").value=p.program_type||"";'
+  + '  document.getElementById("lf-beds").value=p.bedrooms||"";'
+  + '  document.getElementById("lf-baths").value=p.bathrooms||"";'
+  + '  document.getElementById("lf-sqft").value=p.sqft||"";'
+  + '  document.getElementById("lf-ami").value=p.ami_percent||"";'
+  + '  document.getElementById("lf-credit").value=p.min_credit_score||"";'
+  + '  document.getElementById("lf-dti").value=p.max_dti_percent||"";'
+  + '  document.getElementById("lf-debt").value=p.max_monthly_debt||"";'
+  + '  document.getElementById("lf-minhh").value=p.min_household_size||"";'
+  + '  document.getElementById("lf-maxhh").value=p.max_household_size||"";'
+  + '  document.getElementById("lf-ftb").value=p.first_time_buyer_required||"";'
+  + '  document.getElementById("lf-sdres").value=p.sd_county_residency_required||"";'
+  + '  document.getElementById("lf-inc1").value=p.max_income_1person||"";'
+  + '  document.getElementById("lf-inc4").value=p.max_income_4person||"";'
+  + '  document.getElementById("lf-inc6").value=p.max_income_6person||"";'
+  + '  document.getElementById("lf-prog-notes").value=p.program_notes||"";'
+  + '  document.getElementById("lf-int-notes").value=p.internal_notes||"";'
   + '  document.getElementById("lst-modal").classList.add("open");'
   + '}'
   + 'function closeLSTModal(){document.getElementById("lst-modal").classList.remove("open");editingLstRow=null;}'
 
   + 'function editLst(i){if(!lstData||!lstData.rows)return;openLSTModal(lstData.rows[i]);}'
+
+  /* Push a listing to the site by opening the Program modal pre-filled */
+  + 'function pushToSite(i){'
+  + '  if(!lstData||!lstData.rows)return;'
+  + '  var r=lstData.rows[i];'
+  + '  var prefill={'
+  + '    "Community Name":r.listing_name||r.listing_id||"",'
+  + '    "Area":r.city||"",'
+  + '    "Program Type":r.program_type||"",'
+  + '    "AMI Range":r.ami_percent?(r.ami_percent+" AMI"):"",'
+  + '    "Bedrooms":r.bedrooms||"",'
+  + '    "Household Size Limit":r.max_household_size?(r.min_household_size&&r.min_household_size!==r.max_household_size?r.min_household_size+"-"+r.max_household_size:r.max_household_size):"",'
+  + '    "First-Time Buyer":r.first_time_buyer_required==="YES"?"Required":r.first_time_buyer_required==="NO"?"Not Required":"",'
+  + '    "Price Range":r.price||"",'
+  + '    "Status":"Available",'
+  + '    "Notes":r.program_notes||"",'
+  + '    "source_listing_id":r.listing_id||""'
+  + '  };'
+  + '  switchToTab("programs","");'
+  + '  if(!progData){loadPrograms();}'
+  + '  setTimeout(function(){openProgModal(null,prefill);},progData?0:800);'
+  + '}'
 
   + 'function deleteLst(i){'
   + '  if(!lstData||!lstData.rows)return;'
@@ -1793,17 +2118,29 @@ function getAdminJS_() {
   + '    listing_type:document.getElementById("lf-type").value,'
   + '    program_type:document.getElementById("lf-program-type").value.trim(),'
   + '    internal_notes:document.getElementById("lf-int-notes").value.trim(),'
+  + '    source_submission_row:typeof window._promotingPsRowIndex==="number"?window._promotingPsRowIndex:"",'
   + '    _rowIndex:editingLstRow?editingLstRow._rowIndex:-1'
   + '  };'
   + '  var btn=document.getElementById("lst-save-btn");'
   + '  btn.disabled=true;btn.innerHTML=\'<i class="fa-solid fa-circle-notch fa-spin"></i> Saving\u2026\';'
-  + '  google.script.run'
-  + '    .withSuccessHandler(function(r){'
-  + '      btn.disabled=false;btn.innerHTML=\'<i class="fa-solid fa-floppy-disk"></i> Save Listing\';'
-  + '      if(r&&r.ok){toast(editingLstRow?"Listing updated.":"Listing added.");closeLSTModal();lstData=null;loadListings();}else{toast((r&&r.error)||"Failed.",true);}'
-  + '    })'
-  + '    .withFailureHandler(function(e){btn.disabled=false;btn.innerHTML=\'<i class="fa-solid fa-floppy-disk"></i> Save Listing\';toast("Error: "+(e.message||""),true);})'
-  + '    .adminSaveListing(SESSION_TOKEN,listing);'
+  + '  var isPromote=typeof window._promotingPsRowIndex==="number";'
+  + '  var psRowForPromote=isPromote?window._promotingPsRowIndex:-1;'
+  + '  window._promotingPsRowIndex=undefined;window._promotingPsIdx=undefined;'
+  + '  function onSaveSuccess(r){'
+  + '    btn.disabled=false;btn.innerHTML=\'<i class="fa-solid fa-floppy-disk"></i> Save Listing\';'
+  + '    if(r&&r.ok){'
+  + '      toast(isPromote?"Promoted to listing!":editingLstRow?"Listing updated.":"Listing added.");'
+  + '      closeLSTModal();lstData=null;loadListings();'
+  + '      if(isPromote){setTimeout(function(){psData=null;loadProperties();},400);}'
+  + '    }else{toast((r&&r.error)||"Failed.",true);}'
+  + '  }'
+  + '  function onSaveFail(e){btn.disabled=false;btn.innerHTML=\'<i class="fa-solid fa-floppy-disk"></i> Save Listing\';toast("Error: "+(e.message||""),true);}'
+  + '  if(isPromote){'
+  + '    google.script.run.withSuccessHandler(onSaveSuccess).withFailureHandler(onSaveFail).adminPromoteToListing(SESSION_TOKEN,psRowForPromote,listing);'
+  + '  }else{'
+  + '    google.script.run.withSuccessHandler(onSaveSuccess).withFailureHandler(onSaveFail).adminSaveListing(SESSION_TOKEN,listing);'
+  + '  }'
   + '}'
+
   ;
 }
