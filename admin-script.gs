@@ -1976,7 +1976,7 @@ function getAdminJS_() {
   + '         +(r.min_credit_score?\'<span class="lst-meta-item"><i class="fa-solid fa-credit-card" style="color:#888;"></i>Credit \'+esc(r.min_credit_score)+\'+</span>\':"")'
   + '       +\'</div>\''
   + '       +\'<div class="lst-card-footer">\''
-  + '         +(progName?"":(\'<button class="btn-primary btn-sm" onclick="event.stopPropagation();pushToSite(\'+i+\')"><i class="fa-solid fa-globe"></i> Push to Site</button>\'))'
+  + '         +(progName?"":(\'<button class="btn-primary btn-sm" onclick="event.stopPropagation();openLSTDrawer(\'+i+\')"><i class="fa-solid fa-globe"></i> Push to Site</button>\'))'
   + '         +\'<button class="btn-secondary btn-sm" onclick="event.stopPropagation();editLst(\'+i+\')"><i class="fa-solid fa-pen"></i> Edit</button>\''
   + '         +\'<button class="btn-danger btn-sm" onclick="event.stopPropagation();deleteLst(\'+i+\')"><i class="fa-solid fa-trash"></i> Delete</button>\''
   + '       +\'</div>\''
