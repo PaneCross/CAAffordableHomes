@@ -32,7 +32,7 @@
    ========================================================== */
 
 /* ── Admin Configuration ─────────────────────────────────── */
-var ADMIN_EMAILS       = ['tj@nostos.tech', 'KACEE_EMAIL_HERE'];
+var ADMIN_EMAILS       = ['tj@nostos.tech', 'kcaffordablehomes@gmail.com'];
 var OTP_EXPIRY_MIN     = 10;   /* OTP codes expire after this many minutes */
 var SESSION_EXPIRY_HR  = 8;    /* OTP sessions last this many hours */
 
