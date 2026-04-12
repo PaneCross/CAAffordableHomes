@@ -35,8 +35,7 @@ function withTimeout(promise, ms = 12000) {
 // ─────────────────────────────────────────────────────────────
 let appInitialized = false
 
-sb.auth.onAuthStateChange((event, session) => {
-  console.log('[auth] onAuthStateChange:', event, !!session)
+sb.auth.onAuthStateChange((_event, session) => {
   if (session) {
     showApp(session)
   } else {
@@ -48,13 +47,13 @@ sb.auth.onAuthStateChange((event, session) => {
 const _hash = window.location.hash
 console.log('[auth] hash present:', !!_hash, _hash.substring(0, 30))
 if (_hash && _hash.includes('access_token=')) {
-  const _params = new URLSearchParams(_hash.substring(1))
+  // Strip any leading tab hash (e.g. #programs#access_token= → access_token=...)
+  const _oauthStart = _hash.indexOf('access_token=')
+  const _params = new URLSearchParams(_hash.substring(_oauthStart))
   const _accessToken  = _params.get('access_token')
   const _refreshToken = _params.get('refresh_token')
-  console.log('[auth] calling setSession, token length:', _accessToken?.length)
   sb.auth.setSession({ access_token: _accessToken, refresh_token: _refreshToken || '' })
     .then(({ data, error }) => {
-      console.log('[auth] setSession result — session:', !!data?.session, 'error:', error?.message)
       if (data?.session) {
         history.replaceState(null, '', window.location.pathname)
         showApp(data.session)
@@ -64,7 +63,6 @@ if (_hash && _hash.includes('access_token=')) {
     })
 } else {
   sb.auth.getSession().then(({ data: { session } }) => {
-    console.log('[auth] getSession result:', !!session)
     if (session) showApp(session)
     else showLogin()
   })
@@ -98,7 +96,7 @@ document.getElementById('google-login-btn').addEventListener('click', async () =
 
   const { error } = await sb.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: window.location.href },
+    options: { redirectTo: window.location.origin + window.location.pathname },
   })
 
   if (error) {
