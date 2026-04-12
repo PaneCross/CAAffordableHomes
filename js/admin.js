@@ -29,12 +29,6 @@ sb.auth.onAuthStateChange((_event, session) => {
   }
 })
 
-// Check existing session immediately
-sb.auth.getSession().then(({ data: { session } }) => {
-  if (session) showApp(session)
-  else showLogin()
-})
-
 // ─────────────────────────────────────────────────────────────
 // AUTH
 // ─────────────────────────────────────────────────────────────
