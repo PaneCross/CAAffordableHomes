@@ -43,11 +43,24 @@ sb.auth.onAuthStateChange((_event, session) => {
   }
 })
 
-// Explicit session check as fallback for OAuth redirects
-sb.auth.getSession().then(({ data: { session } }) => {
-  if (session) showApp(session)
-  else showLogin()
-})
+// Handle OAuth callback — if access_token is in the URL hash, set session manually
+// (Supabase UMD bundle doesn't always auto-detect the hash on static sites)
+const _hash = window.location.hash
+if (_hash && _hash.includes('access_token=')) {
+  const _params = new URLSearchParams(_hash.substring(1))
+  const _accessToken  = _params.get('access_token')
+  const _refreshToken = _params.get('refresh_token')
+  if (_accessToken) {
+    history.replaceState(null, '', window.location.pathname) // clean up URL
+    sb.auth.setSession({ access_token: _accessToken, refresh_token: _refreshToken || '' })
+      .then(({ data }) => { if (data.session) showApp(data.session) })
+  }
+} else {
+  sb.auth.getSession().then(({ data: { session } }) => {
+    if (session) showApp(session)
+    else showLogin()
+  })
+}
 
 // ─────────────────────────────────────────────────────────────
 // AUTH
