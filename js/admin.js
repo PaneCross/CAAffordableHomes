@@ -20,14 +20,11 @@ let promotingPsId = null  // PS row id when promoting to listing
 let ilSort  = { col: 'submitted_at', asc: false }
 let psSort  = { col: 'submitted_at', asc: false }
 
-// Wraps a promise with a timeout — rejects if it takes longer than ms
-function withTimeout(promise, ms = 12000) {
-  return Promise.race([
-    promise,
-    new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Request timed out — the database may be waking up. Try refreshing.')), ms)
-    )
-  ])
+// Shows a "waking up" message in areaId after delayMs if still loading.
+// Returns a cancel function. Call it once data arrives to suppress the message.
+function startWakeTimer(areaId, delayMs = 8000) {
+  const t = setTimeout(() => setArea(areaId, wakingUpState()), delayMs)
+  return () => clearTimeout(t)
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -45,7 +42,6 @@ sb.auth.onAuthStateChange((_event, session) => {
 
 // Handle OAuth callback — if access_token is in the URL hash, set session manually
 const _hash = window.location.hash
-console.log('[auth] hash present:', !!_hash, _hash.substring(0, 30))
 if (_hash && _hash.includes('access_token=')) {
   // Strip any leading tab hash (e.g. #programs#access_token= → access_token=...)
   const _oauthStart = _hash.indexOf('access_token=')
@@ -159,6 +155,7 @@ document.getElementById('refresh-btn').addEventListener('click', () => {
 // ─────────────────────────────────────────────────────────────
 async function loadDashboard() {
   setArea('dashboard-area', loading())
+  const cancelWake = startWakeTimer('dashboard-area')
   try {
     const [
       { count: ilTotal },
@@ -169,7 +166,7 @@ async function loadDashboard() {
       { data: progRows },
       { count: psTotal },
       { data: psByStatus },
-    ] = await withTimeout(Promise.all([
+    ] = await Promise.all([
       sb.from('interest_list').select('*', { count: 'exact', head: true }),
       sb.from('interest_list').select('status'),
       sb.from('listings').select('*', { count: 'exact', head: true }),
@@ -178,7 +175,8 @@ async function loadDashboard() {
       sb.from('programs').select('status'),
       sb.from('property_submissions').select('*', { count: 'exact', head: true }),
       sb.from('property_submissions').select('status'),
-    ]))
+    ])
+    cancelWake()
 
     const ilCounts = countBy(ilByStatus || [], 'status')
     const psCounts  = countBy(psByStatus  || [], 'status')
@@ -228,7 +226,8 @@ async function loadDashboard() {
       el.addEventListener('click', () => switchTab(el.dataset.nav))
     })
   } catch (err) {
-    setArea('dashboard-area', `<div class="error-state"><p>Error: ${esc(err.message)}</p></div>`)
+    cancelWake()
+    setArea('dashboard-area', errorState(err))
   }
 }
 
@@ -398,15 +397,18 @@ document.getElementById('lst-modal-close').addEventListener('click', closeLSTMod
 
 async function loadListings() {
   setArea('lst-area', loading())
+  const cancelWake = startWakeTimer('lst-area')
   try {
     const fetches = [sb.from('listings').select('*').order('created_at', { ascending: false })]
     if (!progData.length) fetches.push(sb.from('programs').select('*').order('created_at', { ascending: false }))
-    const [lstRes, progRes] = await withTimeout(Promise.all(fetches))
+    const [lstRes, progRes] = await Promise.all(fetches)
+    cancelWake()
     if (lstRes.error) { setArea('lst-area', errorState(lstRes.error)); return }
     lstData = lstRes.data || []
     if (progRes && !progRes.error) progData = progRes.data || []
     renderListings()
   } catch (err) {
+    cancelWake()
     setArea('lst-area', errorState(err))
   }
 }
@@ -725,15 +727,18 @@ document.getElementById('prog-modal-close').addEventListener('click', closeProgM
 
 async function loadPrograms() {
   setArea('prog-area', loading())
+  const cancelWake = startWakeTimer('prog-area')
   try {
     const fetches = [sb.from('programs').select('*').order('created_at', { ascending: false })]
     if (!lstData.length) fetches.push(sb.from('listings').select('*').order('created_at', { ascending: false }))
-    const [progRes, lstRes] = await withTimeout(Promise.all(fetches))
+    const [progRes, lstRes] = await Promise.all(fetches)
+    cancelWake()
     if (progRes.error) { setArea('prog-area', errorState(progRes.error)); return }
     progData = progRes.data || []
     if (lstRes && !lstRes.error) lstData = lstRes.data || []
     renderPrograms()
   } catch (err) {
+    cancelWake()
     setArea('prog-area', errorState(err))
   }
 }
@@ -934,25 +939,22 @@ function renderIL() {
     { label: 'Submitted',      col: 'submitted_at' },
     { label: 'Status',         col: 'status' },
     { label: 'Area Preference',col: 'area_preference' },
-    { label: '',               col: null },
   ]
 
   const html = `<table class="data-table">
     <thead><tr>
-      ${ilCols.map(c => c.col
-        ? `<th class="sortable${ilSort.col === c.col ? ' sort-active' : ''}" data-sort-il="${c.col}">${c.label} ${sortArrow(ilSort, c.col)}</th>`
-        : `<th></th>`
+      ${ilCols.map(c =>
+        `<th class="sortable${ilSort.col === c.col ? ' sort-active' : ''}" data-sort-il="${c.col}">${c.label} ${sortArrow(ilSort, c.col)}</th>`
       ).join('')}
     </tr></thead>
     <tbody>
-      ${rows.map(r => `<tr>
+      ${rows.map(r => `<tr class="clickable-row" onclick="openILModal(${ilData.indexOf(r)})">
         <td><strong>${esc(r.full_name || '')}</strong></td>
         <td>${esc(r.email || '')}</td>
         <td>${esc(r.phone || '')}</td>
         <td>${fmtDate(r.submitted_at)}</td>
         <td><span class="status-pill ${ilPillCls(r.status)}">${esc(r.status || '')}</span></td>
         <td style="font-size:.78rem;color:#666;max-width:200px;white-space:normal;">${esc((r.area_preference || '').substring(0, 80))}</td>
-        <td><button class="btn-secondary btn-xs" onclick="openILModal(${ilData.indexOf(r)})"><i class="fa-solid fa-eye"></i></button></td>
       </tr>`).join('')}
     </tbody>
   </table>`
@@ -966,54 +968,127 @@ function renderIL() {
   )
 }
 
+function ilSection(title, pairs) {
+  const rows = pairs.filter(([, v]) => v != null && v !== '').map(([l, v]) =>
+    `<div class="field-row"><span class="field-label">${esc(l)}</span><span class="field-value">${esc(String(v))}</span></div>`
+  ).join('')
+  if (!rows) return ''
+  return `<div class="field-group il-section"><div class="field-group-title">${title}</div>${rows}</div>`
+}
+
 function openILModal(idx) {
   viewingIlRow = ilData[idx]
   const r = viewingIlRow
   document.getElementById('il-modal-title').textContent = r.full_name || r.email
 
-  const fields = [
-    ['Email', r.email], ['Phone', r.phone], ['Submitted', fmtDate(r.submitted_at)],
-    ['Status', r.status], ['Area Preference', r.area_preference],
-    ['Household Size', r.household_size], ['Credit Score (Self)', r.credit_score_self],
-    ['Credit Score (Co)', r.credit_score_coborrower], ['Monthly Debt', r.monthly_debt_payments ? '$'+r.monthly_debt_payments : ''],
-    ['Monthly Rent', r.monthly_rent], ['Owned Real Estate', r.owned_real_estate],
-    ['SD County Resident', r.live_in_sd_county], ['SD 2yr Residency/Work', r.worked_lived_sd_2yr],
-    ['Lived Together 12mo', r.lived_together_12mo], ['SDHC Prior Purchase', r.sdhc_prior_purchase],
-    ['US Citizen', r.us_citizen], ['Permanent Resident', r.permanent_resident],
-    ['Foreclosure', r.foreclosure], ['Bankruptcy', r.bankruptcy],
-    ['Judgments', r.judgments],
-    ['Assets (Checking)', r.asset_checking ? '$'+r.asset_checking : ''],
-    ['Assets (Savings)', r.asset_savings ? '$'+r.asset_savings : ''],
-    ['Assets (401k)', r.asset_401k ? '$'+r.asset_401k : ''],
-    ['Assets (Other)', r.asset_other ? '$'+r.asset_other : ''],
-  ]
+  // ── Contact Info ──────────────────────────────────────────
+  const contactSection = ilSection('Contact Info', [
+    ['Email',          r.email],
+    ['Phone',          r.phone],
+    ['Submitted',      fmtDate(r.submitted_at)],
+    ['Updated',        r.updated_at && r.updated_at !== r.submitted_at ? fmtDate(r.updated_at) : null],
+    ['Original Signup',r.original_signup_at && r.original_signup_at !== r.submitted_at ? fmtDate(r.original_signup_at) : null],
+    ['Area Preference',r.area_preference],
+  ])
 
-  // Income members
+  // ── Household & Eligibility ───────────────────────────────
+  const householdSection = ilSection('Household & Eligibility', [
+    ['Household Size',        r.household_size],
+    ['Lived Together 12mo',   r.lived_together_12mo],
+    ['SD County Resident',    r.live_in_sd_county],
+    ['SD 2yr Residency/Work', r.worked_lived_sd_2yr],
+    ['SDHC Prior Purchase',   r.sdhc_prior_purchase],
+    ['Owned Real Estate',     r.owned_real_estate],
+  ])
+
+  // ── Financial ─────────────────────────────────────────────
+  const financialSection = ilSection('Financial', [
+    ['Credit Score (Self)',   r.credit_score_self],
+    ['Credit Score (Co-borrower)', r.credit_score_coborrower],
+    ['Monthly Rent',          r.monthly_rent ? '$' + r.monthly_rent : null],
+    ['Monthly Debt Payments', r.monthly_debt_payments ? '$' + r.monthly_debt_payments : null],
+  ])
+
+  // ── Disclosures ───────────────────────────────────────────
+  const disclosuresSection = ilSection('Disclosures', [
+    ['US Citizen',        r.us_citizen],
+    ['Permanent Resident',r.permanent_resident],
+    ['Foreclosure',       r.foreclosure],
+    ['Bankruptcy',        r.bankruptcy],
+    ['Judgments',         r.judgments],
+  ])
+
+  // ── Assets ────────────────────────────────────────────────
+  const assetsSection = ilSection('Assets', [
+    ['Checking', r.asset_checking ? '$' + r.asset_checking : null],
+    ['Savings',  r.asset_savings  ? '$' + r.asset_savings  : null],
+    ['401k',     r.asset_401k     ? '$' + r.asset_401k     : null],
+    ['Other',    r.asset_other    ? '$' + r.asset_other     : null],
+  ])
+
+  // ── Income Members ────────────────────────────────────────
   const incomeRows = [1,2,3,4,5,6].map(n => {
-    const nm = r[`income_${n}_name`]
+    const nm  = r[`income_${n}_name`]
     const amt = r[`income_${n}_annual`]
     if (!nm && !amt) return ''
-    return `<tr><td style="padding:3px 8px;">${esc(nm||'')}</td><td style="padding:3px 8px;">${esc(r[`income_${n}_relationship`]||'')}</td><td style="padding:3px 8px;">${esc(amt ? '$'+amt : '')}</td></tr>`
+    return `<tr>
+      <td style="padding:5px 8px;">${esc(nm || '')}</td>
+      <td style="padding:5px 8px;">${esc(r[`income_${n}_relationship`] || '')}</td>
+      <td style="padding:5px 8px;">${amt ? '$' + esc(String(amt)) : ''}</td>
+    </tr>`
   }).filter(Boolean).join('')
-
-  document.getElementById('il-modal-body').innerHTML = `
-    <div class="field-group">
-      <div class="field-group-title">Personal Info</div>
-      ${fields.filter(([,v]) => v).map(([l, v]) => `
-        <div class="field-row">
-          <span class="field-label">${esc(l)}</span>
-          <span class="field-value">${esc(String(v))}</span>
-        </div>`).join('')}
-    </div>
-    ${incomeRows ? `
-    <div class="field-group">
+  const incomeSection = incomeRows ? `
+    <div class="field-group il-section">
       <div class="field-group-title">Income Members</div>
       <table style="font-size:.82rem;width:100%;border-collapse:collapse;">
-        <thead><tr style="background:#f5f5f0;"><th style="padding:3px 8px;text-align:left;">Name</th><th style="padding:3px 8px;text-align:left;">Relationship</th><th style="padding:3px 8px;text-align:left;">Annual</th></tr></thead>
+        <thead><tr style="background:#f5f5f0;">
+          <th style="padding:5px 8px;text-align:left;">Name</th>
+          <th style="padding:5px 8px;text-align:left;">Relationship</th>
+          <th style="padding:5px 8px;text-align:left;">Annual Income</th>
+        </tr></thead>
         <tbody>${incomeRows}</tbody>
       </table>
-    </div>` : ''}
-    ${r.additional_info ? `<div class="field-group"><div class="field-group-title">Additional Info</div><p style="font-size:.85rem;white-space:pre-wrap;">${esc(r.additional_info)}</p></div>` : ''}`
+    </div>` : ''
+
+  // ── Employment ────────────────────────────────────────────
+  function empRow(label, val) {
+    if (!val) return ''
+    return `<div class="field-row"><span class="field-label">${esc(label)}</span><span class="field-value">${esc(String(val))}</span></div>`
+  }
+  const empBlocks = [1,2,3,4].map(n => {
+    const name     = r[`emp_${n}_name`]
+    const employer = r[`emp_${n}_employer`]
+    if (!name && !employer) return ''
+    const salary = r[`emp_${n}_annual_salary`] ? '$' + r[`emp_${n}_annual_salary`] : null
+    const ytd    = r[`emp_${n}_ytd_gross`]     ? '$' + r[`emp_${n}_ytd_gross`]     : null
+    return `<div style="border-bottom:1px solid var(--border);padding:.5rem 0 .25rem;">
+      <div style="padding:.25rem .75rem;font-weight:600;font-size:.82rem;">${esc(name || employer || 'Member ' + n)}</div>
+      ${empRow('Relationship', r[`emp_${n}_relationship`])}
+      ${empRow('Employer', employer)}
+      ${empRow('Status', r[`emp_${n}_status`])}
+      ${empRow('Income Type', r[`emp_${n}_income_type`])}
+      ${empRow('Annual Salary', salary)}
+      ${empRow('YTD Gross', ytd)}
+      ${empRow('Start Date', r[`emp_${n}_start_date`])}
+      ${empRow('Pay Period End', r[`emp_${n}_pay_period_end`])}
+    </div>`
+  }).filter(Boolean).join('')
+  const empSection = empBlocks ? `
+    <div class="field-group il-section">
+      <div class="field-group-title">Employment</div>
+      ${empBlocks}
+    </div>` : ''
+
+  // ── Additional Info ───────────────────────────────────────
+  const additionalSection = r.additional_info
+    ? `<div class="field-group il-section"><div class="field-group-title">Additional Info</div>
+       <div style="padding:.6rem .75rem;font-size:.85rem;white-space:pre-wrap;line-height:1.5;">${esc(r.additional_info)}</div></div>`
+    : ''
+
+  document.getElementById('il-modal-body').innerHTML =
+    contactSection + householdSection + financialSection +
+    disclosuresSection + assetsSection + incomeSection +
+    empSection + additionalSection
 
   document.getElementById('il-status-select').value = r.status || 'new'
   document.getElementById('il-modal-overlay').classList.add('open')
@@ -1097,6 +1172,14 @@ function emptyState(msg) {
 
 function errorState(err) {
   return `<div class="error-state"><i class="fa-solid fa-triangle-exclamation"></i><p>${esc(err?.message || 'Error')}</p></div>`
+}
+
+function wakingUpState() {
+  return `<div class="loading-state" style="flex-direction:column;gap:.75rem;padding:3rem 1rem;text-align:center;">
+    <i class="fa-solid fa-circle-notch fa-spin" style="font-size:2rem;color:var(--accent);"></i>
+    <p style="margin:0;font-size:.95rem;">Database is waking up...</p>
+    <p style="margin:0;font-size:.82rem;color:#bbb;max-width:360px;">The free-tier database sleeps after inactivity. This usually takes 20-30 seconds. Data will load automatically - no refresh needed.</p>
+  </div>`
 }
 
 function toast(msg, isError) {

@@ -192,6 +192,7 @@ textarea.form-input { resize: vertical; }
 .data-table th.sortable { cursor: pointer; user-select: none; }
 .data-table th.sortable:hover { background: #eceae4; }
 .data-table th.sort-active { color: var(--green); }
+.data-table tr.clickable-row { cursor: pointer; }
 .action-cell { display: flex; gap: .35rem; align-items: center; }
 
 /* ── Status pills ── */
@@ -257,7 +258,9 @@ textarea.form-input { resize: vertical; }
 .field-group-title { background: #f5f5f0; padding: .45rem .75rem; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #555; }
 .field-row { display: flex; justify-content: space-between; padding: .35rem .75rem; border-bottom: 1px solid #f5f5f0; font-size: .82rem; }
 .field-row:last-child { border-bottom: none; }
-.field-label { color: var(--muted); }
+.field-label { color: var(--muted); flex-shrink: 0; margin-right: 1rem; }
+.field-value { text-align: right; }
+.il-section { margin-bottom: .75rem; }
 .field-value  { font-weight: 500; text-align: right; max-width: 55%; }
 
 /* ── Modal ── */
