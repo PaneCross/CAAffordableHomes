@@ -35,7 +35,8 @@ function withTimeout(promise, ms = 12000) {
 // ─────────────────────────────────────────────────────────────
 let appInitialized = false
 
-sb.auth.onAuthStateChange((_event, session) => {
+sb.auth.onAuthStateChange((event, session) => {
+  console.log('[auth] onAuthStateChange:', event, !!session)
   if (session) {
     showApp(session)
   } else {
@@ -44,19 +45,26 @@ sb.auth.onAuthStateChange((_event, session) => {
 })
 
 // Handle OAuth callback — if access_token is in the URL hash, set session manually
-// (Supabase UMD bundle doesn't always auto-detect the hash on static sites)
 const _hash = window.location.hash
+console.log('[auth] hash present:', !!_hash, _hash.substring(0, 30))
 if (_hash && _hash.includes('access_token=')) {
   const _params = new URLSearchParams(_hash.substring(1))
   const _accessToken  = _params.get('access_token')
   const _refreshToken = _params.get('refresh_token')
-  if (_accessToken) {
-    history.replaceState(null, '', window.location.pathname) // clean up URL
-    sb.auth.setSession({ access_token: _accessToken, refresh_token: _refreshToken || '' })
-      .then(({ data }) => { if (data.session) showApp(data.session) })
-  }
+  console.log('[auth] calling setSession, token length:', _accessToken?.length)
+  sb.auth.setSession({ access_token: _accessToken, refresh_token: _refreshToken || '' })
+    .then(({ data, error }) => {
+      console.log('[auth] setSession result — session:', !!data?.session, 'error:', error?.message)
+      if (data?.session) {
+        history.replaceState(null, '', window.location.pathname)
+        showApp(data.session)
+      } else {
+        showLogin()
+      }
+    })
 } else {
   sb.auth.getSession().then(({ data: { session } }) => {
+    console.log('[auth] getSession result:', !!session)
     if (session) showApp(session)
     else showLogin()
   })
