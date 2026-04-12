@@ -7,7 +7,9 @@ const SUPABASE_URL = 'https://monybdfujogcyseyjgfx.supabase.co'
 const SUPABASE_KEY = 'sb_publishable_Y36wJc0oJ_0f9JOf3co6BA_Re749E7U'
 const SUBMIT_FN    = `${SUPABASE_URL}/functions/v1/submit-interest`
 
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { flowType: 'implicit' }
+})
 
 // ── State ─────────────────────────────────────────────────────
 let lstData = [], progData = [], ilData = [], psData = [], candidatesData = [], successesData = []
@@ -39,6 +41,12 @@ sb.auth.onAuthStateChange((_event, session) => {
   } else {
     showLogin()
   }
+})
+
+// Explicit session check as fallback for OAuth redirects
+sb.auth.getSession().then(({ data: { session } }) => {
+  if (session) showApp(session)
+  else showLogin()
 })
 
 // ─────────────────────────────────────────────────────────────
