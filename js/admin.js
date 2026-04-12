@@ -149,26 +149,25 @@ document.getElementById('refresh-btn').addEventListener('click', () => {
 // ─────────────────────────────────────────────────────────────
 async function loadDashboard() {
   setArea('dashboard-area', loading())
-  // Abort all requests after 35s — database is likely awake by then,
-  // and retrying will be instant.
-  const ctrl = new AbortController()
-  const abortTimer = setTimeout(() => ctrl.abort(), 35000)
-
   try {
-    // 4 queries instead of 8: derive counts from data.length,
-    // avoiding duplicate head:true requests that double the connection count.
+    // Race the 4 queries against a 35s timeout.
+    // Promise.race guarantees the catch fires even if Supabase never resolves.
     const [
       { data: ilRows,  error: e1 },
       { data: lstRows, error: e2 },
       { data: progRows,error: e3 },
       { data: psRows,  error: e4 },
-    ] = await Promise.all([
-      sb.from('interest_list').select('status').abortSignal(ctrl.signal),
-      sb.from('listings').select('active,linked_program_id').abortSignal(ctrl.signal),
-      sb.from('programs').select('status').abortSignal(ctrl.signal),
-      sb.from('property_submissions').select('status').abortSignal(ctrl.signal),
+    ] = await Promise.race([
+      Promise.all([
+        sb.from('interest_list').select('status'),
+        sb.from('listings').select('active,linked_program_id'),
+        sb.from('programs').select('status'),
+        sb.from('property_submissions').select('status'),
+      ]),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('TIMEOUT')), 35000)
+      ),
     ])
-    clearTimeout(abortTimer)
 
     if (e1 || e2 || e3 || e4) throw e1 || e2 || e3 || e4
 
@@ -224,13 +223,12 @@ async function loadDashboard() {
       el.addEventListener('click', () => switchTab(el.dataset.nav))
     })
   } catch (err) {
-    clearTimeout(abortTimer)
-    if (err?.name === 'AbortError') {
+    if (err?.message === 'TIMEOUT') {
       setArea('dashboard-area', `
         <div class="error-state">
-          <i class="fa-solid fa-database"></i>
+          <i class="fa-solid fa-database" style="font-size:1.5rem;"></i>
           <p>The database took too long to respond.</p>
-          <p style="font-size:.82rem;color:#aaa;">It should be awake now. Click below to try again.</p>
+          <p style="font-size:.82rem;color:#aaa;max-width:320px;">It should be awake now — click Retry and it will load instantly.</p>
           <button class="btn-secondary" onclick="loadDashboard()" style="margin-top:.5rem;">
             <i class="fa-solid fa-rotate-right"></i> Retry
           </button>
