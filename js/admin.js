@@ -1170,7 +1170,7 @@ function renderMatches(listings, results, cands, il) {
         <td>${il ? (il.credit_score_self || '') : ''}</td>
         <td>${il ? (il.household_size || '') : ''}</td>
         <td>${statusBadge}${failDetail}</td>
-        <td class="action-cell">${actionHtml}</td>
+        <td><div class="action-cell">${actionHtml}</div></td>
       </tr>`
     }).join('')
 
