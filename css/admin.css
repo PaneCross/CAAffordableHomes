@@ -180,6 +180,9 @@ textarea.form-input { resize: vertical; }
 }
 .data-table td { padding: .55rem .75rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
 .data-table tr:hover td { background: var(--green-bg); }
+.data-table th.sortable { cursor: pointer; user-select: none; }
+.data-table th.sortable:hover { background: #eceae4; }
+.data-table th.sort-active { color: var(--green); }
 .action-cell { display: flex; gap: .35rem; align-items: center; }
 
 /* ── Status pills ── */

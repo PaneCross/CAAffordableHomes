@@ -15,6 +15,8 @@ let editingLstRow = null, editingProgRow = null, editingPsRow = null, viewingIlR
 let lstFilter = 'active', progFilter = 'active', ilFilter = 'all', psFilter = 'all'
 let ilSearch = ''
 let promotingPsId = null  // PS row id when promoting to listing
+let ilSort  = { col: 'submitted_at', asc: false }
+let psSort  = { col: 'submitted_at', asc: false }
 
 // ─────────────────────────────────────────────────────────────
 // INIT
@@ -218,13 +220,26 @@ function renderPS() {
   if (psFilter !== 'all') rows = psData.filter(r => (r.status||'new') === psFilter)
   if (!rows.length) { setArea('ps-area', emptyState('No submissions match this filter.')); return }
 
+  rows = sortRows(rows, psSort)
+
+  const psCols = [
+    { label: 'Date',    col: 'submitted_at' },
+    { label: 'Contact', col: 'contact_name' },
+    { label: 'Address', col: 'prop_address' },
+    { label: 'AMI',     col: 'ami_percent' },
+    { label: 'Status',  col: 'status' },
+    { label: 'Actions', col: null },
+  ]
+
   const html = `<table class="data-table">
     <thead><tr>
-      <th>Date</th><th>Contact</th><th>Address</th>
-      <th>AMI</th><th>Status</th><th>Actions</th>
+      ${psCols.map(c => c.col
+        ? `<th class="sortable${psSort.col === c.col ? ' sort-active' : ''}" data-sort-ps="${c.col}">${c.label} ${sortArrow(psSort, c.col)}</th>`
+        : `<th>${c.label}</th>`
+      ).join('')}
     </tr></thead>
     <tbody>
-      ${rows.map((r, i) => `<tr>
+      ${rows.map(r => `<tr>
         <td>${fmtDate(r.submitted_at)}</td>
         <td><strong>${esc(r.contact_name||'')}</strong><br><span style="font-size:.78rem;color:#888;">${esc(r.contact_email||'')}</span></td>
         <td>${esc(r.prop_address||'')}</td>
@@ -238,6 +253,13 @@ function renderPS() {
     </tbody>
   </table>`
   setArea('ps-area', html)
+  document.querySelectorAll('[data-sort-ps]').forEach(th =>
+    th.addEventListener('click', () => {
+      const col = th.dataset.sortPs
+      psSort = { col, asc: psSort.col === col ? !psSort.asc : true }
+      renderPS()
+    })
+  )
 }
 
 function openPSModal(idx) {
@@ -849,10 +871,24 @@ function renderIL() {
 
   if (!rows.length) { setArea('il-area', emptyState('No applicants match.')); return }
 
+  rows = sortRows(rows, ilSort)
+
+  const ilCols = [
+    { label: 'Name',           col: 'full_name' },
+    { label: 'Email',          col: 'email' },
+    { label: 'Phone',          col: 'phone' },
+    { label: 'Submitted',      col: 'submitted_at' },
+    { label: 'Status',         col: 'status' },
+    { label: 'Area Preference',col: 'area_preference' },
+    { label: '',               col: null },
+  ]
+
   const html = `<table class="data-table">
     <thead><tr>
-      <th>Name</th><th>Email</th><th>Phone</th>
-      <th>Submitted</th><th>Status</th><th>Area Preference</th><th></th>
+      ${ilCols.map(c => c.col
+        ? `<th class="sortable${ilSort.col === c.col ? ' sort-active' : ''}" data-sort-il="${c.col}">${c.label} ${sortArrow(ilSort, c.col)}</th>`
+        : `<th></th>`
+      ).join('')}
     </tr></thead>
     <tbody>
       ${rows.map(r => `<tr>
@@ -867,6 +903,13 @@ function renderIL() {
     </tbody>
   </table>`
   setArea('il-area', html)
+  document.querySelectorAll('[data-sort-il]').forEach(th =>
+    th.addEventListener('click', () => {
+      const col = th.dataset.sortIl
+      ilSort = { col, asc: ilSort.col === col ? !ilSort.asc : true }
+      renderIL()
+    })
+  )
 }
 
 function openILModal(idx) {
@@ -943,6 +986,24 @@ document.getElementById('il-status-save-btn').addEventListener('click', async ()
 // ─────────────────────────────────────────────────────────────
 // UTILITIES
 // ─────────────────────────────────────────────────────────────
+function sortRows(rows, sort) {
+  return [...rows].sort((a, b) => {
+    let av = a[sort.col] ?? '', bv = b[sort.col] ?? ''
+    // Date strings sort correctly as strings; numbers too if we coerce
+    const an = Number(av), bn = Number(bv)
+    if (!isNaN(an) && !isNaN(bn)) { av = an; bv = bn }
+    else { av = String(av).toLowerCase(); bv = String(bv).toLowerCase() }
+    if (av < bv) return sort.asc ? -1 : 1
+    if (av > bv) return sort.asc ? 1 : -1
+    return 0
+  })
+}
+
+function sortArrow(sort, col) {
+  if (sort.col !== col) return '<span style="opacity:.3;font-size:.7em;">⇅</span>'
+  return sort.asc ? '<span style="font-size:.7em;">▲</span>' : '<span style="font-size:.7em;">▼</span>'
+}
+
 function esc(s) {
   return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
 }
