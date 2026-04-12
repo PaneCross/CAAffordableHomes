@@ -293,30 +293,30 @@
                         <div class="il-repeating-block__header"><span>Non-Taxable Income 1</span></div>
                         <div class="form-row">
                           <div class="form-group">
-                            <label class="form-label">Who receives it</label>
-                            <input type="text" name="nontax_1_who" class="form-control" placeholder="Name" data-req>
+                            <label class="form-label" for="il-nontax-1-who">Who receives it</label>
+                            <input type="text" id="il-nontax-1-who" name="nontax_1_who" class="form-control" placeholder="Name" data-req>
                           </div>
                           <div class="form-group">
-                            <label class="form-label">Source of income</label>
-                            <input type="text" name="nontax_1_source" class="form-control" placeholder="e.g. Social Security" data-req>
+                            <label class="form-label" for="il-nontax-1-source">Source of income</label>
+                            <input type="text" id="il-nontax-1-source" name="nontax_1_source" class="form-control" placeholder="e.g. Social Security" data-req>
                           </div>
                         </div>
                         <div class="form-row">
                           <div class="form-group">
-                            <label class="form-label">Amount per month</label>
+                            <label class="form-label" for="il-nontax-1-amount">Amount per month</label>
                             <div class="il-dollar-wrap">
-                              <input type="number" name="nontax_1_amount" class="form-control" placeholder="0" min="0" data-req>
+                              <input type="number" id="il-nontax-1-amount" name="nontax_1_amount" class="form-control" placeholder="0" min="0" data-req>
                             </div>
                           </div>
                           <div class="form-group">
-                            <label class="form-label">Is there an end date?</label>
+                            <p class="form-label">Is there an end date?</p>
                             <div class="il-radio-group" style="margin-top:0.4rem">
                               <label class="il-radio-label"><input type="radio" name="nontax_1_end_date_yn" value="Yes" data-shows="il-nontax1-enddate" data-show-when="Yes"> Yes</label>
                               <label class="il-radio-label"><input type="radio" name="nontax_1_end_date_yn" value="No" data-shows="il-nontax1-enddate" data-show-when="Yes"> No</label>
                             </div>
                             <div class="il-conditional" id="il-nontax1-enddate">
-                              <label class="form-label" style="margin-top:0.5rem">End date</label>
-                              <input type="date" name="nontax_1_end_date" class="form-control" data-req>
+                              <label class="form-label" for="il-nontax-1-end-date" style="margin-top:0.5rem">End date</label>
+                              <input type="date" id="il-nontax-1-end-date" name="nontax_1_end_date" class="form-control" data-req>
                             </div>
                           </div>
                         </div>
@@ -1444,22 +1444,22 @@
         + '<button type="button" class="il-remove-btn" data-remove="il-nontax-block-' + n + '">'
         + '<i class="fa-solid fa-xmark" aria-hidden="true"></i> Remove</button></div>'
         + '<div class="form-row">'
-        + '<div class="form-group"><label class="form-label">Who receives it</label>'
-        + '<input type="text" name="nontax_' + n + '_who" class="form-control" placeholder="Name"></div>'
-        + '<div class="form-group"><label class="form-label">Source of income</label>'
-        + '<input type="text" name="nontax_' + n + '_source" class="form-control" placeholder="e.g. Social Security"></div></div>'
+        + '<div class="form-group"><label class="form-label" for="il-nontax-' + n + '-who">Who receives it</label>'
+        + '<input type="text" id="il-nontax-' + n + '-who" name="nontax_' + n + '_who" class="form-control" placeholder="Name"></div>'
+        + '<div class="form-group"><label class="form-label" for="il-nontax-' + n + '-source">Source of income</label>'
+        + '<input type="text" id="il-nontax-' + n + '-source" name="nontax_' + n + '_source" class="form-control" placeholder="e.g. Social Security"></div></div>'
         + '<div class="form-row">'
-        + '<div class="form-group"><label class="form-label">Amount per month</label>'
-        + '<div class="il-dollar-wrap"><input type="number" name="nontax_' + n + '_amount" class="form-control" placeholder="0" min="0"></div></div>'
-        + '<div class="form-group"><label class="form-label">Is there an end date?</label>'
+        + '<div class="form-group"><label class="form-label" for="il-nontax-' + n + '-amount">Amount per month</label>'
+        + '<div class="il-dollar-wrap"><input type="number" id="il-nontax-' + n + '-amount" name="nontax_' + n + '_amount" class="form-control" placeholder="0" min="0"></div></div>'
+        + '<div class="form-group"><p class="form-label">Is there an end date?</p>'
         + '<div class="il-radio-group" style="margin-top:0.4rem">'
         + '<label class="il-radio-label"><input type="radio" name="nontax_' + n + '_end_date_yn" value="Yes"'
         + ' data-shows="il-nontax' + n + '-enddate" data-show-when="Yes"> Yes</label>'
         + '<label class="il-radio-label"><input type="radio" name="nontax_' + n + '_end_date_yn" value="No"'
         + ' data-shows="il-nontax' + n + '-enddate" data-show-when="Yes"> No</label></div>'
         + '<div class="il-conditional" id="il-nontax' + n + '-enddate">'
-        + '<label class="form-label" style="margin-top:0.5rem">End date</label>'
-        + '<input type="date" name="nontax_' + n + '_end_date" class="form-control" data-req></div></div></div>';
+        + '<label class="form-label" for="il-nontax-' + n + '-end-date" style="margin-top:0.5rem">End date</label>'
+        + '<input type="date" id="il-nontax-' + n + '-end-date" name="nontax_' + n + '_end_date" class="form-control" data-req></div></div></div>';
       container.appendChild(div);
       initConditionals(div);
       renumberNontaxBlocks();
@@ -1497,15 +1497,15 @@
         + '<button type="button" class="il-remove-btn" data-remove="il-income-block-' + n + '">'
         + '<i class="fa-solid fa-xmark" aria-hidden="true"></i> Remove</button></div>'
         + '<div class="form-row">'
-        + '<div class="form-group"><label class="form-label">First Name</label>'
-        + '<input type="text" name="income_' + n + '_name" class="form-control" placeholder="Name"></div>'
-        + '<div class="form-group"><label class="form-label">Relationship to Applicant</label>'
-        + '<select name="income_' + n + '_relationship" class="form-control">'
+        + '<div class="form-group"><label class="form-label" for="il-inc-' + n + '-name">First Name</label>'
+        + '<input type="text" id="il-inc-' + n + '-name" name="income_' + n + '_name" class="form-control" placeholder="Name"></div>'
+        + '<div class="form-group"><label class="form-label" for="il-inc-' + n + '-rel">Relationship to Applicant</label>'
+        + '<select id="il-inc-' + n + '-rel" name="income_' + n + '_relationship" class="form-control">'
         + '<option value="" disabled selected>Select</option>'
         + '<option>Self</option><option>Spouse or Partner</option><option>Child</option><option>Parent</option><option>Other</option>'
         + '</select></div></div>'
-        + '<div class="form-group"><label class="form-label">Annual Income</label>'
-        + '<div class="il-dollar-wrap"><input type="number" name="income_' + n + '_annual" class="form-control" placeholder="0" min="0"></div></div>';
+        + '<div class="form-group"><label class="form-label" for="il-inc-' + n + '-annual">Annual Income</label>'
+        + '<div class="il-dollar-wrap"><input type="number" id="il-inc-' + n + '-annual" name="income_' + n + '_annual" class="form-control" placeholder="0" min="0"></div></div>';
       container.appendChild(div);
       div.querySelector('.il-remove-btn').addEventListener('click', function () {
         div.remove();
@@ -1538,16 +1538,16 @@
         + '<button type="button" class="il-remove-btn" data-remove="il-emp-block-' + n + '">'
         + '<i class="fa-solid fa-xmark" aria-hidden="true"></i> Remove</button></div>'
         + '<div class="form-row">'
-        + '<div class="form-group"><label class="form-label">First name of employee</label>'
-        + '<input type="text" name="emp_' + n + '_name" class="form-control" placeholder="Name"></div>'
-        + '<div class="form-group"><label class="form-label">Relationship to applicant</label>'
-        + '<select name="emp_' + n + '_relationship" class="form-control">'
+        + '<div class="form-group"><label class="form-label" for="il-emp-' + n + '-name">First name of employee</label>'
+        + '<input type="text" id="il-emp-' + n + '-name" name="emp_' + n + '_name" class="form-control" placeholder="Name"></div>'
+        + '<div class="form-group"><label class="form-label" for="il-emp-' + n + '-rel">Relationship to applicant</label>'
+        + '<select id="il-emp-' + n + '-rel" name="emp_' + n + '_relationship" class="form-control">'
         + '<option value="" disabled selected>Select</option>'
         + '<option>Self</option><option>Spouse or Partner</option><option>Child</option><option>Parent</option><option>Other</option>'
         + '</select></div></div>'
-        + '<div class="form-group"><label class="form-label">Employer name</label>'
-        + '<input type="text" name="emp_' + n + '_employer" class="form-control" placeholder="Company name"></div>'
-        + '<div class="form-group"><label class="form-label">Current or Previous?</label>'
+        + '<div class="form-group"><label class="form-label" for="il-emp-' + n + '-employer">Employer name</label>'
+        + '<input type="text" id="il-emp-' + n + '-employer" name="emp_' + n + '_employer" class="form-control" placeholder="Company name"></div>'
+        + '<div class="form-group"><p class="form-label">Current or Previous?</p>'
         + '<div class="il-radio-group">'
         + '<label class="il-radio-label"><input type="radio" name="emp_' + n + '_status" value="Current"'
         + ' data-shows="il-emp' + n + '-cond-previous" data-show-when="Previous"> Current</label>'
@@ -1556,16 +1556,16 @@
         + '</div>'
         + '<div class="il-conditional" id="il-emp' + n + '-cond-previous">'
         + '<div class="form-row">'
-        + '<div class="form-group"><label class="form-label">End date</label>'
-        + '<input type="month" name="emp_' + n + '_end_date" class="form-control" data-req></div>'
-        + '<div class="form-group"><label class="form-label">Same line of work as current?</label>'
+        + '<div class="form-group"><label class="form-label" for="il-emp-' + n + '-end-date">End date</label>'
+        + '<input type="month" id="il-emp-' + n + '-end-date" name="emp_' + n + '_end_date" class="form-control" data-req></div>'
+        + '<div class="form-group"><p class="form-label">Same line of work as current?</p>'
         + '<div class="il-radio-group" style="margin-top:0.4rem">'
         + '<label class="il-radio-label"><input type="radio" name="emp_' + n + '_same_line" value="Yes"> Yes</label>'
         + '<label class="il-radio-label"><input type="radio" name="emp_' + n + '_same_line" value="No"> No</label>'
         + '</div></div></div></div></div>'
-        + '<div class="form-group"><label class="form-label">Start date</label>'
-        + '<input type="month" name="emp_' + n + '_start_date" class="form-control"></div>'
-        + '<div class="form-group"><label class="form-label">Any breaks in this employment?</label>'
+        + '<div class="form-group"><label class="form-label" for="il-emp-' + n + '-start-date">Start date</label>'
+        + '<input type="month" id="il-emp-' + n + '-start-date" name="emp_' + n + '_start_date" class="form-control"></div>'
+        + '<div class="form-group"><p class="form-label">Any breaks in this employment?</p>'
         + '<div class="il-radio-group">'
         + '<label class="il-radio-label"><input type="radio" name="emp_' + n + '_breaks" value="Yes"'
         + ' data-shows="il-emp' + n + '-cond-breaks" data-show-when="Yes"> Yes</label>'
@@ -1573,9 +1573,9 @@
         + ' data-shows="il-emp' + n + '-cond-breaks" data-show-when="Yes"> No</label>'
         + '</div>'
         + '<div class="il-conditional" id="il-emp' + n + '-cond-breaks">'
-        + '<label class="form-label">Describe dates of breaks</label>'
-        + '<input type="text" name="emp_' + n + '_breaks_desc" class="form-control" placeholder="e.g. Mar 2022 - Jun 2022" data-req></div></div>'
-        + '<div class="form-group"><label class="form-label">Income type</label>'
+        + '<label class="form-label" for="il-emp-' + n + '-breaks-desc">Describe dates of breaks</label>'
+        + '<input type="text" id="il-emp-' + n + '-breaks-desc" name="emp_' + n + '_breaks_desc" class="form-control" placeholder="e.g. Mar 2022 - Jun 2022" data-req></div></div>'
+        + '<div class="form-group"><p class="form-label">Income type</p>'
         + '<div class="il-radio-group">'
         + '<label class="il-radio-label"><input type="radio" name="emp_' + n + '_income_type" value="W-2"'
         + ' data-shows="il-emp' + n + '-cond-salaried" data-show-when="W-2"> W-2</label>'
@@ -1583,22 +1583,22 @@
         + ' data-shows="il-emp' + n + '-cond-hourly" data-show-when="1099"> 1099</label>'
         + '</div>'
         + '<div class="il-conditional" id="il-emp' + n + '-cond-salaried">'
-        + '<label class="form-label">Annual salary</label>'
-        + '<div class="il-dollar-wrap"><input type="number" name="emp_' + n + '_annual_salary" class="form-control" placeholder="0" min="0" data-req></div></div>'
+        + '<label class="form-label" for="il-emp-' + n + '-annual-salary">Annual salary</label>'
+        + '<div class="il-dollar-wrap"><input type="number" id="il-emp-' + n + '-annual-salary" name="emp_' + n + '_annual_salary" class="form-control" placeholder="0" min="0" data-req></div></div>'
         + '<div class="il-conditional" id="il-emp' + n + '-cond-hourly">'
         + '<div class="form-row">'
-        + '<div class="form-group"><label class="form-label">Hourly rate</label>'
-        + '<div class="il-dollar-wrap"><input type="number" name="emp_' + n + '_hourly_rate" class="form-control" placeholder="0.00" min="0" step="0.01" data-req></div></div>'
-        + '<div class="form-group"><label class="form-label">Hours per week</label>'
-        + '<input type="number" name="emp_' + n + '_hours_per_week" class="form-control" placeholder="40" min="0" max="168" data-req></div>'
+        + '<div class="form-group"><label class="form-label" for="il-emp-' + n + '-hourly-rate">Hourly rate</label>'
+        + '<div class="il-dollar-wrap"><input type="number" id="il-emp-' + n + '-hourly-rate" name="emp_' + n + '_hourly_rate" class="form-control" placeholder="0.00" min="0" step="0.01" data-req></div></div>'
+        + '<div class="form-group"><label class="form-label" for="il-emp-' + n + '-hours-per-week">Hours per week</label>'
+        + '<input type="number" id="il-emp-' + n + '-hours-per-week" name="emp_' + n + '_hours_per_week" class="form-control" placeholder="40" min="0" max="168" data-req></div>'
         + '</div></div></div>'
         + '<div class="form-row">'
-        + '<div class="form-group"><label class="form-label">Year-to-date gross income</label>'
-        + '<div class="il-dollar-wrap"><input type="number" name="emp_' + n + '_ytd_gross" class="form-control" placeholder="0" min="0"></div></div>'
-        + '<div class="form-group"><label class="form-label">Pay period end date</label>'
-        + '<input type="date" name="emp_' + n + '_pay_period_end" class="form-control"></div></div>'
-        + '<div class="form-group"><label class="form-label">Largest income on <span class="il-w2-year">' + (new Date().getFullYear() - 1) + '</span> W-2 <span class="optional">(optional)</span></label>'
-        + '<div class="il-dollar-wrap"><input type="number" name="emp_' + n + '_w2_recent" class="form-control" placeholder="0" min="0"></div></div>';
+        + '<div class="form-group"><label class="form-label" for="il-emp-' + n + '-ytd-gross">Year-to-date gross income</label>'
+        + '<div class="il-dollar-wrap"><input type="number" id="il-emp-' + n + '-ytd-gross" name="emp_' + n + '_ytd_gross" class="form-control" placeholder="0" min="0"></div></div>'
+        + '<div class="form-group"><label class="form-label" for="il-emp-' + n + '-pay-period-end">Pay period end date</label>'
+        + '<input type="date" id="il-emp-' + n + '-pay-period-end" name="emp_' + n + '_pay_period_end" class="form-control"></div></div>'
+        + '<div class="form-group"><label class="form-label" for="il-emp-' + n + '-w2-recent">Largest income on <span class="il-w2-year">' + (new Date().getFullYear() - 1) + '</span> W-2 <span class="optional">(optional)</span></label>'
+        + '<div class="il-dollar-wrap"><input type="number" id="il-emp-' + n + '-w2-recent" name="emp_' + n + '_w2_recent" class="form-control" placeholder="0" min="0"></div></div>';
       container.appendChild(div);
       div.querySelector('.il-remove-btn').addEventListener('click', function () {
         div.remove();
