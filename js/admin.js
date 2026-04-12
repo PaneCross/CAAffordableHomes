@@ -1172,33 +1172,46 @@ function renderMatches(listings, results, cands, il) {
       </tr>`
     }).join('')
 
+    const blockId = esc(lst.listing_id).replace(/[^a-zA-Z0-9]/g, '-')
     return `<div class="match-listing-block">
-      <div class="match-listing-header">
+      <div class="match-listing-header" onclick="toggleMatchBlock('${blockId}')" style="cursor:pointer;">
         <div>
           <span class="match-listing-name">${esc(lst.listing_name || lst.listing_id)}</span>
           ${unitsHtml}
         </div>
-        <div>
+        <div style="display:flex;align-items:center;gap:.5rem;">
           <span class="match-count-badge pass">${passRows.length} Pass</span>
           <span class="match-count-badge close">${closeRows.length} Close</span>
+          <i id="match-chevron-${blockId}" class="fa-solid fa-chevron-down" style="font-size:.85rem;color:#888;transition:transform .2s;"></i>
         </div>
       </div>
-      <table class="data-table" style="margin-top:.5rem;">
-        <thead><tr>
-          <th style="width:60px;">Priority</th>
-          <th>Applicant</th>
-          <th>Submitted</th>
-          <th>Credit</th>
-          <th>HH Size</th>
-          <th>Match</th>
-          <th>Actions</th>
-        </tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
+      <div id="match-body-${blockId}" style="display:none;">
+        <table class="data-table" style="margin-top:.5rem;">
+          <thead><tr>
+            <th style="width:60px;">Priority</th>
+            <th>Applicant</th>
+            <th>Submitted</th>
+            <th>Credit</th>
+            <th>HH Size</th>
+            <th>Match</th>
+            <th>Actions</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
     </div>`
   }).filter(Boolean).join('')
 
   setArea('matches-area', html || emptyState('No Pass or Close matches found for active listings. Run the match engine to populate results.'))
+}
+
+function toggleMatchBlock(blockId) {
+  const body    = document.getElementById('match-body-' + blockId)
+  const chevron = document.getElementById('match-chevron-' + blockId)
+  if (!body) return
+  const open = body.style.display !== 'none'
+  body.style.display    = open ? 'none' : 'block'
+  chevron.style.transform = open ? '' : 'rotate(180deg)'
 }
 
 async function startReview(listingId, email) {
