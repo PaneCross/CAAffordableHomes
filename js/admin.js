@@ -18,6 +18,16 @@ let promotingPsId = null  // PS row id when promoting to listing
 let ilSort  = { col: 'submitted_at', asc: false }
 let psSort  = { col: 'submitted_at', asc: false }
 
+// Wraps a promise with a timeout — rejects if it takes longer than ms
+function withTimeout(promise, ms = 12000) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Request timed out — the database may be waking up. Try refreshing.')), ms)
+    )
+  ])
+}
+
 // ─────────────────────────────────────────────────────────────
 // INIT
 // ─────────────────────────────────────────────────────────────
@@ -134,7 +144,7 @@ async function loadDashboard() {
       { data: progRows },
       { count: psTotal },
       { data: psByStatus },
-    ] = await Promise.all([
+    ] = await withTimeout(Promise.all([
       sb.from('interest_list').select('*', { count: 'exact', head: true }),
       sb.from('interest_list').select('status'),
       sb.from('listings').select('*', { count: 'exact', head: true }),
@@ -143,7 +153,7 @@ async function loadDashboard() {
       sb.from('programs').select('status'),
       sb.from('property_submissions').select('*', { count: 'exact', head: true }),
       sb.from('property_submissions').select('status'),
-    ])
+    ]))
 
     const ilCounts = countBy(ilByStatus || [], 'status')
     const psCounts  = countBy(psByStatus  || [], 'status')
@@ -363,13 +373,17 @@ document.getElementById('lst-modal-close').addEventListener('click', closeLSTMod
 
 async function loadListings() {
   setArea('lst-area', loading())
-  const fetches = [sb.from('listings').select('*').order('created_at', { ascending: false })]
-  if (!progData.length) fetches.push(sb.from('programs').select('*').order('created_at', { ascending: false }))
-  const [lstRes, progRes] = await Promise.all(fetches)
-  if (lstRes.error) { setArea('lst-area', errorState(lstRes.error)); return }
-  lstData = lstRes.data || []
-  if (progRes && !progRes.error) progData = progRes.data || []
-  renderListings()
+  try {
+    const fetches = [sb.from('listings').select('*').order('created_at', { ascending: false })]
+    if (!progData.length) fetches.push(sb.from('programs').select('*').order('created_at', { ascending: false }))
+    const [lstRes, progRes] = await withTimeout(Promise.all(fetches))
+    if (lstRes.error) { setArea('lst-area', errorState(lstRes.error)); return }
+    lstData = lstRes.data || []
+    if (progRes && !progRes.error) progData = progRes.data || []
+    renderListings()
+  } catch (err) {
+    setArea('lst-area', errorState(err))
+  }
 }
 
 function renderListings() {
@@ -686,13 +700,17 @@ document.getElementById('prog-modal-close').addEventListener('click', closeProgM
 
 async function loadPrograms() {
   setArea('prog-area', loading())
-  const fetches = [sb.from('programs').select('*').order('created_at', { ascending: false })]
-  if (!lstData.length) fetches.push(sb.from('listings').select('*').order('created_at', { ascending: false }))
-  const [progRes, lstRes] = await Promise.all(fetches)
-  if (progRes.error) { setArea('prog-area', errorState(progRes.error)); return }
-  progData = progRes.data || []
-  if (lstRes && !lstRes.error) lstData = lstRes.data || []
-  renderPrograms()
+  try {
+    const fetches = [sb.from('programs').select('*').order('created_at', { ascending: false })]
+    if (!lstData.length) fetches.push(sb.from('listings').select('*').order('created_at', { ascending: false }))
+    const [progRes, lstRes] = await withTimeout(Promise.all(fetches))
+    if (progRes.error) { setArea('prog-area', errorState(progRes.error)); return }
+    progData = progRes.data || []
+    if (lstRes && !lstRes.error) lstData = lstRes.data || []
+    renderPrograms()
+  } catch (err) {
+    setArea('prog-area', errorState(err))
+  }
 }
 
 async function loadListingsQuiet() {
