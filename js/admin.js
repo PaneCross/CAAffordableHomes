@@ -129,7 +129,7 @@ function switchTab(tab) {
 
 function loadActiveTab(tab) {
   tab = tab || location.hash.replace('#','') || 'dashboard'
-  if (tab === 'dashboard')     loadDashboard()
+  if (tab === 'dashboard')     { if (!ilData.length || !lstData.length || !progData.length || !psData.length) loadDashboard(); else renderDashboard() }
   if (tab === 'properties')    { if (!psData.length)   loadPS();           else renderPS()           }
   if (tab === 'listings')      { if (!lstData.length)  loadListings();     else renderListings()     }
   if (tab === 'programs')      { if (!progData.length) loadPrograms();     else renderPrograms()     }
@@ -148,80 +148,37 @@ document.getElementById('refresh-btn').addEventListener('click', () => {
 // DASHBOARD
 // ─────────────────────────────────────────────────────────────
 async function loadDashboard() {
+  // If all shared caches are already populated, render immediately — no network request.
+  if (ilData.length && lstData.length && progData.length && psData.length) {
+    renderDashboard(); return
+  }
+
   setArea('dashboard-area', loading())
   try {
-    // Race the 4 queries against a 35s timeout.
-    // Promise.race guarantees the catch fires even if Supabase never resolves.
-    const [
-      { data: ilRows,  error: e1 },
-      { data: lstRows, error: e2 },
-      { data: progRows,error: e3 },
-      { data: psRows,  error: e4 },
-    ] = await Promise.race([
+    // Fetch only tables not already in memory, in parallel.
+    // Storing results in shared caches means all other tabs are instant after this.
+    const [ilRes, lstRes, progRes, psRes] = await Promise.race([
       Promise.all([
-        sb.from('interest_list').select('status'),
-        sb.from('listings').select('active,linked_program_id'),
-        sb.from('programs').select('status'),
-        sb.from('property_submissions').select('status'),
+        ilData.length   ? { data: ilData,   error: null } : sb.from('interest_list').select('*').order('submitted_at', { ascending: false }),
+        lstData.length  ? { data: lstData,  error: null } : sb.from('listings').select('*').order('created_at', { ascending: false }),
+        progData.length ? { data: progData, error: null } : sb.from('programs').select('*').order('created_at', { ascending: false }),
+        psData.length   ? { data: psData,   error: null } : sb.from('property_submissions').select('*').order('submitted_at', { ascending: false }),
       ]),
       new Promise((_, reject) =>
         setTimeout(() => reject(new Error('TIMEOUT')), 35000)
       ),
     ])
 
-    if (e1 || e2 || e3 || e4) throw e1 || e2 || e3 || e4
+    if (ilRes.error || lstRes.error || progRes.error || psRes.error)
+      throw ilRes.error || lstRes.error || progRes.error || psRes.error
 
-    const ilCounts  = countBy(ilRows  || [], 'status')
-    const psCounts  = countBy(psRows  || [], 'status')
-    const ilTotal   = (ilRows  || []).length
-    const lstTotal  = (lstRows || []).length
-    const progTotal = (progRows|| []).length
-    const psTotal   = (psRows  || []).length
-    const lstActive  = (lstRows || []).filter(r => r.active === 'YES').length
-    const lstOnSite  = (lstRows || []).filter(r => r.linked_program_id).length
-    const progAvail  = (progRows|| []).filter(r => r.status === 'Available').length
-    const progSoon   = (progRows|| []).filter(r => r.status === 'Coming Soon').length
-    const psPromoted = psCounts['promoted'] || 0
+    // Populate shared caches so other tabs render instantly
+    if (!ilData.length)   ilData   = ilRes.data   || []
+    if (!lstData.length)  lstData  = lstRes.data  || []
+    if (!progData.length) progData = progRes.data || []
+    if (!psData.length)   psData   = psRes.data   || []
 
-    setArea('dashboard-area', `
-      <div class="dash-pipeline-wrap">
-        <div class="pipeline-stage" data-nav="properties">
-          <div class="pipeline-icon"><i class="fa-solid fa-inbox"></i></div>
-          <div class="pipeline-label">Submissions</div>
-          <div class="pipeline-nums"><span class="pipeline-highlight">${psTotal - psPromoted}</span> pending</div>
-          <div class="pipeline-nums">${psTotal} total &bull; ${psPromoted} promoted</div>
-        </div>
-        <div class="pipeline-arrow"><i class="fa-solid fa-chevron-right"></i></div>
-        <div class="pipeline-stage" data-nav="listings">
-          <div class="pipeline-icon"><i class="fa-solid fa-building"></i></div>
-          <div class="pipeline-label">Listings</div>
-          <div class="pipeline-nums"><span class="pipeline-highlight">${lstActive}</span> active</div>
-          <div class="pipeline-nums">${lstTotal} total &bull; ${lstOnSite} on site</div>
-        </div>
-        <div class="pipeline-arrow"><i class="fa-solid fa-chevron-right"></i></div>
-        <div class="pipeline-stage" data-nav="programs">
-          <div class="pipeline-icon"><i class="fa-solid fa-globe"></i></div>
-          <div class="pipeline-label">Programs</div>
-          <div class="pipeline-nums"><span class="pipeline-highlight">${progAvail}</span> available</div>
-          <div class="pipeline-nums">${progTotal} total &bull; ${progSoon} coming soon</div>
-        </div>
-      </div>
-      <div class="dash-bottom">
-        <div class="dash-stat-card" data-nav="interest-list">
-          <div class="dash-stat-num">${ilTotal}</div>
-          <div class="dash-stat-label">Interest List</div>
-          <div class="dash-stat-sub">${ilCounts.new||0} new &bull; ${ilCounts.reviewing||0} reviewing &bull; ${ilCounts.active||0} active</div>
-        </div>
-        <div class="dash-stat-card" data-nav="interest-list">
-          <div class="dash-stat-num">${ilCounts.matched||0}</div>
-          <div class="dash-stat-label">Matched</div>
-          <div class="dash-stat-sub">${ilCounts.expired||0} expired</div>
-        </div>
-      </div>`)
-
-    document.querySelectorAll('[data-nav]').forEach(el => {
-      el.addEventListener('click', () => switchTab(el.dataset.nav))
-    })
+    renderDashboard()
   } catch (err) {
     if (err?.message === 'TIMEOUT') {
       setArea('dashboard-area', `
@@ -237,6 +194,56 @@ async function loadDashboard() {
       setArea('dashboard-area', errorState(err))
     }
   }
+}
+
+function renderDashboard() {
+  const ilCounts   = countBy(ilData,   'status')
+  const psCounts   = countBy(psData,   'status')
+  const lstActive  = lstData.filter(r => r.active === 'YES').length
+  const lstOnSite  = lstData.filter(r => r.linked_program_id).length
+  const progAvail  = progData.filter(r => r.status === 'Available').length
+  const progSoon   = progData.filter(r => r.status === 'Coming Soon').length
+  const psPromoted = psCounts['promoted'] || 0
+
+  setArea('dashboard-area', `
+    <div class="dash-pipeline-wrap">
+      <div class="pipeline-stage" data-nav="properties">
+        <div class="pipeline-icon"><i class="fa-solid fa-inbox"></i></div>
+        <div class="pipeline-label">Submissions</div>
+        <div class="pipeline-nums"><span class="pipeline-highlight">${psData.length - psPromoted}</span> pending</div>
+        <div class="pipeline-nums">${psData.length} total &bull; ${psPromoted} promoted</div>
+      </div>
+      <div class="pipeline-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+      <div class="pipeline-stage" data-nav="listings">
+        <div class="pipeline-icon"><i class="fa-solid fa-building"></i></div>
+        <div class="pipeline-label">Listings</div>
+        <div class="pipeline-nums"><span class="pipeline-highlight">${lstActive}</span> active</div>
+        <div class="pipeline-nums">${lstData.length} total &bull; ${lstOnSite} on site</div>
+      </div>
+      <div class="pipeline-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+      <div class="pipeline-stage" data-nav="programs">
+        <div class="pipeline-icon"><i class="fa-solid fa-globe"></i></div>
+        <div class="pipeline-label">Programs</div>
+        <div class="pipeline-nums"><span class="pipeline-highlight">${progAvail}</span> available</div>
+        <div class="pipeline-nums">${progData.length} total &bull; ${progSoon} coming soon</div>
+      </div>
+    </div>
+    <div class="dash-bottom">
+      <div class="dash-stat-card" data-nav="interest-list">
+        <div class="dash-stat-num">${ilData.length}</div>
+        <div class="dash-stat-label">Interest List</div>
+        <div class="dash-stat-sub">${ilCounts.new||0} new &bull; ${ilCounts.reviewing||0} reviewing &bull; ${ilCounts.active||0} active</div>
+      </div>
+      <div class="dash-stat-card" data-nav="interest-list">
+        <div class="dash-stat-num">${ilCounts.matched||0}</div>
+        <div class="dash-stat-label">Matched</div>
+        <div class="dash-stat-sub">${ilCounts.expired||0} expired</div>
+      </div>
+    </div>`)
+
+  document.querySelectorAll('[data-nav]').forEach(el => {
+    el.addEventListener('click', () => switchTab(el.dataset.nav))
+  })
 }
 
 // ─────────────────────────────────────────────────────────────
