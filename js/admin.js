@@ -680,10 +680,12 @@ document.getElementById('prog-modal-close').addEventListener('click', closeProgM
 
 async function loadPrograms() {
   setArea('prog-area', loading())
-  const { data, error } = await sb.from('programs').select('*').order('created_at', { ascending: false })
-  if (error) { setArea('prog-area', errorState(error)); return }
-  progData = data || []
-  if (!lstData.length) await loadListingsQuiet()
+  const fetches = [sb.from('programs').select('*').order('created_at', { ascending: false })]
+  if (!lstData.length) fetches.push(sb.from('listings').select('*').order('created_at', { ascending: false }))
+  const [progRes, lstRes] = await Promise.all(fetches)
+  if (progRes.error) { setArea('prog-area', errorState(progRes.error)); return }
+  progData = progRes.data || []
+  if (lstRes && !lstRes.error) lstData = lstRes.data || []
   renderPrograms()
 }
 
