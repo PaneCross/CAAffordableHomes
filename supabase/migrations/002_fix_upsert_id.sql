@@ -1,25 +1,29 @@
--- Fix: strip id from payload before INSERT so BIGSERIAL auto-generates it
+-- Fix: inject all NOT NULL system fields into payload before jsonb_populate_record
+-- so BIGSERIAL and DEFAULT values are never overridden by NULL from missing keys
 CREATE OR REPLACE FUNCTION upsert_interest_list(payload JSONB)
 RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
   v_email       TEXT := LOWER(TRIM(payload->>'email'));
-  v_clean       JSONB := (payload - 'id') || jsonb_build_object('id', nextval('interest_list_id_seq'));
   v_existing    interest_list%ROWTYPE;
   v_now         TIMESTAMPTZ := NOW();
+  v_clean       JSONB;
   v_result_type TEXT;
 BEGIN
   SELECT * INTO v_existing FROM interest_list WHERE LOWER(email) = v_email;
 
   IF NOT FOUND THEN
+    -- Inject system fields so jsonb_populate_record never sees NULL for NOT NULL columns
+    v_clean := jsonb_build_object(
+      'id',                   nextval('interest_list_id_seq'),
+      'submitted_at',         v_now,
+      'updated_at',           v_now,
+      'original_signup_at',   v_now,
+      'status',               'new',
+      'renewal_reminder_sent', false
+    ) || (payload - 'id' - 'submitted_at' - 'updated_at' - 'original_signup_at' - 'status' - 'renewal_reminder_sent');
+
     INSERT INTO interest_list
     SELECT * FROM jsonb_populate_record(NULL::interest_list, v_clean);
-    UPDATE interest_list SET
-      submitted_at          = v_now,
-      updated_at            = v_now,
-      original_signup_at    = v_now,
-      status                = 'new',
-      renewal_reminder_sent = FALSE
-    WHERE LOWER(email) = v_email;
     v_result_type := 'new';
 
   ELSIF v_existing.status = 'expired' THEN
