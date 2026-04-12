@@ -130,10 +130,10 @@ function switchTab(tab) {
 function loadActiveTab(tab) {
   tab = tab || location.hash.replace('#','') || 'dashboard'
   if (tab === 'dashboard')     loadDashboard()
-  if (tab === 'properties')    { if (!psData.length)   loadPS()           }
-  if (tab === 'listings')      { if (!lstData.length)  loadListings()     }
-  if (tab === 'programs')      { if (!progData.length) loadPrograms()     }
-  if (tab === 'interest-list') { if (!ilData.length)   loadInterestList() }
+  if (tab === 'properties')    { if (!psData.length)   loadPS();           else renderPS()           }
+  if (tab === 'listings')      { if (!lstData.length)  loadListings();     else renderListings()     }
+  if (tab === 'programs')      { if (!progData.length) loadPrograms();     else renderPrograms()     }
+  if (tab === 'interest-list') { if (!ilData.length)   loadInterestList(); else renderIL()           }
   if (tab === 'matches')       loadMatches()
   if (tab === 'successes')     loadSuccesses()
 }
