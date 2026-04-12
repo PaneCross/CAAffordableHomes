@@ -966,22 +966,22 @@
                 </div>
 
                 <div class="form-group">
-                  <label class="form-label">Do these homes have solar panels?</label>
+                  <p class="form-label">Do these homes have solar panels?</p>
                   <div class="il-radio-group">
                     <label class="il-radio-label"><input type="radio" name="solar" value="Yes" required data-shows="prop-solar-cond" data-show-when="Yes"> Yes</label>
                     <label class="il-radio-label"><input type="radio" name="solar" value="No" data-shows="prop-solar-cond" data-show-when="Yes"> No</label>
                   </div>
                   <div class="il-conditional" id="prop-solar-cond">
                     <div class="form-group" style="margin-top:0.75rem;">
-                      <label class="form-label">Are solar panels included in the affordable price?</label>
+                      <p class="form-label">Are solar panels included in the affordable price?</p>
                       <div class="il-radio-group">
                         <label class="il-radio-label"><input type="radio" name="solar_included" value="Yes" data-shows="prop-solar-lease-cond" data-show-when="No"> Yes</label>
                         <label class="il-radio-label"><input type="radio" name="solar_included" value="No" data-shows="prop-solar-lease-cond" data-show-when="No"> No</label>
                       </div>
                       <div class="il-conditional" id="prop-solar-lease-cond">
-                        <label class="form-label" style="margin-top:0.5rem;">Average monthly lease amount</label>
+                        <label class="form-label" for="prop-solar-lease-amount" style="margin-top:0.5rem;">Average monthly lease amount</label>
                         <div class="il-dollar-wrap">
-                          <input type="number" name="solar_lease_amount" class="form-control" placeholder="0" min="0" data-req>
+                          <input type="number" id="prop-solar-lease-amount" name="solar_lease_amount" class="form-control" placeholder="0" min="0" data-req>
                         </div>
                       </div>
                     </div>
