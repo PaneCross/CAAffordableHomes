@@ -3,7 +3,7 @@ CREATE OR REPLACE FUNCTION upsert_interest_list(payload JSONB)
 RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
   v_email       TEXT := LOWER(TRIM(payload->>'email'));
-  v_clean       JSONB := payload - 'id';
+  v_clean       JSONB := (payload - 'id') || jsonb_build_object('id', nextval('interest_list_id_seq'));
   v_existing    interest_list%ROWTYPE;
   v_now         TIMESTAMPTZ := NOW();
   v_result_type TEXT;
