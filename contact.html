@@ -1271,7 +1271,7 @@
     var COOLDOWN_KEY = 'caah_buyer_submitted';
     var COOLDOWN_MS  = 2 * 60 * 1000; /* DEV: 2 min — set to 30 * 24 * 60 * 60 * 1000 at launch */
     var SCRIPT_URL   = 'https://monybdfujogcyseyjgfx.supabase.co/functions/v1/submit-interest';
-
+    var SUPABASE_ANON_KEY = 'sb_publishable_Y36wJc0oJ_0f9JOf3co6BA_Re749E7U';
 
     var SECTION_NAMES = ['General Information', 'Income', 'Employment', 'Financial & Disclosures'];
     var currentSection = 1;
@@ -1855,7 +1855,11 @@
 
       fetch(SCRIPT_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+          'apikey': SUPABASE_ANON_KEY,
+        },
         body: JSON.stringify(buildPayload())
       })
       .then(function (res) { return res.json(); })
