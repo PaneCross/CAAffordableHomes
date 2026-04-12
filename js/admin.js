@@ -363,10 +363,12 @@ document.getElementById('lst-modal-close').addEventListener('click', closeLSTMod
 
 async function loadListings() {
   setArea('lst-area', loading())
-  const { data, error } = await sb.from('listings').select('*').order('created_at', { ascending: false })
-  if (error) { setArea('lst-area', errorState(error)); return }
-  lstData = data || []
-  if (!progData.length) await loadPrograms()
+  const fetches = [sb.from('listings').select('*').order('created_at', { ascending: false })]
+  if (!progData.length) fetches.push(sb.from('programs').select('*').order('created_at', { ascending: false }))
+  const [lstRes, progRes] = await Promise.all(fetches)
+  if (lstRes.error) { setArea('lst-area', errorState(lstRes.error)); return }
+  lstData = lstRes.data || []
+  if (progRes && !progRes.error) progData = progRes.data || []
   renderListings()
 }
 
