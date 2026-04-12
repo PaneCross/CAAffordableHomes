@@ -329,6 +329,21 @@ textarea.form-input { resize: vertical; }
 .error-state     { color: var(--red); }
 .error-state i   { font-size: 1.5rem; }
 
+/* Wake hint: invisible initially, fades in after 10s if still loading */
+.wake-hint {
+  opacity: 0;
+  font-size: .82rem;
+  color: #aaa;
+  max-width: 340px;
+  line-height: 1.5;
+  animation: wakeHintFade .6s ease forwards;
+  animation-delay: 10s;
+}
+@keyframes wakeHintFade {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 /* ── Toast ── */
 #toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 999; display: flex; flex-direction: column; gap: .5rem; }
 .toast {

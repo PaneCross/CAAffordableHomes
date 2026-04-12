@@ -20,12 +20,6 @@ let promotingPsId = null  // PS row id when promoting to listing
 let ilSort  = { col: 'submitted_at', asc: false }
 let psSort  = { col: 'submitted_at', asc: false }
 
-// Shows a "waking up" message in areaId after delayMs if still loading.
-// Returns a cancel function. Call it once data arrives to suppress the message.
-function startWakeTimer(areaId, delayMs = 8000) {
-  const t = setTimeout(() => setArea(areaId, wakingUpState()), delayMs)
-  return () => clearTimeout(t)
-}
 
 // ─────────────────────────────────────────────────────────────
 // INIT
@@ -155,7 +149,6 @@ document.getElementById('refresh-btn').addEventListener('click', () => {
 // ─────────────────────────────────────────────────────────────
 async function loadDashboard() {
   setArea('dashboard-area', loading())
-  const cancelWake = startWakeTimer('dashboard-area')
   try {
     const [
       { count: ilTotal },
@@ -176,7 +169,6 @@ async function loadDashboard() {
       sb.from('property_submissions').select('*', { count: 'exact', head: true }),
       sb.from('property_submissions').select('status'),
     ])
-    cancelWake()
 
     const ilCounts = countBy(ilByStatus || [], 'status')
     const psCounts  = countBy(psByStatus  || [], 'status')
@@ -226,7 +218,6 @@ async function loadDashboard() {
       el.addEventListener('click', () => switchTab(el.dataset.nav))
     })
   } catch (err) {
-    cancelWake()
     setArea('dashboard-area', errorState(err))
   }
 }
@@ -397,18 +388,15 @@ document.getElementById('lst-modal-close').addEventListener('click', closeLSTMod
 
 async function loadListings() {
   setArea('lst-area', loading())
-  const cancelWake = startWakeTimer('lst-area')
   try {
     const fetches = [sb.from('listings').select('*').order('created_at', { ascending: false })]
     if (!progData.length) fetches.push(sb.from('programs').select('*').order('created_at', { ascending: false }))
     const [lstRes, progRes] = await Promise.all(fetches)
-    cancelWake()
     if (lstRes.error) { setArea('lst-area', errorState(lstRes.error)); return }
     lstData = lstRes.data || []
     if (progRes && !progRes.error) progData = progRes.data || []
     renderListings()
   } catch (err) {
-    cancelWake()
     setArea('lst-area', errorState(err))
   }
 }
@@ -727,18 +715,15 @@ document.getElementById('prog-modal-close').addEventListener('click', closeProgM
 
 async function loadPrograms() {
   setArea('prog-area', loading())
-  const cancelWake = startWakeTimer('prog-area')
   try {
     const fetches = [sb.from('programs').select('*').order('created_at', { ascending: false })]
     if (!lstData.length) fetches.push(sb.from('listings').select('*').order('created_at', { ascending: false }))
     const [progRes, lstRes] = await Promise.all(fetches)
-    cancelWake()
     if (progRes.error) { setArea('prog-area', errorState(progRes.error)); return }
     progData = progRes.data || []
     if (lstRes && !lstRes.error) lstData = lstRes.data || []
     renderPrograms()
   } catch (err) {
-    cancelWake()
     setArea('prog-area', errorState(err))
   }
 }
@@ -1163,7 +1148,11 @@ function setArea(id, html) {
 }
 
 function loading() {
-  return '<div class="loading-state"><i class="fa-solid fa-circle-notch fa-spin"></i><p>Loading...</p></div>'
+  return `<div class="loading-state">
+    <i class="fa-solid fa-circle-notch fa-spin"></i>
+    <p>Loading...</p>
+    <p class="wake-hint">Still loading — the database may be waking up after inactivity. This usually takes 20-30 seconds and will resolve automatically.</p>
+  </div>`
 }
 
 function emptyState(msg) {
@@ -1174,13 +1163,6 @@ function errorState(err) {
   return `<div class="error-state"><i class="fa-solid fa-triangle-exclamation"></i><p>${esc(err?.message || 'Error')}</p></div>`
 }
 
-function wakingUpState() {
-  return `<div class="loading-state" style="flex-direction:column;gap:.75rem;padding:3rem 1rem;text-align:center;">
-    <i class="fa-solid fa-circle-notch fa-spin" style="font-size:2rem;color:var(--accent);"></i>
-    <p style="margin:0;font-size:.95rem;">Database is waking up...</p>
-    <p style="margin:0;font-size:.82rem;color:#bbb;max-width:360px;">The free-tier database sleeps after inactivity. This usually takes 20-30 seconds. Data will load automatically - no refresh needed.</p>
-  </div>`
-}
 
 function toast(msg, isError) {
   const container = document.getElementById('toast-container')
