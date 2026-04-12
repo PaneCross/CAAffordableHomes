@@ -21,6 +21,8 @@ let psSort  = { col: 'submitted_at', asc: false }
 // ─────────────────────────────────────────────────────────────
 // INIT
 // ─────────────────────────────────────────────────────────────
+let appInitialized = false
+
 sb.auth.onAuthStateChange((_event, session) => {
   if (session) {
     showApp(session)
@@ -33,6 +35,7 @@ sb.auth.onAuthStateChange((_event, session) => {
 // AUTH
 // ─────────────────────────────────────────────────────────────
 function showLogin() {
+  appInitialized = false
   document.getElementById('login-screen').style.display = 'flex'
   document.getElementById('app').style.display = 'none'
 }
@@ -41,7 +44,10 @@ function showApp(session) {
   document.getElementById('login-screen').style.display = 'none'
   document.getElementById('app').style.display = 'flex'
   document.getElementById('sb-user-email').textContent = session.user.email
-  loadActiveTab()
+  if (!appInitialized) {
+    appInitialized = true
+    loadActiveTab()
+  }
 }
 
 document.getElementById('login-form').addEventListener('submit', async (e) => {
