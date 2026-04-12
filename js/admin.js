@@ -149,33 +149,39 @@ document.getElementById('refresh-btn').addEventListener('click', () => {
 // ─────────────────────────────────────────────────────────────
 async function loadDashboard() {
   setArea('dashboard-area', loading())
-  try {
-    const [
-      { count: ilTotal },
-      { data: ilByStatus },
-      { count: lstTotal },
-      { data: lstRows },
-      { count: progTotal },
-      { data: progRows },
-      { count: psTotal },
-      { data: psByStatus },
-    ] = await Promise.all([
-      sb.from('interest_list').select('*', { count: 'exact', head: true }),
-      sb.from('interest_list').select('status'),
-      sb.from('listings').select('*', { count: 'exact', head: true }),
-      sb.from('listings').select('active,linked_program_id'),
-      sb.from('programs').select('*', { count: 'exact', head: true }),
-      sb.from('programs').select('status'),
-      sb.from('property_submissions').select('*', { count: 'exact', head: true }),
-      sb.from('property_submissions').select('status'),
-    ])
+  // Abort all requests after 35s — database is likely awake by then,
+  // and retrying will be instant.
+  const ctrl = new AbortController()
+  const abortTimer = setTimeout(() => ctrl.abort(), 35000)
 
-    const ilCounts = countBy(ilByStatus || [], 'status')
-    const psCounts  = countBy(psByStatus  || [], 'status')
-    const lstActive = (lstRows || []).filter(r => r.active === 'YES').length
-    const lstOnSite = (lstRows || []).filter(r => r.linked_program_id).length
-    const progAvail = (progRows || []).filter(r => r.status === 'Available').length
-    const progSoon  = (progRows || []).filter(r => r.status === 'Coming Soon').length
+  try {
+    // 4 queries instead of 8: derive counts from data.length,
+    // avoiding duplicate head:true requests that double the connection count.
+    const [
+      { data: ilRows,  error: e1 },
+      { data: lstRows, error: e2 },
+      { data: progRows,error: e3 },
+      { data: psRows,  error: e4 },
+    ] = await Promise.all([
+      sb.from('interest_list').select('status').abortSignal(ctrl.signal),
+      sb.from('listings').select('active,linked_program_id').abortSignal(ctrl.signal),
+      sb.from('programs').select('status').abortSignal(ctrl.signal),
+      sb.from('property_submissions').select('status').abortSignal(ctrl.signal),
+    ])
+    clearTimeout(abortTimer)
+
+    if (e1 || e2 || e3 || e4) throw e1 || e2 || e3 || e4
+
+    const ilCounts  = countBy(ilRows  || [], 'status')
+    const psCounts  = countBy(psRows  || [], 'status')
+    const ilTotal   = (ilRows  || []).length
+    const lstTotal  = (lstRows || []).length
+    const progTotal = (progRows|| []).length
+    const psTotal   = (psRows  || []).length
+    const lstActive  = (lstRows || []).filter(r => r.active === 'YES').length
+    const lstOnSite  = (lstRows || []).filter(r => r.linked_program_id).length
+    const progAvail  = (progRows|| []).filter(r => r.status === 'Available').length
+    const progSoon   = (progRows|| []).filter(r => r.status === 'Coming Soon').length
     const psPromoted = psCounts['promoted'] || 0
 
     setArea('dashboard-area', `
@@ -183,27 +189,27 @@ async function loadDashboard() {
         <div class="pipeline-stage" data-nav="properties">
           <div class="pipeline-icon"><i class="fa-solid fa-inbox"></i></div>
           <div class="pipeline-label">Submissions</div>
-          <div class="pipeline-nums"><span class="pipeline-highlight">${(psTotal||0) - psPromoted}</span> pending</div>
-          <div class="pipeline-nums">${psTotal||0} total &bull; ${psPromoted} promoted</div>
+          <div class="pipeline-nums"><span class="pipeline-highlight">${psTotal - psPromoted}</span> pending</div>
+          <div class="pipeline-nums">${psTotal} total &bull; ${psPromoted} promoted</div>
         </div>
         <div class="pipeline-arrow"><i class="fa-solid fa-chevron-right"></i></div>
         <div class="pipeline-stage" data-nav="listings">
           <div class="pipeline-icon"><i class="fa-solid fa-building"></i></div>
           <div class="pipeline-label">Listings</div>
           <div class="pipeline-nums"><span class="pipeline-highlight">${lstActive}</span> active</div>
-          <div class="pipeline-nums">${lstTotal||0} total &bull; ${lstOnSite} on site</div>
+          <div class="pipeline-nums">${lstTotal} total &bull; ${lstOnSite} on site</div>
         </div>
         <div class="pipeline-arrow"><i class="fa-solid fa-chevron-right"></i></div>
         <div class="pipeline-stage" data-nav="programs">
           <div class="pipeline-icon"><i class="fa-solid fa-globe"></i></div>
           <div class="pipeline-label">Programs</div>
           <div class="pipeline-nums"><span class="pipeline-highlight">${progAvail}</span> available</div>
-          <div class="pipeline-nums">${progTotal||0} total &bull; ${progSoon} coming soon</div>
+          <div class="pipeline-nums">${progTotal} total &bull; ${progSoon} coming soon</div>
         </div>
       </div>
       <div class="dash-bottom">
         <div class="dash-stat-card" data-nav="interest-list">
-          <div class="dash-stat-num">${ilTotal||0}</div>
+          <div class="dash-stat-num">${ilTotal}</div>
           <div class="dash-stat-label">Interest List</div>
           <div class="dash-stat-sub">${ilCounts.new||0} new &bull; ${ilCounts.reviewing||0} reviewing &bull; ${ilCounts.active||0} active</div>
         </div>
@@ -218,7 +224,20 @@ async function loadDashboard() {
       el.addEventListener('click', () => switchTab(el.dataset.nav))
     })
   } catch (err) {
-    setArea('dashboard-area', errorState(err))
+    clearTimeout(abortTimer)
+    if (err?.name === 'AbortError') {
+      setArea('dashboard-area', `
+        <div class="error-state">
+          <i class="fa-solid fa-database"></i>
+          <p>The database took too long to respond.</p>
+          <p style="font-size:.82rem;color:#aaa;">It should be awake now. Click below to try again.</p>
+          <button class="btn-secondary" onclick="loadDashboard()" style="margin-top:.5rem;">
+            <i class="fa-solid fa-rotate-right"></i> Retry
+          </button>
+        </div>`)
+    } else {
+      setArea('dashboard-area', errorState(err))
+    }
   }
 }
 
