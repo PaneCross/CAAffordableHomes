@@ -50,6 +50,8 @@
       <button class="sb-btn" data-tab="listings"><i class="fa-solid fa-building"></i> Listings</button>
       <button class="sb-btn" data-tab="programs"><i class="fa-solid fa-globe"></i> Programs</button>
       <button class="sb-btn" data-tab="interest-list"><i class="fa-solid fa-users"></i> Interest List</button>
+      <button class="sb-btn" data-tab="matches"><i class="fa-solid fa-handshake"></i> Matches</button>
+      <button class="sb-btn" data-tab="successes"><i class="fa-solid fa-star"></i> Successes</button>
     </div>
     <div class="sb-footer">
       <button class="sb-btn" id="refresh-btn"><i class="fa-solid fa-rotate"></i> Refresh</button>
@@ -126,6 +128,16 @@
       </div>
       <div id="il-area"><div class="loading-state"><i class="fa-solid fa-circle-notch fa-spin"></i><p>Loading...</p></div></div>
     </section>
+
+    <!-- MATCHES -->
+    <section id="tab-matches" class="admin-tab" style="display:none;">
+      <div id="matches-area"><div class="loading-state"><i class="fa-solid fa-circle-notch fa-spin"></i><p>Loading...</p></div></div>
+    </section>
+
+    <!-- SUCCESSES -->
+    <section id="tab-successes" class="admin-tab" style="display:none;">
+      <div id="successes-area"><div class="loading-state"><i class="fa-solid fa-circle-notch fa-spin"></i><p>Loading...</p></div></div>
+    </section>
   </main>
 </div>
 
@@ -161,10 +173,11 @@
         <div class="form-group"><label>Property ID / Name *</label><input id="lf-id" class="form-input" placeholder="e.g. VILLA-001"></div>
         <div class="form-group"><label>Display Name</label><input id="lf-name" class="form-input" placeholder="Villa Rosa"></div>
       </div>
-      <div class="form-row2">
+      <div class="form-row3">
         <div class="form-group"><label>Active for Matching</label>
           <select id="lf-active" class="form-input"><option value="YES">YES</option><option value="NO">NO</option></select>
         </div>
+        <div class="form-group"><label>Units Available</label><input id="lf-units" class="form-input" type="number" min="0" placeholder="e.g. 4"></div>
         <div class="form-group"><label>Listing Type</label>
           <select id="lf-type" class="form-input"><option value="affordable">Affordable</option><option value="mls">MLS</option></select>
         </div>

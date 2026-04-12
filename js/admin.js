@@ -10,7 +10,7 @@ const SUBMIT_FN    = `${SUPABASE_URL}/functions/v1/submit-interest`
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
 
 // ── State ─────────────────────────────────────────────────────
-let lstData = [], progData = [], ilData = [], psData = []
+let lstData = [], progData = [], ilData = [], psData = [], candidatesData = [], successesData = []
 let editingLstRow = null, editingProgRow = null, editingPsRow = null, viewingIlRow = null
 let lstFilter = 'active', progFilter = 'active', ilFilter = 'all', psFilter = 'all'
 let ilSearch = ''
@@ -83,6 +83,8 @@ const TAB_TITLES = {
   listings:      'Listings',
   programs:      'Programs',
   'interest-list': 'Interest List',
+  matches:       'Matches',
+  successes:     'Successes',
 }
 
 document.querySelectorAll('.sb-btn[data-tab]').forEach(btn => {
@@ -107,11 +109,13 @@ function loadActiveTab(tab) {
   if (tab === 'listings')      { if (!lstData.length)  loadListings()     }
   if (tab === 'programs')      { if (!progData.length) loadPrograms()     }
   if (tab === 'interest-list') { if (!ilData.length)   loadInterestList() }
+  if (tab === 'matches')       loadMatches()
+  if (tab === 'successes')     loadSuccesses()
 }
 
 document.getElementById('refresh-btn').addEventListener('click', () => {
   const tab = document.querySelector('.sb-btn.active[data-tab]')?.dataset.tab || 'dashboard'
-  lstData = []; progData = []; ilData = []; psData = []
+  lstData = []; progData = []; ilData = []; psData = []; candidatesData = []; successesData = []
   loadActiveTab(tab)
 })
 
@@ -444,6 +448,7 @@ function openLSTDrawer(idx) {
   // Fields display
   const sections = [
     { title: 'Eligibility', fields: [
+      ['Units Available', r.units_available !== null && r.units_available !== undefined ? String(r.units_available) : ''],
       ['AMI %', r.ami_percent], ['Min Credit Score', r.min_credit_score],
       ['Max DTI %', r.max_dti_percent], ['Max Monthly Debt', r.max_monthly_debt ? '$'+r.max_monthly_debt : ''],
       ['Min Household', r.min_household_size], ['Max Household', r.max_household_size],
@@ -560,6 +565,7 @@ function openLSTModal(idx, prefill) {
   document.getElementById('lf-id').value          = p.listing_id || ''
   document.getElementById('lf-name').value        = p.listing_name || ''
   document.getElementById('lf-active').value      = p.active || 'NO'
+  document.getElementById('lf-units').value       = p.units_available ?? ''
   document.getElementById('lf-type').value        = p.listing_type || 'affordable'
   document.getElementById('lf-address').value     = p.address || ''
   document.getElementById('lf-city').value        = p.city || ''
@@ -603,6 +609,7 @@ document.getElementById('lst-save-btn').addEventListener('click', async () => {
     listing_id:   id,
     listing_name: document.getElementById('lf-name').value.trim() || id,
     active:       document.getElementById('lf-active').value,
+    units_available: document.getElementById('lf-units').value !== '' ? parseInt(document.getElementById('lf-units').value) : null,
     listing_type: document.getElementById('lf-type').value,
     address:      document.getElementById('lf-address').value.trim(),
     city:         document.getElementById('lf-city').value.trim(),
@@ -1053,4 +1060,246 @@ function toast(msg, isError) {
   container.appendChild(el)
   setTimeout(() => el.classList.add('toast-show'), 10)
   setTimeout(() => { el.classList.remove('toast-show'); setTimeout(() => el.remove(), 300) }, 3000)
+}
+
+// =============================================================
+// MATCHES
+// =============================================================
+
+async function loadMatches() {
+  setArea('matches-area', loading())
+  try {
+    const [
+      { data: listings, error: lstErr },
+      { data: results,  error: resErr },
+      { data: cands,    error: cndErr },
+      { data: il,       error: ilErr  },
+    ] = await Promise.all([
+      sb.from('listings').select('listing_id,listing_name,active,units_available').eq('active','YES'),
+      sb.from('match_results').select('*').in('status', ['Pass','Close']),
+      sb.from('listing_candidates').select('*'),
+      sb.from('interest_list').select('id,email,full_name,submitted_at,status,credit_score_self,household_size,area_preference'),
+    ])
+    if (lstErr) throw lstErr
+    if (resErr) throw resErr
+    if (cndErr) throw cndErr
+    if (ilErr)  throw ilErr
+
+    candidatesData = cands || []
+    renderMatches(listings || [], results || [], cands || [], il || [])
+  } catch(e) {
+    setArea('matches-area', errorState(e))
+  }
+}
+
+function renderMatches(listings, results, cands, il) {
+  if (!listings.length) {
+    setArea('matches-area', emptyState('No active listings. Set a listing to Active for Matching to see candidates here.'))
+    return
+  }
+
+  // Build lookup: email -> IL row
+  const ilByEmail = {}
+  il.forEach(r => { ilByEmail[r.email] = r })
+
+  // Build candidate status lookup: listing_id+email -> candidate row
+  const candKey = (lid, email) => lid + '|' + email
+  const candMap = {}
+  cands.forEach(c => { candMap[candKey(c.listing_id, c.email)] = c })
+
+  const html = listings.map(lst => {
+    const lstResults = results.filter(r => r.listing_id === lst.listing_id)
+    const passRows  = lstResults.filter(r => r.status === 'Pass')
+    const closeRows = lstResults.filter(r => r.status === 'Close')
+
+    // Merge pass+close, sort by IL submitted_at ascending (earliest = highest priority)
+    const allCandidates = [...passRows, ...closeRows].map(r => ({
+      ...r,
+      ilRow: ilByEmail[r.email] || null,
+      cand:  candMap[candKey(lst.listing_id, r.email)] || null,
+    })).sort((a, b) => {
+      const da = a.ilRow?.submitted_at || a.email
+      const db = b.ilRow?.submitted_at || b.email
+      return da < db ? -1 : da > db ? 1 : 0
+    })
+
+    if (!allCandidates.length) return ''
+
+    const unitsHtml = lst.units_available !== null && lst.units_available !== undefined
+      ? `<span class="units-badge">${lst.units_available} unit${lst.units_available !== 1 ? 's' : ''} left</span>`
+      : ''
+
+    const rows = allCandidates.map((item, i) => {
+      const r   = item
+      const il  = item.ilRow
+      const cnd = item.cand
+      const rank = i + 1
+      const isPass  = r.status === 'Pass'
+      const statusBadge = isPass
+        ? '<span class="match-badge match-pass">Pass</span>'
+        : '<span class="match-badge match-close">Close</span>'
+
+      let actionHtml
+      if (!cnd) {
+        actionHtml = `<button class="btn-primary btn-xs" onclick="startReview('${esc(lst.listing_id)}','${esc(r.email)}')"><i class="fa-solid fa-magnifying-glass"></i> Start Review</button>`
+      } else if (cnd.status === 'in_review') {
+        actionHtml = `
+          <span class="status-pill pill-reviewing" style="margin-right:.35rem;">In Review</span>
+          <button class="btn-primary btn-xs" onclick="approveCandidate(${cnd.id},'${esc(lst.listing_id)}','${esc(lst.listing_name||lst.listing_id)}','${esc(r.email)}','${esc(r.full_name||'')}')"><i class="fa-solid fa-check"></i> Approve</button>
+          <button class="btn-danger btn-xs"  onclick="declineCandidate(${cnd.id})"><i class="fa-solid fa-xmark"></i> Decline</button>`
+      } else if (cnd.status === 'approved') {
+        actionHtml = `<span class="status-pill pill-matched">Approved</span>`
+      } else {
+        // declined — allow re-assignment
+        actionHtml = `
+          <span class="status-pill pill-expired" style="margin-right:.35rem;">Declined</span>
+          <button class="btn-secondary btn-xs" onclick="startReview('${esc(lst.listing_id)}','${esc(r.email)}')"><i class="fa-solid fa-rotate-left"></i> Re-assign</button>`
+      }
+
+      const failDetail = r.failed_fields
+        ? `<div style="font-size:.72rem;color:#999;margin-top:.2rem;">${esc(r.failed_fields)}</div>` : ''
+
+      return `<tr class="${isPass ? 'match-row-pass' : 'match-row-close'}${rank === 1 && !cnd ? ' match-priority' : ''}">
+        <td class="match-rank">#${rank}${rank === 1 ? ' <span class="priority-star" title="Next in line">★</span>' : ''}</td>
+        <td><strong>${esc(r.full_name || r.email)}</strong><br><span style="font-size:.78rem;color:#888;">${esc(r.email)}</span></td>
+        <td>${il ? fmtDate(il.submitted_at) : ''}</td>
+        <td>${il ? (il.credit_score_self || '') : ''}</td>
+        <td>${il ? (il.household_size || '') : ''}</td>
+        <td>${statusBadge}${failDetail}</td>
+        <td class="action-cell">${actionHtml}</td>
+      </tr>`
+    }).join('')
+
+    return `<div class="match-listing-block">
+      <div class="match-listing-header">
+        <div>
+          <span class="match-listing-name">${esc(lst.listing_name || lst.listing_id)}</span>
+          ${unitsHtml}
+        </div>
+        <div>
+          <span class="match-count-badge pass">${passRows.length} Pass</span>
+          <span class="match-count-badge close">${closeRows.length} Close</span>
+        </div>
+      </div>
+      <table class="data-table" style="margin-top:.5rem;">
+        <thead><tr>
+          <th style="width:60px;">Priority</th>
+          <th>Applicant</th>
+          <th>Submitted</th>
+          <th>Credit</th>
+          <th>HH Size</th>
+          <th>Match</th>
+          <th>Actions</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`
+  }).filter(Boolean).join('')
+
+  setArea('matches-area', html || emptyState('No Pass or Close matches found for active listings. Run the match engine to populate results.'))
+}
+
+async function startReview(listingId, email) {
+  // Get IL row for submitted_at and name
+  const ilRow = ilData.find(r => r.email === email)
+  const { data: fresh } = ilRow ? { data: ilRow } : await sb.from('interest_list').select('full_name,submitted_at').eq('email', email).single()
+  const name = fresh?.full_name || email
+  const submittedAt = fresh?.submitted_at || null
+
+  const { error } = await sb.from('listing_candidates').insert({
+    listing_id: listingId,
+    email,
+    full_name: name,
+    il_submitted_at: submittedAt,
+    status: 'in_review',
+  })
+  if (error) { toast(error.message, true); return }
+  toast(`${name} moved to In Review.`)
+  loadMatches()
+}
+
+async function approveCandidate(candId, listingId, listingName, email, fullName) {
+  if (!confirm(`Approve ${fullName || email} for ${listingName}? This will:\n- Mark them as Matched on the Interest List\n- Decrement units available\n- Log to Successes`)) return
+
+  try {
+    // 1. Mark candidate approved
+    const { error: e1 } = await sb.from('listing_candidates').update({ status: 'approved' }).eq('id', candId)
+    if (e1) throw e1
+
+    // 2. Mark IL applicant as matched
+    const { error: e2 } = await sb.from('interest_list').update({ status: 'matched', updated_at: new Date().toISOString() }).eq('email', email)
+    if (e2) throw e2
+
+    // 3. Decrement units_available and auto-inactive if 0
+    const lst = lstData.find(r => r.listing_id === listingId)
+    if (lst && lst.units_available !== null && lst.units_available !== undefined) {
+      const newUnits = Math.max(0, parseInt(lst.units_available) - 1)
+      const updates = { units_available: newUnits, updated_at: new Date().toISOString() }
+      if (newUnits === 0) updates.active = 'NO'
+      const { error: e3 } = await sb.from('listings').update(updates).eq('listing_id', listingId)
+      if (e3) throw e3
+      if (newUnits === 0) toast(`${listingName} has no units remaining and has been set to inactive.`)
+    }
+
+    // 4. Log to successes
+    const { error: e4 } = await sb.from('successes').insert({
+      listing_id:   listingId,
+      listing_name: listingName,
+      email,
+      full_name:    fullName || email,
+      approved_at:  new Date().toISOString(),
+    })
+    if (e4) throw e4
+
+    toast(`${fullName || email} approved! Logged to Successes.`)
+    lstData = []
+    loadMatches()
+  } catch(e) {
+    toast(e.message, true)
+  }
+}
+
+async function declineCandidate(candId) {
+  const { error } = await sb.from('listing_candidates').update({ status: 'declined' }).eq('id', candId)
+  if (error) { toast(error.message, true); return }
+  toast('Candidate declined.')
+  loadMatches()
+}
+
+// =============================================================
+// SUCCESSES
+// =============================================================
+
+async function loadSuccesses() {
+  setArea('successes-area', loading())
+  const { data, error } = await sb.from('successes').select('*').order('approved_at', { ascending: false })
+  if (error) { setArea('successes-area', errorState(error)); return }
+  successesData = data || []
+  renderSuccesses()
+}
+
+function renderSuccesses() {
+  if (!successesData.length) {
+    setArea('successes-area', emptyState('No successes yet. Approve a candidate in the Matches tab to log one here.'))
+    return
+  }
+  const html = `
+    <div style="margin-bottom:1rem;font-size:.9rem;color:#666;">${successesData.length} successful match${successesData.length !== 1 ? 'es' : ''}</div>
+    <table class="data-table">
+      <thead><tr>
+        <th>Date</th>
+        <th>Family</th>
+        <th>Listing</th>
+        <th>Notes</th>
+      </tr></thead>
+      <tbody>
+        ${successesData.map(r => `<tr>
+          <td>${fmtDate(r.approved_at)}</td>
+          <td><strong>${esc(r.full_name || '')}</strong><br><span style="font-size:.78rem;color:#888;">${esc(r.email || '')}</span></td>
+          <td>${esc(r.listing_name || r.listing_id || '')}</td>
+          <td style="font-size:.82rem;color:#666;">${esc(r.notes || '')}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`
+  setArea('successes-area', html)
 }
