@@ -1203,6 +1203,13 @@ function toast(msg, isError) {
 // =============================================================
 
 async function loadMatches() {
+  // Capture open blocks NOW, before setArea() wipes the DOM with the loading spinner
+  const openBlocks = new Set(
+    Array.from(document.querySelectorAll('[id^="match-body-"]'))
+      .filter(el => el.style.display !== 'none')
+      .map(el => el.id.replace('match-body-', ''))
+  )
+
   setArea('matches-area', loading())
   try {
     const [
@@ -1222,13 +1229,13 @@ async function loadMatches() {
     if (ilErr)  throw ilErr
 
     candidatesData = cands || []
-    renderMatches(listings || [], results || [], cands || [], il || [])
+    renderMatches(listings || [], results || [], cands || [], il || [], openBlocks)
   } catch(e) {
     setArea('matches-area', errorState(e))
   }
 }
 
-function renderMatches(listings, results, cands, il) {
+function renderMatches(listings, results, cands, il, openBlocks = new Set()) {
   if (!listings.length) {
     setArea('matches-area', emptyState('No active listings. Set a listing to Active for Matching to see candidates here.'))
     return
@@ -1341,14 +1348,6 @@ function renderMatches(listings, results, cands, il) {
       </div>
     </div>`
   }).filter(Boolean).join('')
-
-  // Remember which listing blocks are currently expanded so we can restore
-  // them after the re-render (e.g. after Start Review / Approve / Decline).
-  const openBlocks = new Set(
-    Array.from(document.querySelectorAll('[id^="match-body-"]'))
-      .filter(el => el.style.display !== 'none')
-      .map(el => el.id.replace('match-body-', ''))
-  )
 
   setArea('matches-area', html || emptyState('No Pass or Close matches found for active listings. Run the match engine to populate results.'))
 
