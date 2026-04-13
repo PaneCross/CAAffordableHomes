@@ -351,11 +351,11 @@ async function sendWeeklyDigest(payload: DigestPayload) {
   const totalAll     = Object.values(statusCounts).reduce((a, b) => a + b, 0)
 
   function statBox(label: string, value: string | number, sub?: string) {
-    return `<td style="padding:0 8px;text-align:center;vertical-align:top;">
-      <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:14px 20px;min-width:100px;">
+    return `<td style="padding:0 6px;text-align:center;vertical-align:top;">
+      <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:14px 16px;">
         <div style="font-size:28px;font-weight:700;color:#2c5545;line-height:1;">${value}</div>
-        <div style="font-size:12px;color:#666;margin-top:4px;text-transform:uppercase;letter-spacing:0.05em;">${label}</div>
-        ${sub ? `<div style="font-size:11px;color:#aaa;margin-top:2px;">${sub}</div>` : ''}
+        <div style="font-size:11px;color:#666;margin-top:5px;text-transform:uppercase;letter-spacing:0.05em;">${label}</div>
+        ${sub ? `<div style="font-size:10px;color:#aaa;margin-top:2px;">${sub}</div>` : ''}
       </div>
     </td>`
   }
@@ -398,18 +398,18 @@ async function sendWeeklyDigest(payload: DigestPayload) {
 
       <!-- Pipeline Snapshot -->
       <h3 style="font-size:13px;text-transform:uppercase;letter-spacing:0.08em;color:#999;margin:0 0 14px;font-weight:600;">Pipeline Snapshot</h3>
-      <table style="border-collapse:separate;border-spacing:8px 0;margin-bottom:8px;">
+      <table style="border-collapse:separate;border-spacing:0;width:100%;margin-bottom:20px;">
         <tr>
           ${statBox('Total Applicants', totalAll)}
-          ${statBox('In Matching', inMatching, 'new + reviewing + active')}
+          ${statBox('In Matching', inMatching, 'active pipeline')}
           ${statBox('New This Week', newApplicantsThisWeek)}
           ${statBox('Active Listings', activeListingsCount)}
           ${statBox('Total Successes', totalSuccesses)}
         </tr>
       </table>
 
-      <!-- Applicant Status Breakdown -->
-      <div style="margin:24px 0;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px 20px;">
+      <!-- Applicant Status Breakdown + Activity -->
+      <div style="margin:0 0 28px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px 20px;">
         <div style="font-size:12px;text-transform:uppercase;letter-spacing:0.07em;color:#999;margin-bottom:10px;font-weight:600;">Applicants by Status</div>
         <table style="border-collapse:collapse;font-size:13px;width:100%;">
           <tr>
@@ -432,15 +432,11 @@ async function sendWeeklyDigest(payload: DigestPayload) {
             <td style="padding:3px 0;color:#555;">Expired</td>
             <td style="padding:3px 0;font-weight:600;text-align:right;">${totalExpired}</td>
           </tr>
+          <tr style="border-top:1px solid #e5e7eb;">
+            <td style="padding:6px 0 3px;color:#555;">New property submissions this week</td>
+            <td style="padding:6px 0 3px;font-weight:600;text-align:right;color:#2c7a4b;">${newSubmissionsThisWeek}</td>
+          </tr>
         </table>
-      </div>
-
-      <!-- Activity This Week -->
-      <div style="margin:0 0 28px;display:flex;gap:12px;">
-        <div style="flex:1;background:#f0f8f4;border:1px solid #c8e3d4;border-radius:8px;padding:14px 18px;font-size:13px;">
-          <span style="font-weight:700;font-size:18px;color:#2c7a4b;">${newSubmissionsThisWeek}</span>
-          <span style="color:#555;margin-left:8px;">new property submission${newSubmissionsThisWeek !== 1 ? 's' : ''} this week</span>
-        </div>
       </div>
 
       <!-- Matching Results -->
