@@ -57,7 +57,7 @@
   </nav>
 
   <!-- Main -->
-  <main class="admin-main">
+  <main class="admin-main" id="admin-main">
     <div class="admin-topbar">
       <h1 class="admin-page-title" id="page-title">Dashboard</h1>
       <button class="btn-secondary btn-sm" id="help-btn"><i class="fa-solid fa-circle-question"></i> Help</button>
@@ -360,16 +360,17 @@
 </div>
 
 <!-- ══════════════════════════════════════════════════════════
-     HELP MODAL
+     HELP PANEL (persistent right-side drawer)
 ══════════════════════════════════════════════════════════ -->
-<div id="help-modal-overlay" class="modal-overlay">
-  <div class="modal-box modal-help">
-    <div class="modal-header">
-      <h2 id="help-modal-title">Help</h2>
-      <button class="modal-close" id="help-modal-close"><i class="fa-solid fa-xmark"></i></button>
+<div id="help-panel" class="help-panel">
+  <div class="help-panel-header">
+    <div class="help-panel-title-row">
+      <i class="fa-solid fa-circle-question" style="color:var(--green-light);"></i>
+      <span id="help-panel-title">Help</span>
     </div>
-    <div class="modal-body" id="help-modal-body"></div>
+    <button class="modal-close" id="help-panel-close"><i class="fa-solid fa-xmark"></i></button>
   </div>
+  <div class="help-panel-body" id="help-panel-body"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>

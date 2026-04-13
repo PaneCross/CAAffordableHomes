@@ -14,6 +14,7 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
 // ── State ─────────────────────────────────────────────────────
 let lstData = [], progData = [], ilData = [], psData = [], candidatesData = [], successesData = []
 let dashboardFetched = false
+let helpPanelOpen = false
 let editingLstRow = null, editingProgRow = null, editingPsRow = null, viewingIlRow = null
 let lstFilter = 'active', progFilter = 'active', ilFilter = 'all', psFilter = 'all'
 let ilSearch = ''
@@ -131,6 +132,7 @@ function switchTab(tab) {
   document.getElementById('page-title').textContent = TAB_TITLES[tab] || tab
   loadActiveTab(tab)
   history.replaceState(null, '', `#${tab}`)
+  if (helpPanelOpen) populateHelpPanel(tab)
 }
 
 function loadActiveTab(tab) {
@@ -280,15 +282,16 @@ function renderPS() {
       ).join('')}
     </tr></thead>
     <tbody>
-      ${rows.map(r => `<tr>
+      ${rows.map(r => `<tr class="clickable-row" onclick="openPSModal(${psData.indexOf(r)})">
         <td>${fmtDate(r.submitted_at)}</td>
         <td><strong>${esc(r.contact_name||'')}</strong><br><span style="font-size:.78rem;color:#888;">${esc(r.contact_email||'')}</span></td>
         <td>${esc(r.prop_address||'')}</td>
         <td>${esc(r.ami_percent ? r.ami_percent+'%' : '')}</td>
         <td><span class="status-pill ${pillCls(r.status||'new')}">${esc(r.status||'new')}</span></td>
-        <td class="action-cell">
-          <button class="btn-secondary btn-xs" onclick="openPSModal(${psData.indexOf(r)})"><i class="fa-solid fa-pen"></i></button>
-          ${(r.status||'new') !== 'promoted' ? `<button class="btn-primary btn-xs" onclick="promoteToListing(${psData.indexOf(r)})"><i class="fa-solid fa-arrow-up-right-from-square"></i> Promote</button>` : `<span style="font-size:.75rem;color:#888;">Promoted</span>`}
+        <td class="action-cell" onclick="event.stopPropagation()">
+          ${(r.status||'new') !== 'promoted'
+            ? `<button class="btn-primary btn-xs" onclick="promoteToListing(${psData.indexOf(r)})"><i class="fa-solid fa-arrow-up-right-from-square"></i> Promote</button>`
+            : `<span style="font-size:.75rem;color:#888;">Promoted</span>`}
         </td>
       </tr>`).join('')}
     </tbody>
@@ -1640,35 +1643,36 @@ const HELP_CONTENT = {
   }
 }
 
-function openHelp() {
-  const activeTab = document.querySelector('.sb-btn.active[data-tab]')?.dataset.tab || 'dashboard'
-  const content = HELP_CONTENT[activeTab]
+function populateHelpPanel(tab) {
+  const content = HELP_CONTENT[tab]
   if (!content) return
-
-  document.getElementById('help-modal-title').textContent = content.title + ' - Help'
-
+  document.getElementById('help-panel-title').textContent = content.title + ' Help'
   const faqHtml = content.faq.map(item => `
     <details>
       <summary>${esc(item.q)}</summary>
       <div class="help-answer">${item.a}</div>
     </details>
   `).join('')
-
-  document.getElementById('help-modal-body').innerHTML = `
+  document.getElementById('help-panel-body').innerHTML = `
     <div class="help-intro">${content.intro}</div>
     <div class="help-faq-title">Frequently Asked Questions</div>
     <div class="help-faq">${faqHtml}</div>
   `
+}
 
-  document.getElementById('help-modal-overlay').classList.add('active')
+function openHelp() {
+  const activeTab = document.querySelector('.sb-btn.active[data-tab]')?.dataset.tab || 'dashboard'
+  populateHelpPanel(activeTab)
+  document.getElementById('help-panel').classList.add('open')
+  document.getElementById('admin-main').classList.add('help-open')
+  helpPanelOpen = true
+}
+
+function closeHelp() {
+  document.getElementById('help-panel').classList.remove('open')
+  document.getElementById('admin-main').classList.remove('help-open')
+  helpPanelOpen = false
 }
 
 document.getElementById('help-btn').addEventListener('click', openHelp)
-document.getElementById('help-modal-close').addEventListener('click', () => {
-  document.getElementById('help-modal-overlay').classList.remove('active')
-})
-document.getElementById('help-modal-overlay').addEventListener('click', e => {
-  if (e.target === document.getElementById('help-modal-overlay')) {
-    document.getElementById('help-modal-overlay').classList.remove('active')
-  }
-})
+document.getElementById('help-panel-close').addEventListener('click', closeHelp)
