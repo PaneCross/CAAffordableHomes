@@ -255,22 +255,39 @@ textarea.form-input { resize: vertical; }
 .form-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .75rem; }
 .form-section-label {
   font-size: .72rem; font-weight: 600; text-transform: uppercase;
-  letter-spacing: .06em; color: var(--green); margin-bottom: .6rem;
+  letter-spacing: .06em; color: var(--green); margin-bottom: .7rem;
 }
 .form-section-rule {
   border: none; border-top: 1px solid var(--border);
   margin: 1.25rem 0 1.1rem;
 }
+/* ── Listing modal alternating sections ── */
+.lst-section {
+  padding: 1.1rem 1.25rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.lst-section:last-child { border-bottom: none; }
+.lst-section-white { background: var(--white); }
+.lst-section-green { background: #f3faf6; }
 .lst-prog-link-row {
   display: flex; gap: .5rem; align-items: center;
 }
 .eligibility-helper {
-  font-size: .78rem; color: #5a7a6a; background: var(--green-bg);
+  font-size: .78rem; color: #5a7a6a; background: rgba(255,255,255,.7);
   border: 1px solid #c8e6d6; border-radius: 6px;
   padding: .45rem .75rem; margin-bottom: .85rem;
   display: flex; align-items: flex-start; gap: .4rem; line-height: 1.5;
 }
 .eligibility-helper i { margin-top: .1rem; flex-shrink: 0; }
+/* ── In Matching toggle with Yes/No labels ── */
+.toggle-row {
+  display: flex; align-items: center; gap: .5rem;
+}
+.toggle-side-label {
+  font-size: .78rem; font-weight: 600; min-width: 22px;
+}
+.toggle-no  { color: var(--muted); text-align: right; }
+.toggle-yes { color: var(--green); }
 
 /* ── Data table ── */
 .data-table { width: 100%; border-collapse: collapse; font-size: .82rem; }

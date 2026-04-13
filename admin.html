@@ -150,60 +150,63 @@
       <h2 id="lst-modal-title">Add Listing</h2>
       <button class="modal-close" id="lst-modal-close"><i class="fa-solid fa-xmark"></i></button>
     </div>
-    <div class="modal-body">
+    <div class="modal-body" style="padding:0;">
 
-      <div class="form-section-label"><i class="fa-solid fa-globe" style="margin-right:.35rem;"></i>Site Program</div>
-      <div class="lst-prog-link-row">
-        <select id="lf-linked-prog" class="form-input" style="flex:1;min-width:0;">
-          <option value="">-- No program linked --</option>
-        </select>
-        <button class="btn-secondary btn-sm" id="lf-new-prog-btn" type="button" title="Create a new site program pre-filled from this listing"><i class="fa-solid fa-plus"></i> New Program</button>
-      </div>
-
-      <hr class="form-section-rule">
-
-      <div class="form-section-label">Identity</div>
-      <div class="form-row2">
-        <div class="form-group"><label for="lf-id">Property ID *</label><input id="lf-id" class="form-input" placeholder="e.g. VILLA-001"></div>
-        <div class="form-group"><label for="lf-name">Display Name</label><input id="lf-name" class="form-input" placeholder="Villa Rosa"></div>
-      </div>
-      <div class="form-row3">
-        <div class="form-group">
-          <label class="toggle-label">
-            <span>In Matching</span>
-            <span class="toggle-switch">
-              <input type="checkbox" id="lf-active" class="toggle-input">
-              <span class="toggle-track"><span class="toggle-thumb"></span></span>
-            </span>
-          </label>
-        </div>
-        <div class="form-group"><label for="lf-units">Units Available</label><input id="lf-units" class="form-input" type="number" min="0" placeholder="e.g. 4"></div>
-        <div class="form-group"><label for="lf-type">Listing Type</label>
-          <select id="lf-type" class="form-input"><option value="affordable">Affordable</option><option value="mls">MLS</option></select>
+      <div class="lst-section lst-section-white">
+        <div class="form-section-label"><i class="fa-solid fa-globe" style="margin-right:.35rem;"></i>Site Program</div>
+        <div class="lst-prog-link-row">
+          <select id="lf-linked-prog" class="form-input" style="flex:1;min-width:0;">
+            <option value="">-- No program linked --</option>
+          </select>
+          <button class="btn-secondary btn-sm" id="lf-new-prog-btn" type="button" title="Create a new site program pre-filled from this listing"><i class="fa-solid fa-plus"></i> New Program</button>
         </div>
       </div>
 
-      <hr class="form-section-rule">
-
-      <div class="form-section-label">Property Details</div>
-      <div class="form-row2">
-        <div class="form-group"><label for="lf-address">Address</label><input id="lf-address" class="form-input"></div>
-        <div class="form-group"><label for="lf-city">City</label><input id="lf-city" class="form-input"></div>
+      <div class="lst-section lst-section-green">
+        <div class="form-section-label">Identity</div>
+        <div class="form-row2">
+          <div class="form-group"><label for="lf-id">Property ID *</label><input id="lf-id" class="form-input" placeholder="e.g. VILLA-001"></div>
+          <div class="form-group"><label for="lf-name">Display Name</label><input id="lf-name" class="form-input" placeholder="Villa Rosa"></div>
+        </div>
+        <div class="form-row3">
+          <div class="form-group">
+            <label style="display:block;font-size:.8rem;font-weight:500;margin-bottom:.5rem;">In Matching</label>
+            <div class="toggle-row">
+              <span class="toggle-side-label toggle-no">No</span>
+              <span class="toggle-switch">
+                <input type="checkbox" id="lf-active" class="toggle-input">
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              </span>
+              <span class="toggle-side-label toggle-yes">Yes</span>
+            </div>
+          </div>
+          <div class="form-group"><label for="lf-units">Units Available</label><input id="lf-units" class="form-input" type="number" min="0" placeholder="e.g. 4"></div>
+          <div class="form-group"><label for="lf-type">Listing Type</label>
+            <select id="lf-type" class="form-input"><option value="affordable">Affordable</option><option value="mls">MLS</option></select>
+          </div>
+        </div>
       </div>
-      <div class="form-row3">
-        <div class="form-group"><label for="lf-price">Price ($)</label><input id="lf-price" class="form-input" placeholder="450000"></div>
-        <div class="form-group"><label for="lf-beds">Bedrooms</label><input id="lf-beds" class="form-input" type="number"></div>
-        <div class="form-group"><label for="lf-baths">Bathrooms</label><input id="lf-baths" class="form-input" type="number" step="0.5"></div>
-      </div>
-      <div class="form-row2">
-        <div class="form-group"><label for="lf-sqft">Sqft</label><input id="lf-sqft" class="form-input" type="number"></div>
-        <div class="form-group"><label for="lf-program-type">Program Type</label><input id="lf-program-type" class="form-input" placeholder="e.g. Below Market Rate"></div>
+
+      <div class="lst-section lst-section-white">
+        <div class="form-section-label">Property Details</div>
+        <div class="form-row2">
+          <div class="form-group"><label for="lf-address">Address</label><input id="lf-address" class="form-input"></div>
+          <div class="form-group"><label for="lf-city">City</label><input id="lf-city" class="form-input"></div>
+        </div>
+        <div class="form-row3">
+          <div class="form-group"><label for="lf-price">Price ($)</label><input id="lf-price" class="form-input" placeholder="450000"></div>
+          <div class="form-group"><label for="lf-beds">Bedrooms</label><input id="lf-beds" class="form-input" type="number"></div>
+          <div class="form-group"><label for="lf-baths">Bathrooms</label><input id="lf-baths" class="form-input" type="number" step="0.5"></div>
+        </div>
+        <div class="form-row2">
+          <div class="form-group"><label for="lf-sqft">Sqft</label><input id="lf-sqft" class="form-input" type="number"></div>
+          <div class="form-group"><label for="lf-program-type">Program Type</label><input id="lf-program-type" class="form-input" placeholder="e.g. Below Market Rate"></div>
+        </div>
       </div>
 
-      <hr class="form-section-rule">
-
-      <div class="form-section-label">Eligibility Requirements</div>
-      <div class="eligibility-helper"><i class="fa-solid fa-circle-info"></i> All fields are optional. Only fields you fill in will be checked during matching. Leave a field blank to skip that requirement for this listing.</div>
+      <div class="lst-section lst-section-green">
+        <div class="form-section-label">Eligibility Requirements</div>
+        <div class="eligibility-helper"><i class="fa-solid fa-circle-info"></i> All fields are optional. Only fields you fill in will be checked during matching. Leave a field blank to skip that requirement for this listing.</div>
       <div class="form-row2">
         <div class="form-group"><label for="lf-ami">AMI %</label><input id="lf-ami" class="form-input" type="number" placeholder="80"></div>
         <div class="form-group"><label for="lf-credit">Min Credit Score</label><input id="lf-credit" class="form-input" type="number" placeholder="640"></div>
@@ -277,12 +280,13 @@
           <select id="lf-permresident" class="form-input"><option value="">N/A</option><option value="YES">YES</option><option value="NO">NO</option></select>
         </div>
       </div>
+      </div><!-- end eligibility lst-section -->
 
-      <hr class="form-section-rule">
-
-      <div class="form-section-label">Notes</div>
-      <div class="form-group"><label for="lf-prog-notes">Program Notes (visible in matching)</label><textarea id="lf-prog-notes" class="form-input" rows="2"></textarea></div>
-      <div class="form-group"><label for="lf-int-notes">Internal Notes</label><textarea id="lf-int-notes" class="form-input" rows="2"></textarea></div>
+      <div class="lst-section lst-section-white">
+        <div class="form-section-label">Notes</div>
+        <div class="form-group"><label for="lf-prog-notes">Program Notes (visible in matching)</label><textarea id="lf-prog-notes" class="form-input" rows="2"></textarea></div>
+        <div class="form-group"><label for="lf-int-notes">Internal Notes</label><textarea id="lf-int-notes" class="form-input" rows="2"></textarea></div>
+      </div>
 
     </div>
     <div class="modal-footer">
