@@ -103,6 +103,11 @@ body { font-family: var(--font-body); color: var(--text); background: var(--bg);
 .sb-btn:hover  { background: rgba(255,255,255,.1); color: #fff; }
 .sb-btn.active { background: rgba(255,255,255,.18); color: #fff; font-weight: 500; }
 .sb-btn i      { width: 16px; text-align: center; }
+.sb-group-label {
+  font-size: .62rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .09em; color: rgba(255,255,255,.38);
+  padding: 1rem 1rem .25rem; pointer-events: none; user-select: none;
+}
 .sb-footer { padding: .5rem 0 1rem; border-top: 1px solid rgba(255,255,255,.12); }
 
 /* ── Main ── */
@@ -339,8 +344,43 @@ textarea.form-input { resize: vertical; }
   padding: .45rem .6rem; margin-top: .2rem; margin-bottom: .3rem;
   line-height: 1.4;
 }
-.prog-link-note { font-size: .76rem; color: var(--green); margin-top: .5rem; display: flex; align-items: center; gap: .35rem; }
-.prog-badge { display: inline-block; background: var(--green-bg); color: var(--green); font-size: .72rem; font-weight: 600; padding: .18rem .5rem; border-radius: 12px; margin-top: .35rem; }
+/* ── Program card: linked listings block ── */
+.prog-listings-block {
+  margin-top: .6rem; padding-top: .55rem;
+  border-top: 1px solid rgba(0,0,0,.07);
+}
+.prog-listings-header {
+  font-size: .62rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .07em; color: #bbb;
+  display: flex; align-items: center; gap: .3rem;
+  margin-bottom: .4rem;
+}
+.prog-listings-pills { display: flex; flex-wrap: wrap; gap: .3rem; }
+.prog-listing-pill {
+  font-size: .73rem; font-weight: 500;
+  background: var(--green-bg); color: var(--green);
+  border-radius: 10px; padding: .18rem .6rem;
+  white-space: nowrap;
+}
+.prog-listings-empty {
+  font-size: .74rem; color: #ccc; font-style: italic;
+}
+
+/* ── Listing card: linked program row ── */
+.lst-prog-link {
+  margin-top: .5rem; padding-top: .5rem;
+  border-top: 1px solid rgba(0,0,0,.07);
+}
+.lst-prog-link-label {
+  font-size: .62rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .07em; color: #bbb;
+  display: flex; align-items: center; gap: .3rem;
+  margin-bottom: .25rem;
+}
+.lst-prog-link-name {
+  font-size: .78rem; font-weight: 500; color: var(--green);
+  display: flex; align-items: center; gap: .3rem;
+}
 
 /* ── Drawer ── */
 .drawer-overlay {

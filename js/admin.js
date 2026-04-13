@@ -561,7 +561,10 @@ function renderListings() {
     ${rows.map(r => {
       const idx = lstData.indexOf(r)
       const progBadge = r.linked_program_id
-        ? `<span class="prog-badge"><i class="fa-solid fa-globe"></i> ${esc(r.linked_program_id)}</span>`
+        ? `<div class="lst-prog-link">
+            <div class="lst-prog-link-label"><i class="fa-solid fa-link" style="font-size:.6rem;"></i> Linked Program</div>
+            <div class="lst-prog-link-name"><i class="fa-solid fa-globe" style="font-size:.72rem;"></i> ${esc(r.linked_program_id)}</div>
+          </div>`
         : ''
       return `<div class="prog-card ${r.active === 'YES' ? 'prog-card--available' : 'prog-card--inactive'}">
         <div class="prog-card-header">
@@ -845,9 +848,12 @@ function renderPrograms() {
           ${p.bedrooms ? `<div class="prog-detail"><span class="prog-detail-label"><i class="fa-solid fa-bed" style="width:14px;color:#888;margin-right:.3rem;"></i>Bedrooms</span><span class="prog-detail-value">${esc(p.bedrooms)}</span></div>` : ''}
           ${p.price_range ? `<div class="prog-detail"><span class="prog-detail-label"><i class="fa-solid fa-tag" style="width:14px;color:#888;margin-right:.3rem;"></i>Price Range</span><span class="prog-detail-value">${esc(p.price_range)}</span></div>` : ''}
           ${p.notes ? `<div style="font-size:.78rem;color:#888;background:rgba(0,0,0,.04);border-radius:6px;padding:.45rem .6rem;margin-top:.2rem;">${esc(p.notes)}</div>` : ''}
-          ${lnkLst.length
-            ? `<div class="prog-link-note"><i class="fa-solid fa-link"></i> ${lnkLst.length} linked listing${lnkLst.length === 1 ? '' : 's'}: ${esc(lnkLst.join(', '))}</div>`
-            : `<div class="prog-link-note" style="color:#bbb;"><i class="fa-solid fa-unlink"></i> No linked listings</div>`}
+          <div class="prog-listings-block">
+            <div class="prog-listings-header"><i class="fa-solid fa-link" style="font-size:.6rem;"></i> Linked Listings${lnkLst.length ? ` (${lnkLst.length})` : ''}</div>
+            ${lnkLst.length
+              ? `<div class="prog-listings-pills">${lnkLst.map(name => `<span class="prog-listing-pill">${esc(name)}</span>`).join('')}</div>`
+              : `<div class="prog-listings-empty">None linked yet</div>`}
+          </div>
         </div>
         <div class="prog-card-footer">
           <button class="btn-secondary btn-sm" onclick="openProgModal(${idx})"><i class="fa-solid fa-pen"></i> Edit</button>
@@ -880,12 +886,15 @@ function openProgModal(idx, prefill) {
   const lnkLst = lstData.filter(l => l.linked_program_id === progName)
   const labelEl = document.getElementById('pf-linked-listings-label')
   if (lnkLst.length) {
-    labelEl.innerHTML = `<strong style="font-size:.8rem;color:#555;">Linked listings:</strong>
-      <ul style="margin:.3rem 0 0 1.1rem;padding:0;font-size:.78rem;color:#444;">
-        ${lnkLst.map(l => `<li style="margin-bottom:.15rem;">${esc(l.listing_name || l.listing_id)}</li>`).join('')}
-      </ul>`
+    labelEl.innerHTML = `
+      <div class="prog-listings-header" style="margin-bottom:.4rem;"><i class="fa-solid fa-link" style="font-size:.6rem;"></i> Linked Listings (${lnkLst.length})</div>
+      <div class="prog-listings-pills">
+        ${lnkLst.map(l => `<span class="prog-listing-pill">${esc(l.listing_name || l.listing_id)}</span>`).join('')}
+      </div>`
   } else {
-    labelEl.innerHTML = editingProgRow ? '<span style="font-size:.78rem;color:#bbb;">No linked listings</span>' : ''
+    labelEl.innerHTML = editingProgRow
+      ? '<div class="prog-listings-header" style="margin-bottom:.3rem;"><i class="fa-solid fa-link" style="font-size:.6rem;"></i> Linked Listings</div><div class="prog-listings-empty">None linked yet</div>'
+      : ''
   }
 
   document.getElementById('prog-modal-overlay').classList.add('open')
