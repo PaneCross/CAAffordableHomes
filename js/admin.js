@@ -287,11 +287,11 @@ function renderPS() {
         <td><strong>${esc(r.contact_name||'')}</strong><br><span style="font-size:.78rem;color:#888;">${esc(r.contact_email||'')}</span></td>
         <td>${esc(r.prop_address||'')}</td>
         <td>${esc(r.ami_percent ? r.ami_percent+'%' : '')}</td>
-        <td class="action-cell" onclick="event.stopPropagation()">
+        <td onclick="event.stopPropagation()"><div class="action-cell">
           ${(r.status||'new') !== 'promoted'
             ? `<button class="btn-primary btn-xs" onclick="promoteToListing(${psData.indexOf(r)})"><i class="fa-solid fa-arrow-up-right-from-square"></i> Promote</button>`
             : `<span style="font-size:.75rem;color:#888;">Promoted</span>`}
-        </td>
+        </div></td>
       </tr>`).join('')}
     </tbody>
   </table>`
@@ -485,6 +485,26 @@ function openLSTModal(idx, prefill) {
   document.getElementById('lf-prog-notes').value  = p.program_notes || ''
   document.getElementById('lf-int-notes').value   = p.internal_notes || ''
   document.getElementById('lf-src-row').value     = p.source_submission_row || ''
+  document.getElementById('lf-sdmonths').value      = p.sd_residency_months || ''
+  document.getElementById('lf-hhtogether').value    = p.household_together_months || ''
+  document.getElementById('lf-ftb-years').value     = p.no_ownership_years || ''
+  document.getElementById('lf-inc2').value          = p.max_income_2person || ''
+  document.getElementById('lf-inc3').value          = p.max_income_3person || ''
+  document.getElementById('lf-inc5').value          = p.max_income_5person || ''
+  document.getElementById('lf-mininc').value        = p.min_income || ''
+  document.getElementById('lf-minassets').value     = p.min_assets || ''
+  document.getElementById('lf-maxassets').value     = p.max_assets || ''
+  document.getElementById('lf-mindown').value       = p.min_down_payment_pct || ''
+  document.getElementById('lf-maxdown').value       = p.max_down_payment_pct || ''
+  document.getElementById('lf-minempmo').value      = p.min_employment_months || ''
+  document.getElementById('lf-sdhc').value          = p.sdhc_prior_purchase_allowed || ''
+  document.getElementById('lf-foreclosure').value   = p.foreclosure_allowed || ''
+  document.getElementById('lf-fcyears').value       = p.foreclosure_min_years || ''
+  document.getElementById('lf-bankruptcy').value    = p.bankruptcy_allowed || ''
+  document.getElementById('lf-bkyears').value       = p.bankruptcy_min_years || ''
+  document.getElementById('lf-judgments').value     = p.judgments_allowed || ''
+  document.getElementById('lf-citizenship').value   = p.citizenship_required || ''
+  document.getElementById('lf-permresident').value  = p.permanent_resident_acceptable || ''
 
   // Populate site program dropdown from cached progData
   const progSel = document.getElementById('lf-linked-prog')
@@ -562,6 +582,26 @@ document.getElementById('lst-save-btn').addEventListener('click', async () => {
     internal_notes: document.getElementById('lf-int-notes').value.trim(),
     source_submission_row: document.getElementById('lf-src-row').value || null,
     linked_program_id:     document.getElementById('lf-linked-prog').value || null,
+    sd_residency_months:        document.getElementById('lf-sdmonths').value.trim() || null,
+    household_together_months:  document.getElementById('lf-hhtogether').value.trim() || null,
+    no_ownership_years:         document.getElementById('lf-ftb-years').value.trim() || null,
+    max_income_2person:         document.getElementById('lf-inc2').value.trim() || null,
+    max_income_3person:         document.getElementById('lf-inc3').value.trim() || null,
+    max_income_5person:         document.getElementById('lf-inc5').value.trim() || null,
+    min_income:                 document.getElementById('lf-mininc').value.trim() || null,
+    min_assets:                 document.getElementById('lf-minassets').value.trim() || null,
+    max_assets:                 document.getElementById('lf-maxassets').value.trim() || null,
+    min_down_payment_pct:       document.getElementById('lf-mindown').value.trim() || null,
+    max_down_payment_pct:       document.getElementById('lf-maxdown').value.trim() || null,
+    min_employment_months:      document.getElementById('lf-minempmo').value.trim() || null,
+    sdhc_prior_purchase_allowed: document.getElementById('lf-sdhc').value || null,
+    foreclosure_allowed:        document.getElementById('lf-foreclosure').value || null,
+    foreclosure_min_years:      document.getElementById('lf-fcyears').value.trim() || null,
+    bankruptcy_allowed:         document.getElementById('lf-bankruptcy').value || null,
+    bankruptcy_min_years:       document.getElementById('lf-bkyears').value.trim() || null,
+    judgments_allowed:          document.getElementById('lf-judgments').value || null,
+    citizenship_required:       document.getElementById('lf-citizenship').value || null,
+    permanent_resident_acceptable: document.getElementById('lf-permresident').value || null,
     updated_at: new Date().toISOString(),
   }
 
