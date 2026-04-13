@@ -117,9 +117,51 @@ body { font-family: var(--font-body); color: var(--text); background: var(--bg);
   border-bottom: 1px solid var(--border);
   padding: .85rem 1.5rem;
   position: sticky; top: 0; z-index: 50;
+  display: flex; align-items: center; justify-content: space-between;
 }
 .admin-page-title { font-family: var(--font-serif); font-size: 1.3rem; font-weight: 500; color: var(--green); }
 .admin-tab { padding: 1.25rem 1.5rem; }
+
+/* ── Help Modal ── */
+.modal-help { max-width: 660px; }
+.help-intro {
+  font-size: .93rem; color: var(--text); line-height: 1.6;
+  background: var(--green-bg); border: 1px solid #c8e6d6;
+  border-radius: 8px; padding: .85rem 1rem; margin-bottom: 1.25rem;
+}
+.help-faq-title {
+  font-size: .72rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--muted); margin-bottom: .6rem;
+}
+.help-faq { display: flex; flex-direction: column; gap: .4rem; }
+.help-faq details {
+  border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
+}
+.help-faq summary {
+  padding: .7rem 1rem; font-size: .88rem; font-weight: 600;
+  cursor: pointer; list-style: none; display: flex;
+  align-items: center; justify-content: space-between;
+  user-select: none; background: var(--white);
+}
+.help-faq summary::-webkit-details-marker { display: none; }
+.help-faq summary::after {
+  content: '\f107'; font-family: 'Font Awesome 6 Free'; font-weight: 900;
+  font-size: .8rem; color: var(--muted); transition: transform .2s; flex-shrink: 0;
+}
+.help-faq details[open] summary { background: #fafaf8; }
+.help-faq details[open] summary::after { transform: rotate(180deg); }
+.help-faq .help-answer {
+  padding: .75rem 1rem; font-size: .86rem; line-height: 1.65;
+  color: #444; border-top: 1px solid var(--border); background: #fafaf8;
+}
+.help-answer ul { margin: .4rem 0 .4rem 1.1rem; padding: 0; }
+.help-answer li { margin-bottom: .3rem; }
+.help-answer strong { color: var(--text); }
+.help-answer .help-pill {
+  display: inline-block; border-radius: 20px; padding: .1rem .5rem;
+  font-size: .75rem; font-weight: 600; margin: 0 .15rem;
+  vertical-align: middle;
+}
 
 /* ── Tab toolbar ── */
 .tab-toolbar {

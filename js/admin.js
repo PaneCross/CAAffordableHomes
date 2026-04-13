@@ -1398,3 +1398,277 @@ function renderSuccesses() {
     </table>`
   setArea('successes-area', html)
 }
+
+// =============================================================
+// HELP MODAL
+// =============================================================
+
+const HELP_CONTENT = {
+  dashboard: {
+    title: 'Dashboard',
+    intro: 'The Dashboard gives you a snapshot of the entire pipeline at a glance. It shows live counts from every table so you can quickly see how many applicants, listings, and programs are active without navigating to each tab.',
+    faq: [
+      {
+        q: 'What do the pipeline numbers mean?',
+        a: `<ul>
+          <li><strong>Applicants in matching</strong> — people on the Interest List with status <em>New</em>, <em>Reviewing</em>, or <em>Active</em>. These are the applicants the matching engine runs against each day.</li>
+          <li><strong>In Matching listings</strong> — listings marked "In Matching" (active = YES). These are the properties the engine compares applicants against.</li>
+          <li><strong>Program-linked</strong> — listings that have a site program attached.</li>
+          <li><strong>Programs</strong> — total community or developer programs you have set up.</li>
+          <li><strong>Property submissions</strong> — seller inquiries submitted through the public contact form.</li>
+        </ul>`
+      },
+      {
+        q: 'What does the Refresh button do?',
+        a: 'The <strong>Refresh</strong> button (circular arrow icon in the top-right) clears all cached data and reloads the current tab from the database. Use it if you just made a change and want to confirm it saved, or if the page has been open for a while and you want fresh numbers.'
+      },
+      {
+        q: 'Why does it sometimes say "Database is waking up"?',
+        a: 'The database is on a free-tier plan that goes to sleep after a period of inactivity. The first load after it has been idle can take 20 to 30 seconds. The page will load automatically once the database responds — no need to refresh manually.'
+      }
+    ]
+  },
+
+  properties: {
+    title: 'Property Submissions',
+    intro: 'This tab shows all seller inquiries submitted through the public "Submit a Property" form on the website. These are people who own a property and want to know if it qualifies for the affordable housing program.',
+    faq: [
+      {
+        q: 'What information comes in with a submission?',
+        a: 'Each submission includes the owner\'s contact info, the property address and type, bedrooms and bathrooms, asking price, and any notes they added. You can see the full details by clicking <strong>View</strong> on any card.'
+      },
+      {
+        q: 'What are the status options and what do they mean?',
+        a: `<ul>
+          <li><strong>New</strong> — just submitted, not yet reviewed.</li>
+          <li><strong>Reviewing</strong> — you have opened it and are evaluating the property.</li>
+          <li><strong>Approved</strong> — the property qualifies and has been (or will be) added as a Listing.</li>
+          <li><strong>Rejected</strong> — the property does not qualify for the program.</li>
+        </ul>`
+      },
+      {
+        q: 'What happens after I approve a submission?',
+        a: 'Approving a submission here does not automatically create a Listing. You need to manually go to the <strong>Listings</strong> tab and add the property there with all the details the matching engine needs.'
+      },
+      {
+        q: 'Can I delete a submission?',
+        a: 'Yes. Click the <strong>trash icon</strong> on any card to permanently delete the submission. This cannot be undone.'
+      }
+    ]
+  },
+
+  listings: {
+    title: 'Listings',
+    intro: 'Listings are the internal property records that the matching engine runs against. They are never shown to applicants. This tab is where you create, edit, and manage all properties in the system.',
+    faq: [
+      {
+        q: 'What do "In Matching" and "Not Matching" mean?',
+        a: '<strong>In Matching</strong> means the listing is active and the daily matching engine will compare all eligible applicants against it. <strong>Not Matching</strong> means the listing is paused and skipped during the matching run. Toggle this in the Edit modal using the "In Matching" switch.'
+      },
+      {
+        q: 'What does "Program-Linked" mean?',
+        a: 'A listing is program-linked when it has a site program attached to it. Site programs (managed in the Programs tab) represent community developments or developer partnerships. Linking a listing to a program helps you track which properties belong to which development.'
+      },
+      {
+        q: 'How do I add a new listing?',
+        a: 'Click the <strong>+ Add Listing</strong> button at the top right of the tab. Fill in the property details in the modal that appears and click Save. Required fields are highlighted if left empty.'
+      },
+      {
+        q: 'What are all the fields in the Edit modal?',
+        a: `<ul>
+          <li><strong>Site Program</strong> — links this listing to a community program. Optional.</li>
+          <li><strong>Listing Name / ID</strong> — your internal reference name and a short unique ID.</li>
+          <li><strong>In Matching</strong> — toggle on to include in daily matching, off to pause.</li>
+          <li><strong>Address, City, Zip</strong> — full property location (never shown to applicants).</li>
+          <li><strong>Price, Bedrooms, Bathrooms, Sq Ft</strong> — basic property specs.</li>
+          <li><strong>AMI %</strong> — the Area Median Income percentage this property targets (e.g., 80 for 80% AMI).</li>
+          <li><strong>Min Credit Score</strong> — the minimum credit score required to match.</li>
+          <li><strong>Max Household Size</strong> — the maximum number of people in the applicant\'s household.</li>
+          <li><strong>Max DTI %</strong> — maximum debt-to-income ratio allowed.</li>
+          <li><strong>Max Monthly Debt</strong> — maximum existing monthly debt the applicant can have.</li>
+          <li><strong>Notes</strong> — any internal notes about the property visible only to you.</li>
+        </ul>`
+      },
+      {
+        q: 'How do I link a listing to a program?',
+        a: 'Open the Edit modal for a listing. At the very top is a <strong>Site Program</strong> dropdown. Select the program from the list. If the program does not exist yet, click <strong>+ New Program</strong> — this will take you to the Programs tab and open a new program form pre-filled with the listing name.'
+      },
+      {
+        q: 'How do I delete a listing?',
+        a: 'Click the <strong>trash icon</strong> on a listing card. You will be asked to confirm before the listing is permanently deleted. Deleting a listing also removes it from future matching runs but does not delete existing match results.'
+      },
+      {
+        q: 'What do the filter buttons do?',
+        a: `<ul>
+          <li><strong>All</strong> — shows every listing regardless of status.</li>
+          <li><strong>In Matching</strong> — shows only active listings (default view).</li>
+          <li><strong>Not Matching</strong> — shows only paused listings.</li>
+          <li><strong>Program-Linked</strong> — shows only listings attached to a site program.</li>
+        </ul>`
+      }
+    ]
+  },
+
+  programs: {
+    title: 'Programs',
+    intro: 'Programs represent community developments, builder partnerships, or other housing initiatives that have multiple listings associated with them. They appear on the public-facing website as program cards.',
+    faq: [
+      {
+        q: 'What is the difference between a Program and a Listing?',
+        a: 'A <strong>Listing</strong> is an individual property. A <strong>Program</strong> is a community or development that may contain multiple listings. For example, a new 50-unit development would be one Program, and each available unit within it would be a separate Listing linked to that Program.'
+      },
+      {
+        q: 'How do I add a new program?',
+        a: 'Click <strong>+ Add Program</strong> at the top right. Fill in the program name, description, location, eligibility notes, and any relevant links. Set the status to <strong>Active</strong> to show it on the public site.'
+      },
+      {
+        q: 'What does Active / Inactive mean for programs?',
+        a: '<strong>Active</strong> programs are published and visible to visitors on the website. <strong>Inactive</strong> programs are hidden from the public but remain in the database for your records.'
+      },
+      {
+        q: 'Can I edit a program after creating it?',
+        a: 'Yes. Click the <strong>Edit</strong> button (pencil icon) on any program card to open the edit modal. Changes are saved immediately to the database and update the public website on the next page load.'
+      },
+      {
+        q: 'What do the filter buttons do?',
+        a: `<ul>
+          <li><strong>All</strong> — shows every program.</li>
+          <li><strong>Active</strong> — shows only publicly visible programs (default view).</li>
+          <li><strong>Inactive</strong> — shows only hidden programs.</li>
+        </ul>`
+      }
+    ]
+  },
+
+  'interest-list': {
+    title: 'Interest List',
+    intro: 'The Interest List contains every applicant who has submitted the contact form on the website. This is the pool of people the matching engine runs against each day. You can review applicant details, update their status, and manage their place in the pipeline here.',
+    faq: [
+      {
+        q: 'What are all the status options and what do they mean?',
+        a: `<ul>
+          <li><strong>New</strong> — submitted the form and has not been reviewed yet. Included in daily matching.</li>
+          <li><strong>Reviewing</strong> — you are actively evaluating this applicant. Included in daily matching.</li>
+          <li><strong>Active</strong> — qualified and actively waiting for a match. Included in daily matching. Subject to 12-month automatic expiry.</li>
+          <li><strong>Matched</strong> — successfully placed in a home. Excluded from matching.</li>
+          <li><strong>Expired</strong> — 12 months have passed without a match. Excluded from matching. If they re-submit the form, they are automatically re-enrolled.</li>
+        </ul>`
+      },
+      {
+        q: 'How do I change an applicant\'s status?',
+        a: 'Click <strong>Edit</strong> (pencil icon) on any applicant row. Change the Status field in the modal and click Save. Status changes take effect immediately for the next matching run.'
+      },
+      {
+        q: 'What is the "star" rank I see in the Matches tab?',
+        a: 'Applicants are ranked within each listing based on their submitted_at date — first come, first served. The top-ranked applicant (the one who submitted earliest) gets a star on the Matches tab. The rank does not appear on the Interest List tab itself.'
+      },
+      {
+        q: 'What do the filter buttons do?',
+        a: 'You can filter by status (All, New, Reviewing, Active, Matched, Expired) to focus on a specific group. The search box lets you find a specific applicant by name or email.'
+      },
+      {
+        q: 'Can I delete an applicant?',
+        a: 'Yes. Click the <strong>trash icon</strong> on an applicant row. This permanently removes them from the Interest List and all associated match results. This cannot be undone.'
+      },
+      {
+        q: 'What happens when someone re-submits the form?',
+        a: 'If their email already exists in the system and their status is <strong>Expired</strong>, they are automatically re-enrolled: their status is reset, the 12-month clock restarts, and their data is updated. If their status is anything other than Expired, their data is updated in place but their status and submission date are preserved.'
+      }
+    ]
+  },
+
+  matches: {
+    title: 'Matches',
+    intro: 'The Matches tab shows the results of the daily matching engine. For each active listing, you can see which applicants passed, which came close, and which did not qualify. This is where you decide who to reach out to.',
+    faq: [
+      {
+        q: 'How does the matching engine work?',
+        a: 'Every morning the engine compares every applicant with status New, Reviewing, or Active against every In Matching listing. It runs 13 checks covering credit score, first-time buyer status, household size, AMI income, debt-to-income ratio, monthly debt, San Diego County residency, household together months, SDHC prior purchase, foreclosure history, bankruptcy history, judgments, and citizenship. Results are saved to the database.'
+      },
+      {
+        q: 'What do Pass, Close, and Fail mean?',
+        a: `<ul>
+          <li><strong>Pass</strong> — the applicant meets all 13 requirements for this listing. They are your top candidates to contact.</li>
+          <li><strong>Close</strong> — the applicant failed 1 or 2 checks. They may still be worth reaching out to depending on the situation.</li>
+          <li><strong>Fail</strong> — the applicant failed 3 or more checks. They do not qualify for this listing at this time.</li>
+        </ul>`
+      },
+      {
+        q: 'What is the star icon next to a candidate?',
+        a: 'The star marks the <strong>top-ranked</strong> Pass or Close candidate for a listing. Ranking is first come, first served based on submission date. The star moves to the next eligible person if the top-ranked candidate opts out or is moved to Matched status.'
+      },
+      {
+        q: 'What does "Opt Out" do?',
+        a: 'Clicking <strong>Opt Out</strong> records that this applicant has decided they are not interested in this specific property. They remain on the Interest List and stay eligible for other listings. Their place in line for other listings is unaffected. The star moves to the next eligible person for this listing.'
+      },
+      {
+        q: 'What does "Opt Back In" do?',
+        a: 'If an applicant opted out of a listing but changes their mind, clicking <strong>Opt Back In</strong> restores them to their original position in line for that listing. Their rank is based on their original submission date.'
+      },
+      {
+        q: 'How do I approve a match and log a success?',
+        a: 'Find the applicant in the Pass or Close section for a listing. Click <strong>Approve</strong>. This changes the applicant\'s status to Matched (removing them from future matching runs) and logs the placement in the Successes tab.'
+      },
+      {
+        q: 'Why does a listing show no candidates?',
+        a: 'Either no applicants have passed or come close to the requirements for that listing, or the matching engine has not run yet today. The engine runs automatically each morning. You can also trigger a manual run from the GitHub Actions dashboard if needed.'
+      },
+      {
+        q: 'Can I see what checks an applicant failed?',
+        a: 'Yes. Click the <strong>Details</strong> or expand icon on a candidate row to see a breakdown of which of the 13 checks they passed and which they failed.'
+      }
+    ]
+  },
+
+  successes: {
+    title: 'Successes',
+    intro: 'The Successes tab is a record of every applicant who has been successfully matched and placed in a home. It is your pipeline completion log.',
+    faq: [
+      {
+        q: 'How does a record get added here?',
+        a: 'A success record is created automatically when you click <strong>Approve</strong> on a candidate in the Matches tab. The applicant\'s status is changed to Matched and a log entry is created here with the date, name, and listing.'
+      },
+      {
+        q: 'Can I add notes to a success record?',
+        a: 'Yes. The Notes column shows any notes that were on the applicant\'s Interest List record at the time of approval. You can edit those notes in the Interest List tab before approving if you want to capture additional context.'
+      },
+      {
+        q: 'Can I delete a success record?',
+        a: 'Success records are intended as a permanent log. Contact your administrator if a record needs to be removed.'
+      }
+    ]
+  }
+}
+
+function openHelp() {
+  const activeTab = document.querySelector('.sb-btn.active[data-tab]')?.dataset.tab || 'dashboard'
+  const content = HELP_CONTENT[activeTab]
+  if (!content) return
+
+  document.getElementById('help-modal-title').textContent = content.title + ' - Help'
+
+  const faqHtml = content.faq.map(item => `
+    <details>
+      <summary>${esc(item.q)}</summary>
+      <div class="help-answer">${item.a}</div>
+    </details>
+  `).join('')
+
+  document.getElementById('help-modal-body').innerHTML = `
+    <div class="help-intro">${content.intro}</div>
+    <div class="help-faq-title">Frequently Asked Questions</div>
+    <div class="help-faq">${faqHtml}</div>
+  `
+
+  document.getElementById('help-modal-overlay').classList.add('active')
+}
+
+document.getElementById('help-btn').addEventListener('click', openHelp)
+document.getElementById('help-modal-close').addEventListener('click', () => {
+  document.getElementById('help-modal-overlay').classList.remove('active')
+})
+document.getElementById('help-modal-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('help-modal-overlay')) {
+    document.getElementById('help-modal-overlay').classList.remove('active')
+  }
+})
