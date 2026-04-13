@@ -176,7 +176,14 @@ textarea.form-input { resize: vertical; }
 .form-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .75rem; }
 .form-section-label {
   font-size: .72rem; font-weight: 600; text-transform: uppercase;
-  letter-spacing: .06em; color: var(--green); margin-bottom: .4rem;
+  letter-spacing: .06em; color: var(--green); margin-bottom: .6rem;
+}
+.form-section-rule {
+  border: none; border-top: 1px solid var(--border);
+  margin: 1.25rem 0 1.1rem;
+}
+.lst-prog-link-row {
+  display: flex; gap: .5rem; align-items: center;
 }
 
 /* ── Data table ── */

@@ -144,18 +144,6 @@
 <div id="toast-container"></div>
 
 <!-- ══════════════════════════════════════════════════════════
-     LISTING DRAWER
-══════════════════════════════════════════════════════════ -->
-<div id="lst-drawer-overlay" class="drawer-overlay"></div>
-<aside id="lst-drawer" class="side-drawer" aria-hidden="true">
-  <div class="drawer-header">
-    <h2 class="drawer-title" id="lst-drawer-title">Listing Details</h2>
-    <button class="drawer-close" id="lst-drawer-close" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
-  </div>
-  <div class="drawer-body" id="lst-drawer-body"></div>
-</aside>
-
-<!-- ══════════════════════════════════════════════════════════
      LISTING MODAL (add / edit)
 ══════════════════════════════════════════════════════════ -->
 <div id="lst-modal-overlay" class="modal-overlay">
@@ -165,9 +153,20 @@
       <button class="modal-close" id="lst-modal-close"><i class="fa-solid fa-xmark"></i></button>
     </div>
     <div class="modal-body">
+
+      <div class="form-section-label"><i class="fa-solid fa-globe" style="margin-right:.35rem;"></i>Site Program</div>
+      <div class="lst-prog-link-row">
+        <select id="lf-linked-prog" class="form-input" style="flex:1;min-width:0;">
+          <option value="">-- No program linked --</option>
+        </select>
+        <button class="btn-secondary btn-sm" id="lf-new-prog-btn" type="button" title="Create a new site program pre-filled from this listing"><i class="fa-solid fa-plus"></i> New Program</button>
+      </div>
+
+      <hr class="form-section-rule">
+
       <div class="form-section-label">Identity</div>
       <div class="form-row2">
-        <div class="form-group"><label for="lf-id">Property ID / Name *</label><input id="lf-id" class="form-input" placeholder="e.g. VILLA-001"></div>
+        <div class="form-group"><label for="lf-id">Property ID *</label><input id="lf-id" class="form-input" placeholder="e.g. VILLA-001"></div>
         <div class="form-group"><label for="lf-name">Display Name</label><input id="lf-name" class="form-input" placeholder="Villa Rosa"></div>
       </div>
       <div class="form-row3">
@@ -179,13 +178,16 @@
           <select id="lf-type" class="form-input"><option value="affordable">Affordable</option><option value="mls">MLS</option></select>
         </div>
       </div>
-      <div class="form-section-label" style="margin-top:1rem;">Property Details</div>
+
+      <hr class="form-section-rule">
+
+      <div class="form-section-label">Property Details</div>
       <div class="form-row2">
         <div class="form-group"><label for="lf-address">Address</label><input id="lf-address" class="form-input"></div>
         <div class="form-group"><label for="lf-city">City</label><input id="lf-city" class="form-input"></div>
       </div>
       <div class="form-row3">
-        <div class="form-group"><label for="lf-price">Price</label><input id="lf-price" class="form-input" placeholder="450000"></div>
+        <div class="form-group"><label for="lf-price">Price ($)</label><input id="lf-price" class="form-input" placeholder="450000"></div>
         <div class="form-group"><label for="lf-beds">Bedrooms</label><input id="lf-beds" class="form-input" type="number"></div>
         <div class="form-group"><label for="lf-baths">Bathrooms</label><input id="lf-baths" class="form-input" type="number" step="0.5"></div>
       </div>
@@ -193,7 +195,10 @@
         <div class="form-group"><label for="lf-sqft">Sqft</label><input id="lf-sqft" class="form-input" type="number"></div>
         <div class="form-group"><label for="lf-program-type">Program Type</label><input id="lf-program-type" class="form-input" placeholder="e.g. Below Market Rate"></div>
       </div>
-      <div class="form-section-label" style="margin-top:1rem;">Eligibility Requirements</div>
+
+      <hr class="form-section-rule">
+
+      <div class="form-section-label">Eligibility Requirements</div>
       <div class="form-row2">
         <div class="form-group"><label for="lf-ami">AMI %</label><input id="lf-ami" class="form-input" type="number" placeholder="80"></div>
         <div class="form-group"><label for="lf-credit">Min Credit Score</label><input id="lf-credit" class="form-input" type="number" placeholder="640"></div>
@@ -209,23 +214,26 @@
           <select id="lf-ftb" class="form-input"><option value="">N/A</option><option value="YES">Required</option><option value="NO">Not Required</option></select>
         </div>
       </div>
-      <div class="form-row2">
+      <div class="form-row3">
         <div class="form-group"><label for="lf-inc1">Max Income (1 person)</label><input id="lf-inc1" class="form-input" type="number"></div>
         <div class="form-group"><label for="lf-inc4">Max Income (4 person)</label><input id="lf-inc4" class="form-input" type="number"></div>
+        <div class="form-group"><label for="lf-inc6">Max Income (6 person)</label><input id="lf-inc6" class="form-input" type="number"></div>
       </div>
       <div class="form-row2">
-        <div class="form-group"><label for="lf-inc6">Max Income (6 person)</label><input id="lf-inc6" class="form-input" type="number"></div>
         <div class="form-group"><label for="lf-sdres">SD County Residency Required</label>
           <select id="lf-sdres" class="form-input"><option value="YES">YES</option><option value="NO">NO</option></select>
         </div>
       </div>
-      <div class="form-section-label" style="margin-top:1rem;">Notes</div>
+
+      <hr class="form-section-rule">
+
+      <div class="form-section-label">Notes</div>
       <div class="form-group"><label for="lf-prog-notes">Program Notes (visible in matching)</label><textarea id="lf-prog-notes" class="form-input" rows="2"></textarea></div>
       <div class="form-group"><label for="lf-int-notes">Internal Notes</label><textarea id="lf-int-notes" class="form-input" rows="2"></textarea></div>
+
     </div>
     <div class="modal-footer">
       <input type="hidden" id="lf-src-row">
-      <input type="hidden" id="lf-linked-prog">
       <button class="btn-secondary" id="lst-cancel-btn">Cancel</button>
       <button class="btn-primary" id="lst-save-btn"><i class="fa-solid fa-floppy-disk"></i> Save Listing</button>
     </div>

@@ -385,8 +385,6 @@ document.getElementById('lst-filter-bar').addEventListener('click', e => {
   renderListings()
 })
 document.getElementById('lst-add-btn').addEventListener('click', () => openLSTModal(null))
-document.getElementById('lst-drawer-close').addEventListener('click', closeLSTDrawer)
-document.getElementById('lst-drawer-overlay').addEventListener('click', closeLSTDrawer)
 document.getElementById('lst-cancel-btn').addEventListener('click', closeLSTModal)
 document.getElementById('lst-modal-close').addEventListener('click', closeLSTModal)
 
@@ -437,7 +435,6 @@ function renderListings() {
           ${progBadge}
         </div>
         <div class="prog-card-footer">
-          <button class="btn-secondary btn-sm" onclick="openLSTDrawer(${idx})"><i class="fa-solid fa-circle-info"></i> Details</button>
           <button class="btn-secondary btn-sm" onclick="openLSTModal(${idx})"><i class="fa-solid fa-pen"></i> Edit</button>
           <button class="btn-danger btn-sm" onclick="deleteListing(${idx})"><i class="fa-solid fa-trash"></i></button>
         </div>
@@ -445,151 +442,6 @@ function renderListings() {
     }).join('')}
   </div>`
   setArea('lst-area', html)
-}
-
-// ── Listing Drawer ────────────────────────────────────────────
-function openLSTDrawer(idx) {
-  const r = lstData[idx]
-  document.getElementById('lst-drawer-title').textContent = r.listing_name || r.listing_id || 'Listing Details'
-
-  // Site program section
-  let linkedProgIdx = -1
-  const currentLink = r.linked_program_id || ''
-  let progOpts = '<option value="-1">-- Select a program --</option>'
-  if (progData.length) {
-    progData.forEach((p, pi) => {
-      const selected = currentLink && p.community_name === currentLink
-      if (selected) linkedProgIdx = pi
-      progOpts += `<option value="${pi}"${selected ? ' selected' : ''}>${esc(p.community_name || 'Program ' + pi)}</option>`
-    })
-  }
-
-  // Linked listings for this program (shown in program card too)
-  const linkedListings = lstData.filter(l => l.linked_program_id && l.linked_program_id === currentLink && l.listing_id !== r.listing_id)
-
-  const siteSection = `<div class="drawer-action-row">
-    <div class="drawer-action-title"><i class="fa-solid fa-globe"></i> Site Program</div>
-    ${currentLink
-      ? `<div style="font-size:.84rem;color:#2c5545;margin-bottom:.55rem;"><i class="fa-solid fa-circle-check" style="margin-right:.35rem;"></i>Linked to: <strong>${esc(currentLink)}</strong></div>`
-      : `<div style="font-size:.82rem;color:#999;margin-bottom:.55rem;">Not linked to any site program</div>`}
-    <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;">
-      <select id="lst-prog-select" class="form-input" style="flex:1;min-width:160px;">${progOpts}</select>
-      <button class="btn-primary btn-sm" id="lst-link-btn"><i class="fa-solid fa-link"></i> Link</button>
-      ${linkedProgIdx >= 0 ? `<button class="btn-secondary btn-sm" id="lst-unlink-btn"><i class="fa-solid fa-unlink"></i> Unlink</button>` : ''}
-      <button class="btn-secondary btn-sm" id="lst-push-new-btn"><i class="fa-solid fa-plus"></i> New Program</button>
-    </div>
-  </div>`
-
-  // Fields display
-  const sections = [
-    { title: 'Eligibility', fields: [
-      ['Units Available', r.units_available !== null && r.units_available !== undefined ? String(r.units_available) : ''],
-      ['AMI %', r.ami_percent], ['Min Credit Score', r.min_credit_score],
-      ['Max DTI %', r.max_dti_percent], ['Max Monthly Debt', r.max_monthly_debt ? '$'+r.max_monthly_debt : ''],
-      ['Min Household', r.min_household_size], ['Max Household', r.max_household_size],
-      ['First-Time Buyer', r.first_time_buyer_required], ['SD County Residency', r.sd_county_residency_required],
-    ]},
-    { title: 'Income Limits', fields: [
-      ['1 Person', r.max_income_1person ? '$'+r.max_income_1person : ''],
-      ['4 Person', r.max_income_4person ? '$'+r.max_income_4person : ''],
-      ['6 Person', r.max_income_6person ? '$'+r.max_income_6person : ''],
-    ]},
-    { title: 'Program Notes', fields: [['', r.program_notes]] },
-  ]
-
-  let fieldsHtml = sections.map(sec => {
-    const rows = sec.fields.filter(([,v]) => v).map(([label, val]) =>
-      `<div class="field-row">
-        ${label ? `<span class="field-label">${esc(label)}</span>` : ''}
-        <span class="field-value">${esc(String(val))}</span>
-      </div>`
-    ).join('')
-    if (!rows) return ''
-    return `<div class="field-group"><div class="field-group-title">${esc(sec.title)}</div>${rows}</div>`
-  }).join('')
-
-  const activeSection = `<div>
-    <div class="field-group-title" style="border-radius:8px 8px 0 0;border:1px solid #f0f0eb;border-bottom:none;padding:.5rem .85rem;">Active for Matching</div>
-    <div style="border:1px solid #f0f0eb;border-radius:0 0 8px 8px;padding:.85rem;">
-      <div class="status-editor">
-        <select id="lst-active-select">
-          <option value="YES"${r.active === 'YES' ? ' selected' : ''}>YES - include in daily matching</option>
-          <option value="NO"${r.active !== 'YES' ? ' selected' : ''}>NO - exclude from matching</option>
-        </select>
-        <button class="btn-primary btn-sm" id="lst-active-save-btn"><i class="fa-solid fa-check"></i> Save</button>
-      </div>
-      <textarea class="notes-area" id="lst-note-input" placeholder="Add or edit internal notes...">${esc(r.internal_notes || '')}</textarea>
-      <button class="btn-secondary btn-sm" id="lst-notes-save-btn" style="margin-top:.5rem;"><i class="fa-solid fa-floppy-disk"></i> Save Notes</button>
-    </div>
-  </div>`
-
-  document.getElementById('lst-drawer-body').innerHTML = siteSection + activeSection + fieldsHtml
-
-  // Wire buttons
-  document.getElementById('lst-link-btn')?.addEventListener('click', async () => {
-    const sel = document.getElementById('lst-prog-select')
-    const pi = parseInt(sel.value, 10)
-    if (isNaN(pi) || pi < 0) { toast('Select a program first.', true); return }
-    const prog = progData[pi]
-    const { error } = await sb.from('listings').update({ linked_program_id: prog.community_name }).eq('id', r.id)
-    if (error) { toast(error.message, true); return }
-    r.linked_program_id = prog.community_name
-    toast('Linked to program.')
-    renderListings()
-    openLSTDrawer(idx)
-  })
-
-  document.getElementById('lst-unlink-btn')?.addEventListener('click', async () => {
-    if (!confirm('Remove this listing from its site program?')) return
-    const { error } = await sb.from('listings').update({ linked_program_id: null }).eq('id', r.id)
-    if (error) { toast(error.message, true); return }
-    r.linked_program_id = null
-    toast('Unlinked.')
-    renderListings()
-    openLSTDrawer(idx)
-  })
-
-  document.getElementById('lst-push-new-btn')?.addEventListener('click', () => {
-    switchTab('programs')
-    openProgModal(null, {
-      community_name: r.listing_name || r.listing_id || '',
-      area:           r.city || '',
-      program_type:   r.program_type || '',
-      ami_range:      r.ami_percent ? r.ami_percent + '% AMI' : '',
-      bedrooms:       r.bedrooms || '',
-      household_size_limit: r.max_household_size ? (r.min_household_size && r.min_household_size !== r.max_household_size ? `${r.min_household_size}-${r.max_household_size}` : r.max_household_size) : '',
-      first_time_buyer: r.first_time_buyer_required === 'YES' ? 'Required' : r.first_time_buyer_required === 'NO' ? 'Not Required' : '',
-      price_range:    r.price || '',
-      status:         'Available',
-      notes:          r.program_notes || '',
-      source_listing_id: r.listing_id || '',
-    })
-  })
-
-  document.getElementById('lst-active-save-btn')?.addEventListener('click', async () => {
-    const val = document.getElementById('lst-active-select').value
-    const { error } = await sb.from('listings').update({ active: val }).eq('id', r.id)
-    if (error) { toast(error.message, true); return }
-    r.active = val
-    toast('Active status saved.')
-    renderListings()
-  })
-
-  document.getElementById('lst-notes-save-btn')?.addEventListener('click', async () => {
-    const notes = document.getElementById('lst-note-input').value
-    const { error } = await sb.from('listings').update({ internal_notes: notes }).eq('id', r.id)
-    if (error) { toast(error.message, true); return }
-    r.internal_notes = notes
-    toast('Notes saved.')
-  })
-
-  document.getElementById('lst-drawer').setAttribute('aria-hidden', 'false')
-  document.getElementById('lst-drawer-overlay').classList.add('active')
-}
-
-function closeLSTDrawer() {
-  document.getElementById('lst-drawer').setAttribute('aria-hidden', 'true')
-  document.getElementById('lst-drawer-overlay').classList.remove('active')
 }
 
 // ── Listing Modal ─────────────────────────────────────────────
@@ -623,7 +475,39 @@ function openLSTModal(idx, prefill) {
   document.getElementById('lf-prog-notes').value  = p.program_notes || ''
   document.getElementById('lf-int-notes').value   = p.internal_notes || ''
   document.getElementById('lf-src-row').value     = p.source_submission_row || ''
-  document.getElementById('lf-linked-prog').value = p.linked_program_id || ''
+
+  // Populate site program dropdown from cached progData
+  const progSel = document.getElementById('lf-linked-prog')
+  progSel.innerHTML = '<option value="">-- No program linked --</option>'
+    + progData.map(pr =>
+        `<option value="${esc(pr.community_name || '')}">${esc(pr.community_name || 'Unnamed Program')}</option>`
+      ).join('')
+  progSel.value = p.linked_program_id || ''
+
+  // Wire "New Program" button — pre-fills the program form from this listing's data
+  document.getElementById('lf-new-prog-btn').onclick = () => {
+    closeLSTModal()
+    switchTab('programs')
+    openProgModal(null, {
+      community_name: p.listing_name || p.listing_id || '',
+      area:           p.city || '',
+      program_type:   p.program_type || '',
+      ami_range:      p.ami_percent ? p.ami_percent + '% AMI' : '',
+      bedrooms:       p.bedrooms || '',
+      household_size_limit: p.max_household_size
+        ? (p.min_household_size && p.min_household_size !== p.max_household_size
+            ? `${p.min_household_size}-${p.max_household_size}`
+            : p.max_household_size)
+        : '',
+      first_time_buyer: p.first_time_buyer_required === 'YES' ? 'Required'
+        : p.first_time_buyer_required === 'NO' ? 'Not Required' : '',
+      price_range:    p.price || '',
+      status:         'Available',
+      notes:          p.program_notes || '',
+      source_listing_id: p.listing_id || '',
+    })
+  }
+
   document.getElementById('lst-modal-overlay').classList.add('open')
 }
 
