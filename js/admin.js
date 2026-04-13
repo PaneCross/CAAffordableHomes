@@ -1248,12 +1248,18 @@ function renderMatches(listings, results, cands, il) {
     const passRows  = lstResults.filter(r => r.status === 'Pass')
     const closeRows = lstResults.filter(r => r.status === 'Close')
 
-    // Merge pass+close, sort by IL submitted_at ascending (earliest = highest priority)
+    // Merge pass+close, filter out matched/expired applicants, sort by submitted_at
     const allCandidates = [...passRows, ...closeRows].map(r => ({
       ...r,
       ilRow: ilByEmail[r.email] || null,
       cand:  candMap[candKey(lst.listing_id, r.email)] || null,
-    })).sort((a, b) => {
+    })).filter(item => {
+      // Always show approved candidates under their own listing
+      if (item.cand?.status === 'approved') return true
+      // Hide anyone whose IL status is no longer in the active pool
+      const s = item.ilRow?.status
+      return s !== 'matched' && s !== 'expired'
+    }).sort((a, b) => {
       const da = a.ilRow?.submitted_at || a.email
       const db = b.ilRow?.submitted_at || b.email
       return da < db ? -1 : da > db ? 1 : 0
@@ -1399,6 +1405,10 @@ async function approveCandidate(candId, listingId, listingName, email, fullName)
       approved_at:  new Date().toISOString(),
     })
     if (e4) throw e4
+
+    // 5. Remove match_results for all OTHER listings so they stop appearing
+    //    in the Matches tab. Their result for the approved listing stays intact.
+    await sb.from('match_results').delete().eq('email', email).neq('listing_id', listingId)
 
     toast(`${fullName || email} approved! Logged to Successes.`)
     lstData = []
