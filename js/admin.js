@@ -420,7 +420,8 @@ function renderListings() {
   let rows = lstData
   if (lstFilter === 'active')   rows = lstData.filter(r => r.active === 'YES')
   if (lstFilter === 'inactive') rows = lstData.filter(r => r.active !== 'YES')
-  if (lstFilter === 'on-site')  rows = lstData.filter(r => r.linked_program_id)
+  if (lstFilter === 'on-site')     rows = lstData.filter(r =>  r.linked_program_id)
+  if (lstFilter === 'not-on-site') rows = lstData.filter(r => !r.linked_program_id)
 
   if (!rows.length) { setArea('lst-area', emptyState('No listings match this filter.')); return }
 
@@ -1735,6 +1736,7 @@ const HELP_CONTENT = {
           <li><strong>In Matching</strong> — shows only active listings (default view).</li>
           <li><strong>Not Matching</strong> — shows only paused listings.</li>
           <li><strong>Program-Linked</strong> — shows only listings attached to a site program.</li>
+          <li><strong>Non Program-Linked</strong> — shows only listings not yet attached to any program.</li>
         </ul>`
       }
     ]
