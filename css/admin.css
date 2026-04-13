@@ -264,6 +264,13 @@ textarea.form-input { resize: vertical; }
 .lst-prog-link-row {
   display: flex; gap: .5rem; align-items: center;
 }
+.eligibility-helper {
+  font-size: .78rem; color: #5a7a6a; background: var(--green-bg);
+  border: 1px solid #c8e6d6; border-radius: 6px;
+  padding: .45rem .75rem; margin-bottom: .85rem;
+  display: flex; align-items: flex-start; gap: .4rem; line-height: 1.5;
+}
+.eligibility-helper i { margin-top: .1rem; flex-shrink: 0; }
 
 /* ── Data table ── */
 .data-table { width: 100%; border-collapse: collapse; font-size: .82rem; }

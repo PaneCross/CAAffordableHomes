@@ -105,22 +105,35 @@ Deno.serve(async (req) => {
 function evaluateApplicant(ap: Record<string, string>, req: Record<string, string>) {
   const failed: string[] = []
 
-  // 1 — Credit score
-  const minCredit = parseNum(req.min_credit_score, 640)
-  const selfScore = parseNum(ap.credit_score_self, null)
-  const coScore   = parseNum(ap.credit_score_coborrower, null)
-  const apCredit  = (selfScore !== null && coScore !== null) ? Math.min(selfScore, coScore)
-    : (selfScore ?? coScore)
-  if (apCredit !== null && apCredit < minCredit!) {
-    failed.push(`Credit score (${selfScore}${coScore !== null ? '/' + coScore : ''}, need ${minCredit}+)`)
+  // Helper: only true when a YES/NO field is explicitly set to YES.
+  // Empty/null/missing fields return false so the check is skipped entirely.
+  function isExplicitYes(v: unknown): boolean {
+    const s = String(v ?? '').trim().toLowerCase()
+    return s === 'yes' || s === 'true' || s === '1'
+  }
+  function isExplicitNo(v: unknown): boolean {
+    const s = String(v ?? '').trim().toLowerCase()
+    return s === 'no' || s === 'false' || s === '0'
   }
 
-  // 2 — First-time buyer
-  if (yesNo(req.first_time_buyer_required, 'yes') && yesNo(ap.owned_real_estate)) {
+  // 1 — Credit score (skipped if listing has no min_credit_score)
+  const minCredit = parseNum(req.min_credit_score, null)
+  if (minCredit !== null) {
+    const selfScore = parseNum(ap.credit_score_self, null)
+    const coScore   = parseNum(ap.credit_score_coborrower, null)
+    const apCredit  = (selfScore !== null && coScore !== null) ? Math.min(selfScore, coScore)
+      : (selfScore ?? coScore)
+    if (apCredit !== null && apCredit < minCredit) {
+      failed.push(`Credit score (${selfScore}${coScore !== null ? '/' + coScore : ''}, need ${minCredit}+)`)
+    }
+  }
+
+  // 2 — First-time buyer (skipped if listing field is blank)
+  if (isExplicitYes(req.first_time_buyer_required) && yesNo(ap.owned_real_estate)) {
     failed.push(`Owned real estate in last ${parseNum(req.no_ownership_years, 3)} years`)
   }
 
-  // 3 — Household size
+  // 3 — Household size (skipped if listing fields are blank)
   const hhSize = parseNum(ap.household_size, null)
   const minHH  = parseNum(req.min_household_size, null)
   const maxHH  = parseNum(req.max_household_size, null)
@@ -129,7 +142,7 @@ function evaluateApplicant(ap: Record<string, string>, req: Record<string, strin
     if (maxHH !== null && hhSize > maxHH) failed.push(`Household size too large (${hhSize}, max ${maxHH})`)
   }
 
-  // 4 — Income
+  // 4 — Income (skipped if listing has no income limits)
   const annualIncome = getApplicantIncome(ap)
   if (annualIncome !== null && hhSize !== null) {
     const sizeKey = `max_income_${Math.min(Math.max(Math.round(hhSize), 1), 6)}person`
@@ -139,20 +152,20 @@ function evaluateApplicant(ap: Record<string, string>, req: Record<string, strin
     if (minInc !== null && annualIncome < minInc) failed.push(`Income too low ($${fmt(annualIncome)}, min $${fmt(minInc)})`)
   }
 
-  // 5 — Monthly debt + DTI
+  // 5 — Monthly debt + DTI (each skipped independently if listing field is blank)
   const monthlyDebt = parseNum(ap.monthly_debt_payments, null)
   if (monthlyDebt !== null) {
     const maxDebt = parseNum(req.max_monthly_debt, null)
     if (maxDebt !== null && monthlyDebt > maxDebt) failed.push(`Monthly debt too high ($${fmt(monthlyDebt)}/mo, max $${fmt(maxDebt)})`)
-    const maxDTI = parseNum(req.max_dti_percent, 45)
+    const maxDTI = parseNum(req.max_dti_percent, null)
     if (maxDTI !== null && annualIncome !== null && annualIncome > 0) {
       const dti = (monthlyDebt / (annualIncome / 12)) * 100
       if (dti > maxDTI) failed.push(`DTI too high (${Math.round(dti)}%, max ${maxDTI}%)`)
     }
   }
 
-  // 6 — SD County residency
-  if (yesNo(req.sd_county_residency_required, 'yes')) {
+  // 6 — SD County residency (skipped if listing field is blank)
+  if (isExplicitYes(req.sd_county_residency_required)) {
     const sdMonths = parseNum(req.sd_residency_months, 24)!
     if (sdMonths >= 24) {
       if (!yesNo(ap.worked_lived_sd_2yr)) failed.push('SD County 2-year residency/work requirement not met')
@@ -161,21 +174,22 @@ function evaluateApplicant(ap: Record<string, string>, req: Record<string, strin
     }
   }
 
-  // 7 — Household together
-  if ((parseNum(req.household_together_months, 12) ?? 12) >= 12) {
+  // 7 — Household together (skipped if listing field is blank)
+  const hhTogetherMonths = parseNum(req.household_together_months, null)
+  if (hhTogetherMonths !== null && hhTogetherMonths >= 12) {
     if (!yesNo(ap.lived_together_12mo)) failed.push('Household not living together 12+ months')
   }
 
-  // 8 — SDHC
-  if (!yesNo(req.sdhc_prior_purchase_allowed, 'yes') && yesNo(ap.sdhc_prior_purchase)) {
+  // 8 — SDHC (skipped if blank; only fails if listing explicitly sets NO)
+  if (isExplicitNo(req.sdhc_prior_purchase_allowed) && yesNo(ap.sdhc_prior_purchase)) {
     failed.push('Prior SDHC affordable program participation')
   }
 
-  // 9 — Foreclosure
+  // 9 — Foreclosure (skipped if blank; only fails if listing explicitly sets NO)
   if (yesNo(ap.foreclosure)) {
-    if (!yesNo(req.foreclosure_allowed, 'yes')) {
+    if (isExplicitNo(req.foreclosure_allowed)) {
       failed.push('Prior foreclosure/short sale (not allowed)')
-    } else {
+    } else if (isExplicitYes(req.foreclosure_allowed)) {
       const fcMinYrs = parseNum(req.foreclosure_min_years, null)
       if (fcMinYrs !== null) {
         const fcYrs = yearsSince(ap.foreclosure_date)
@@ -184,11 +198,11 @@ function evaluateApplicant(ap: Record<string, string>, req: Record<string, strin
     }
   }
 
-  // 10 — Bankruptcy
+  // 10 — Bankruptcy (skipped if blank; only fails if listing explicitly sets NO)
   if (yesNo(ap.bankruptcy)) {
-    if (!yesNo(req.bankruptcy_allowed, 'yes')) {
+    if (isExplicitNo(req.bankruptcy_allowed)) {
       failed.push('Prior bankruptcy (not allowed)')
-    } else {
+    } else if (isExplicitYes(req.bankruptcy_allowed)) {
       const bkMinYrs = parseNum(req.bankruptcy_min_years, null)
       if (bkMinYrs !== null) {
         const bkYrs = yearsSince(ap.bankruptcy_discharge_date)
@@ -197,20 +211,20 @@ function evaluateApplicant(ap: Record<string, string>, req: Record<string, strin
     }
   }
 
-  // 11 — Judgments
-  if (!yesNo(req.judgments_allowed, 'yes') && yesNo(ap.judgments)) {
+  // 11 — Judgments (skipped if blank; only fails if listing explicitly sets NO)
+  if (isExplicitNo(req.judgments_allowed) && yesNo(ap.judgments)) {
     failed.push('Outstanding judgments/garnishments/liens')
   }
 
-  // 12 — Citizenship
-  if (yesNo(req.citizenship_required, 'yes')) {
+  // 12 — Citizenship (skipped if listing field is blank)
+  if (isExplicitYes(req.citizenship_required)) {
     const isCitizen = yesNo(ap.us_citizen)
     const isPR      = yesNo(ap.permanent_resident)
-    const prOK      = yesNo(req.permanent_resident_acceptable, 'yes')
+    const prOK      = isExplicitYes(req.permanent_resident_acceptable)
     if (!isCitizen && !(prOK && isPR)) failed.push('US citizenship or permanent residency required')
   }
 
-  // 13 — Assets
+  // 13 — Assets (skipped if listing has no asset limits)
   const totalAssets = getTotalAssets(ap)
   if (totalAssets !== null) {
     const minA = parseNum(req.min_assets, null)
