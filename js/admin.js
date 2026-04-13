@@ -152,54 +152,32 @@ document.getElementById('refresh-btn').addEventListener('click', () => {
 async function loadDashboard() {
   if (dashboardFetched) { renderDashboard(); return }
 
-  const t0 = Date.now()
-  const ms = () => `+${Math.round(Date.now() - t0)}ms`
+  // Show on-screen progress so we can see exactly which query stalls without DevTools.
+  const dashProgress = (step, label) => setArea('dashboard-area', `
+    <div class="loading-state">
+      <i class="fa-solid fa-circle-notch fa-spin"></i>
+      <p>Loading dashboard... (${step} of 4)</p>
+      <p style="font-size:.82rem;color:#aaa;margin-top:.2rem;">Waiting on: <strong>${label}</strong></p>
+      <p class="wake-hint">The database may be waking up — this usually resolves in 20-30 seconds.</p>
+    </div>`)
 
-  console.log('[dash] loadDashboard start')
-  setArea('dashboard-area', loading())
-
-  // Non-destructive fallback: show Retry after 45s without cancelling in-flight requests.
-  // If the requests complete after this fires, renderDashboard() will overwrite it.
-  const fallbackTimer = setTimeout(() => {
-    if (!dashboardFetched) {
-      console.warn('[dash] 45s elapsed — still waiting. Check console for which query stalled.')
-      setArea('dashboard-area', `
-        <div class="error-state">
-          <i class="fa-solid fa-clock" style="font-size:1.5rem;color:#aaa;"></i>
-          <p>Dashboard is taking unusually long.</p>
-          <p style="font-size:.82rem;color:#aaa;max-width:340px;line-height:1.5;">
-            Open the browser console (F12) and look for <strong>[dash]</strong> lines to see which query stalled.
-          </p>
-          <button class="btn-secondary" onclick="dashboardFetched=false;loadDashboard()" style="margin-top:.75rem;">
-            <i class="fa-solid fa-rotate-right"></i> Retry
-          </button>
-        </div>`)
-    }
-  }, 45000)
-
+  dashProgress(1, 'Interest List')
   try {
-    // Sequential queries — avoids connection pool exhaustion on cold start.
-    // (Four concurrent queries to a sleeping DB can all block waiting on each other.)
-    console.log('[dash] querying interest_list...')
+    // Sequential queries — avoids connection pool exhaustion during cold start.
     const ilRes = await sb.from('interest_list').select('*').order('submitted_at', { ascending: false })
-    console.log(`[dash] interest_list done ${ms()} —`, ilRes.error ? 'ERROR: ' + ilRes.error.message : `${ilRes.data?.length} rows`)
+    if (ilRes.error) throw ilRes.error
 
-    console.log('[dash] querying listings...')
+    dashProgress(2, 'Listings')
     const lstRes = await sb.from('listings').select('*').order('created_at', { ascending: false })
-    console.log(`[dash] listings done ${ms()} —`, lstRes.error ? 'ERROR: ' + lstRes.error.message : `${lstRes.data?.length} rows`)
+    if (lstRes.error) throw lstRes.error
 
-    console.log('[dash] querying programs...')
+    dashProgress(3, 'Programs')
     const progRes = await sb.from('programs').select('*').order('created_at', { ascending: false })
-    console.log(`[dash] programs done ${ms()} —`, progRes.error ? 'ERROR: ' + progRes.error.message : `${progRes.data?.length} rows`)
+    if (progRes.error) throw progRes.error
 
-    console.log('[dash] querying property_submissions...')
+    dashProgress(4, 'Property Submissions')
     const psRes = await sb.from('property_submissions').select('*').order('submitted_at', { ascending: false })
-    console.log(`[dash] property_submissions done ${ms()} —`, psRes.error ? 'ERROR: ' + psRes.error.message : `${psRes.data?.length} rows`)
-
-    clearTimeout(fallbackTimer)
-
-    if (ilRes.error || lstRes.error || progRes.error || psRes.error)
-      throw ilRes.error || lstRes.error || progRes.error || psRes.error
+    if (psRes.error) throw psRes.error
 
     ilData   = ilRes.data   || []
     lstData  = lstRes.data  || []
@@ -207,11 +185,8 @@ async function loadDashboard() {
     psData   = psRes.data   || []
     dashboardFetched = true
 
-    console.log(`[dash] rendering ${ms()}`)
     renderDashboard()
   } catch (err) {
-    clearTimeout(fallbackTimer)
-    console.error('[dash] caught error:', err)
     setArea('dashboard-area', errorState(err))
   }
 }
@@ -220,7 +195,7 @@ function renderDashboard() {
   const ilCounts   = countBy(ilData,   'status')
   const psCounts   = countBy(psData,   'status')
   const lstActive  = lstData.filter(r => r.active === 'YES').length
-  const lstOnSite  = lstData.filter(r => r.linked_program_id).length
+  const lstLinked  = lstData.filter(r => r.linked_program_id).length
   const progAvail  = progData.filter(r => r.status === 'Available').length
   const progSoon   = progData.filter(r => r.status === 'Coming Soon').length
   const psPromoted = psCounts['promoted'] || 0
@@ -237,8 +212,8 @@ function renderDashboard() {
       <div class="pipeline-stage" data-nav="listings">
         <div class="pipeline-icon"><i class="fa-solid fa-building"></i></div>
         <div class="pipeline-label">Listings</div>
-        <div class="pipeline-nums"><span class="pipeline-highlight">${lstActive}</span> active</div>
-        <div class="pipeline-nums">${lstData.length} total &bull; ${lstOnSite} on site</div>
+        <div class="pipeline-nums"><span class="pipeline-highlight">${lstActive}</span> in matching</div>
+        <div class="pipeline-nums">${lstData.length} total &bull; ${lstLinked} program-linked</div>
       </div>
       <div class="pipeline-arrow"><i class="fa-solid fa-chevron-right"></i></div>
       <div class="pipeline-stage" data-nav="programs">
@@ -466,7 +441,7 @@ function renderListings() {
             <div class="prog-card-name">${esc(r.listing_name || r.listing_id)}</div>
             <div class="prog-card-area"><i class="fa-solid fa-location-dot" style="color:#888;font-size:.75rem;margin-right:.3rem;"></i>${esc(r.city || r.address || '')}</div>
           </div>
-          <span class="status-pill ${r.active === 'YES' ? 'pill-active' : 'pill-expired'}" style="flex-shrink:0;">${r.active === 'YES' ? 'Active' : 'Inactive'}</span>
+          <span class="status-pill ${r.active === 'YES' ? 'pill-active' : 'pill-expired'}" style="flex-shrink:0;">${r.active === 'YES' ? 'In Matching' : 'Not Matching'}</span>
         </div>
         <div class="prog-card-body">
           ${r.ami_percent ? `<div class="prog-detail"><span class="prog-detail-label">AMI</span><span class="prog-detail-value">${esc(r.ami_percent)}%</span></div>` : ''}
