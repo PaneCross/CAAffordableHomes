@@ -1975,7 +1975,7 @@ const HELP_CONTENT = {
 
   programs: {
     title: 'Programs',
-    intro: 'Programs represent community developments, builder partnerships, or other housing initiatives. They appear on the public-facing website as program cards - they are the only content here that is shown to visitors on the site.',
+    intro: 'Programs represent community developments, builder partnerships, or other housing initiatives. They appear on the public-facing website as program cards - they are the only real estate content here that is shown to visitors on the site.',
     faq: [
       {
         q: 'What is the difference between a Program and a Listing?',
