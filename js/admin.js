@@ -1342,7 +1342,25 @@ function renderMatches(listings, results, cands, il) {
     </div>`
   }).filter(Boolean).join('')
 
+  // Remember which listing blocks are currently expanded so we can restore
+  // them after the re-render (e.g. after Start Review / Approve / Decline).
+  const openBlocks = new Set(
+    Array.from(document.querySelectorAll('[id^="match-body-"]'))
+      .filter(el => el.style.display !== 'none')
+      .map(el => el.id.replace('match-body-', ''))
+  )
+
   setArea('matches-area', html || emptyState('No Pass or Close matches found for active listings. Run the match engine to populate results.'))
+
+  // Re-expand any blocks that were open before the re-render
+  openBlocks.forEach(blockId => {
+    const body    = document.getElementById('match-body-'    + blockId)
+    const chevron = document.getElementById('match-chevron-' + blockId)
+    if (body) {
+      body.style.display      = 'block'
+      if (chevron) chevron.style.transform = 'rotate(180deg)'
+    }
+  })
 }
 
 function toggleMatchBlock(blockId) {
