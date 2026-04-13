@@ -152,14 +152,51 @@ document.getElementById('refresh-btn').addEventListener('click', () => {
 async function loadDashboard() {
   if (dashboardFetched) { renderDashboard(); return }
 
+  const t0 = Date.now()
+  const ms = () => `+${Math.round(Date.now() - t0)}ms`
+
+  console.log('[dash] loadDashboard start')
   setArea('dashboard-area', loading())
+
+  // Non-destructive fallback: show Retry after 45s without cancelling in-flight requests.
+  // If the requests complete after this fires, renderDashboard() will overwrite it.
+  const fallbackTimer = setTimeout(() => {
+    if (!dashboardFetched) {
+      console.warn('[dash] 45s elapsed — still waiting. Check console for which query stalled.')
+      setArea('dashboard-area', `
+        <div class="error-state">
+          <i class="fa-solid fa-clock" style="font-size:1.5rem;color:#aaa;"></i>
+          <p>Dashboard is taking unusually long.</p>
+          <p style="font-size:.82rem;color:#aaa;max-width:340px;line-height:1.5;">
+            Open the browser console (F12) and look for <strong>[dash]</strong> lines to see which query stalled.
+          </p>
+          <button class="btn-secondary" onclick="dashboardFetched=false;loadDashboard()" style="margin-top:.75rem;">
+            <i class="fa-solid fa-rotate-right"></i> Retry
+          </button>
+        </div>`)
+    }
+  }, 45000)
+
   try {
-    const [ilRes, lstRes, progRes, psRes] = await Promise.all([
-      sb.from('interest_list').select('*').order('submitted_at', { ascending: false }),
-      sb.from('listings').select('*').order('created_at', { ascending: false }),
-      sb.from('programs').select('*').order('created_at', { ascending: false }),
-      sb.from('property_submissions').select('*').order('submitted_at', { ascending: false }),
-    ])
+    // Sequential queries — avoids connection pool exhaustion on cold start.
+    // (Four concurrent queries to a sleeping DB can all block waiting on each other.)
+    console.log('[dash] querying interest_list...')
+    const ilRes = await sb.from('interest_list').select('*').order('submitted_at', { ascending: false })
+    console.log(`[dash] interest_list done ${ms()} —`, ilRes.error ? 'ERROR: ' + ilRes.error.message : `${ilRes.data?.length} rows`)
+
+    console.log('[dash] querying listings...')
+    const lstRes = await sb.from('listings').select('*').order('created_at', { ascending: false })
+    console.log(`[dash] listings done ${ms()} —`, lstRes.error ? 'ERROR: ' + lstRes.error.message : `${lstRes.data?.length} rows`)
+
+    console.log('[dash] querying programs...')
+    const progRes = await sb.from('programs').select('*').order('created_at', { ascending: false })
+    console.log(`[dash] programs done ${ms()} —`, progRes.error ? 'ERROR: ' + progRes.error.message : `${progRes.data?.length} rows`)
+
+    console.log('[dash] querying property_submissions...')
+    const psRes = await sb.from('property_submissions').select('*').order('submitted_at', { ascending: false })
+    console.log(`[dash] property_submissions done ${ms()} —`, psRes.error ? 'ERROR: ' + psRes.error.message : `${psRes.data?.length} rows`)
+
+    clearTimeout(fallbackTimer)
 
     if (ilRes.error || lstRes.error || progRes.error || psRes.error)
       throw ilRes.error || lstRes.error || progRes.error || psRes.error
@@ -170,8 +207,11 @@ async function loadDashboard() {
     psData   = psRes.data   || []
     dashboardFetched = true
 
+    console.log(`[dash] rendering ${ms()}`)
     renderDashboard()
   } catch (err) {
+    clearTimeout(fallbackTimer)
+    console.error('[dash] caught error:', err)
     setArea('dashboard-area', errorState(err))
   }
 }
