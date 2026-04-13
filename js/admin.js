@@ -74,7 +74,12 @@ function showApp(session) {
   document.getElementById('sb-user-email').textContent = session.user.email
   if (!appInitialized) {
     appInitialized = true
-    loadActiveTab()
+    // Use switchTab so the correct panel is shown AND its data is loaded.
+    // loadActiveTab alone loads data but never hides the default dashboard panel,
+    // so if the URL hash was #listings the user would see the dashboard baked-in
+    // spinner forever while listings data loaded silently in the background.
+    const initialTab = location.hash.replace('#', '') || 'dashboard'
+    switchTab(initialTab)
   }
 }
 
