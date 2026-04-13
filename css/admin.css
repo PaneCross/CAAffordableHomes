@@ -334,11 +334,11 @@ textarea.form-input { resize: vertical; }
 .prog-detail-label { color: var(--muted); }
 .prog-detail-value { font-weight: 500; }
 .lst-card-notes {
-  font-size: .75rem; color: #777; font-style: italic;
-  margin: .45rem 0 .3rem; line-height: 1.4;
-  display: flex; gap: .3rem; align-items: flex-start;
+  font-size: .78rem; color: #888;
+  background: rgba(0,0,0,.04); border-radius: 6px;
+  padding: .45rem .6rem; margin-top: .2rem; margin-bottom: .3rem;
+  line-height: 1.4;
 }
-.lst-card-notes i { color: #b0b0a8; margin-top: .1rem; flex-shrink: 0; }
 .prog-link-note { font-size: .76rem; color: var(--green); margin-top: .5rem; display: flex; align-items: center; gap: .35rem; }
 .prog-badge { display: inline-block; background: var(--green-bg); color: var(--green); font-size: .72rem; font-weight: 600; padding: .18rem .5rem; border-radius: 12px; margin-top: .35rem; }
 

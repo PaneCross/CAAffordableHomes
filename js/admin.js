@@ -442,7 +442,7 @@ function renderListings() {
           ${r.ami_percent ? `<div class="prog-detail"><span class="prog-detail-label">AMI</span><span class="prog-detail-value">${esc(r.ami_percent)}%</span></div>` : ''}
           ${r.price ? `<div class="prog-detail"><span class="prog-detail-label"><i class="fa-solid fa-tag" style="width:14px;color:#888;margin-right:.3rem;"></i>Price</span><span class="prog-detail-value">$${esc(r.price)}</span></div>` : ''}
           ${r.bedrooms ? `<div class="prog-detail"><span class="prog-detail-label"><i class="fa-solid fa-bed" style="width:14px;color:#888;margin-right:.3rem;"></i>Beds</span><span class="prog-detail-value">${esc(r.bedrooms)}</span></div>` : ''}
-          ${r.internal_notes ? `<div class="lst-card-notes"><i class="fa-solid fa-note-sticky"></i> ${esc(r.internal_notes)}</div>` : ''}
+          ${r.internal_notes ? `<div class="lst-card-notes">${esc(r.internal_notes)}</div>` : ''}
           ${progBadge}
         </div>
         <div class="prog-card-footer">
