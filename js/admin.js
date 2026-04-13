@@ -1254,23 +1254,44 @@ function renderMatches(listings, results, cands, il, openBlocks = new Set()) {
 
     if (!allCandidates.length) return ''
 
+    // Split into active queue and opted-out (approved always stays in active)
+    const activeCandidates   = allCandidates.filter(item => !item.opted_out || item.cand?.status === 'approved')
+    const optedOutCandidates = allCandidates.filter(item => item.opted_out && item.cand?.status !== 'approved')
+
     const unitsHtml = lst.units_available !== null && lst.units_available !== undefined
       ? `<span class="units-badge">${lst.units_available} unit${lst.units_available !== 1 ? 's' : ''} left</span>`
       : ''
 
-    const rows = allCandidates.map((item, i) => {
+    const buildRow = (item, rank, isOptedOut) => {
       const r   = item
-      const il  = item.ilRow
+      const ilR = item.ilRow
       const cnd = item.cand
-      const rank = i + 1
-      const isPass  = r.status === 'Pass'
+      const isPass = r.status === 'Pass'
       const statusBadge = isPass
         ? '<span class="match-badge match-pass">Pass</span>'
         : '<span class="match-badge match-close">Close</span>'
+      const failDetail = r.failed_fields
+        ? `<div style="font-size:.72rem;color:#999;margin-top:.2rem;">${esc(r.failed_fields)}</div>` : ''
+
+      if (isOptedOut) {
+        return `<tr class="match-row-opted-out">
+          <td class="match-rank">-</td>
+          <td><strong>${esc(r.full_name || r.email)}</strong><br><span style="font-size:.78rem;">${esc(r.email)}</span></td>
+          <td>${ilR ? fmtDate(ilR.submitted_at) : ''}</td>
+          <td>${ilR ? (ilR.credit_score_self || '') : ''}</td>
+          <td>${ilR ? (ilR.household_size || '') : ''}</td>
+          <td>${statusBadge} <span class="match-badge match-opted-out">Opted Out</span></td>
+          <td><div class="action-cell">
+            <button class="btn-secondary btn-xs" onclick="optIn('${esc(lst.listing_id)}','${esc(r.email)}')"><i class="fa-solid fa-rotate-left"></i> Opt Back In</button>
+          </div></td>
+        </tr>`
+      }
 
       let actionHtml
       if (!cnd) {
-        actionHtml = `<button class="btn-primary btn-xs" onclick="startReview('${esc(lst.listing_id)}','${esc(r.email)}')"><i class="fa-solid fa-magnifying-glass"></i> Start Review</button>`
+        actionHtml = `
+          <button class="btn-primary btn-xs" onclick="startReview('${esc(lst.listing_id)}','${esc(r.email)}')"><i class="fa-solid fa-magnifying-glass"></i> Start Review</button>
+          <button class="btn-secondary btn-xs" onclick="optOut('${esc(lst.listing_id)}','${esc(r.email)}')"><i class="fa-solid fa-ban"></i> Opt Out</button>`
       } else if (cnd.status === 'in_review') {
         actionHtml = `
           <span class="status-pill pill-reviewing" style="margin-right:.35rem;">In Review</span>
@@ -1285,19 +1306,25 @@ function renderMatches(listings, results, cands, il, openBlocks = new Set()) {
           <button class="btn-secondary btn-xs" onclick="startReview('${esc(lst.listing_id)}','${esc(r.email)}')"><i class="fa-solid fa-rotate-left"></i> Re-assign</button>`
       }
 
-      const failDetail = r.failed_fields
-        ? `<div style="font-size:.72rem;color:#999;margin-top:.2rem;">${esc(r.failed_fields)}</div>` : ''
-
-      return `<tr class="${isPass ? 'match-row-pass' : 'match-row-close'}${rank === 1 && !cnd ? ' match-priority' : ''}">
-        <td class="match-rank">#${rank}${rank === 1 ? ' <span class="priority-star" title="Next in line">★</span>' : ''}</td>
+      const isStar = rank === 1 && !cnd
+      return `<tr class="${isPass ? 'match-row-pass' : 'match-row-close'}${isStar ? ' match-priority' : ''}">
+        <td class="match-rank">#${rank}${isStar ? ' <span class="priority-star" title="Next in line">★</span>' : ''}</td>
         <td><strong>${esc(r.full_name || r.email)}</strong><br><span style="font-size:.78rem;color:#888;">${esc(r.email)}</span></td>
-        <td>${il ? fmtDate(il.submitted_at) : ''}</td>
-        <td>${il ? (il.credit_score_self || '') : ''}</td>
-        <td>${il ? (il.household_size || '') : ''}</td>
+        <td>${ilR ? fmtDate(ilR.submitted_at) : ''}</td>
+        <td>${ilR ? (ilR.credit_score_self || '') : ''}</td>
+        <td>${ilR ? (ilR.household_size || '') : ''}</td>
         <td>${statusBadge}${failDetail}</td>
         <td><div class="action-cell">${actionHtml}</div></td>
       </tr>`
-    }).join('')
+    }
+
+    const activeRows = activeCandidates.map((item, i) => buildRow(item, i + 1, false)).join('')
+
+    const optedOutSection = optedOutCandidates.length ? `
+      <tr class="match-opted-out-divider">
+        <td colspan="7">Opted out of this property (${optedOutCandidates.length})</td>
+      </tr>
+      ${optedOutCandidates.map(item => buildRow(item, 0, true)).join('')}` : ''
 
     const blockId = esc(lst.listing_id).replace(/[^a-zA-Z0-9]/g, '-')
     return `<div class="match-listing-block">
@@ -1323,7 +1350,7 @@ function renderMatches(listings, results, cands, il, openBlocks = new Set()) {
             <th>Match</th>
             <th>Actions</th>
           </tr></thead>
-          <tbody>${rows}</tbody>
+          <tbody>${activeRows}${optedOutSection}</tbody>
         </table>
       </div>
     </div>`
@@ -1419,6 +1446,26 @@ async function declineCandidate(candId) {
   const { error } = await sb.from('listing_candidates').update({ status: 'declined' }).eq('id', candId)
   if (error) { toast(error.message, true); return }
   toast('Candidate declined.')
+  loadMatches()
+}
+
+async function optOut(listingId, email) {
+  const { error } = await sb.from('match_results')
+    .update({ opted_out: true })
+    .eq('listing_id', listingId)
+    .eq('email', email)
+  if (error) { toast(error.message, true); return }
+  toast('Applicant opted out of this property. Their spot in line is preserved.')
+  loadMatches()
+}
+
+async function optIn(listingId, email) {
+  const { error } = await sb.from('match_results')
+    .update({ opted_out: false })
+    .eq('listing_id', listingId)
+    .eq('email', email)
+  if (error) { toast(error.message, true); return }
+  toast('Applicant opted back in. They are restored to their original position.')
   loadMatches()
 }
 

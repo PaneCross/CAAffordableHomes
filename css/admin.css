@@ -380,13 +380,16 @@ textarea.form-input { resize: vertical; }
   display: inline-block; border-radius: 20px;
   padding: .15rem .55rem; font-size: .72rem; font-weight: 600;
 }
-.match-badge.match-pass  { background: #e8f5e9; color: #2e7d32; }
-.match-badge.match-close { background: #fff8e1; color: #7a5800; }
+.match-badge.match-pass      { background: #e8f5e9; color: #2e7d32; }
+.match-badge.match-close     { background: #fff8e1; color: #7a5800; }
+.match-badge.match-opted-out { background: #f0f0ed; color: #999; }
 .match-row-pass  td { background: #fafffe; }
 .match-row-close td { background: #fffdf5; }
+.match-row-opted-out td { background: #fafaf8; opacity: .65; }
 .match-priority td { border-left: 3px solid var(--green); }
 .match-rank { font-weight: 700; font-size: .82rem; white-space: nowrap; }
 .priority-star { color: var(--green); font-size: .85rem; }
+.match-opted-out-divider td { padding: .4rem .75rem; font-size: .75rem; color: #bbb; border-top: 1px dashed #e8e8e3; background: #fafaf8; }
 .btn-danger {
   background: var(--red); color: #fff; border: none;
   border-radius: var(--radius); cursor: pointer; font-weight: 500;
