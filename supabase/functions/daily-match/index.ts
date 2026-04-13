@@ -1,7 +1,7 @@
-// daily-match Edge Function
+// weekly-match Edge Function (formerly daily-match - keep function name for deploy compatibility)
 // Runs the matching engine: evaluates all active applicants against all active listings
-// Writes results to match_results table, sends daily digest email to team
-// Triggered by GitHub Actions cron at 6 AM daily
+// Writes results to match_results table, sends weekly digest email to team every Monday
+// Triggered by GitHub Actions cron at 6 AM PST every Monday
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -26,67 +26,89 @@ Deno.serve(async (req) => {
   const supabase = createClient(SUPABASE_URL, SERVICE_KEY)
 
   try {
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+
     // Load active listings
     const { data: listings, error: lstErr } = await supabase
       .from('listings')
       .select('*')
       .eq('active', 'YES')
     if (lstErr) throw lstErr
-    if (!listings || listings.length === 0) {
-      return new Response(JSON.stringify({ ok: true, message: 'No active listings' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
 
-    // Load eligible applicants
+    // Load eligible applicants (for matching)
     const { data: applicants, error: apErr } = await supabase
       .from('interest_list')
       .select('*')
       .in('status', ['new', 'reviewing', 'active'])
     if (apErr) throw apErr
-    if (!applicants || applicants.length === 0) {
-      return new Response(JSON.stringify({ ok: true, message: 'No eligible applicants' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
 
+    // Pipeline stats (run in parallel, fail gracefully)
+    const [ilAllRes, ilNewRes, psNewRes, successesRes] = await Promise.all([
+      supabase.from('interest_list').select('status'),
+      supabase.from('interest_list').select('id').gte('submitted_at', weekAgo),
+      supabase.from('property_submissions').select('id').gte('created_at', weekAgo),
+      supabase.from('successes').select('*', { count: 'exact', head: true }),
+    ])
+
+    // Count applicants by status
+    const statusCounts: Record<string, number> = {}
+    if (ilAllRes.data) {
+      for (const row of ilAllRes.data) {
+        statusCounts[row.status] = (statusCounts[row.status] || 0) + 1
+      }
+    }
+    const newApplicantsThisWeek = ilNewRes.data?.length ?? 0
+    const newSubmissionsThisWeek = psNewRes.data?.length ?? 0
+    const totalSuccesses = successesRes.count ?? 0
+    const activeListingsCount = listings?.length ?? 0
+
+    // Run matching engine
     const results: Array<{
       listing_id: string; email: string; full_name: string; status: string; failed_fields: string
     }> = []
 
-    for (const listing of listings) {
-      for (const ap of applicants) {
-        const { status, failedFields } = evaluateApplicant(ap, listing)
-        results.push({
-          listing_id:   listing.listing_id,
-          email:        ap.email,
-          full_name:    ap.full_name || ap.email,
-          status,
-          failed_fields: failedFields.join(' | '),
-        })
+    if (listings && listings.length > 0 && applicants && applicants.length > 0) {
+      for (const listing of listings) {
+        for (const ap of applicants) {
+          const { status, failedFields } = evaluateApplicant(ap, listing)
+          results.push({
+            listing_id:    listing.listing_id,
+            email:         ap.email,
+            full_name:     ap.full_name || ap.email,
+            status,
+            failed_fields: failedFields.join(' | '),
+          })
+        }
+      }
+
+      if (results.length > 0) {
+        const { error: upsertErr } = await supabase
+          .from('match_results')
+          .upsert(results, { onConflict: 'listing_id,email' })
+        if (upsertErr) throw upsertErr
       }
     }
 
-    // Upsert all results
-    if (results.length > 0) {
-      const { error: upsertErr } = await supabase
-        .from('match_results')
-        .upsert(results, { onConflict: 'listing_id,email' })
-      if (upsertErr) throw upsertErr
-    }
-
-    // Count Pass/Close for digest
     const passCount  = results.filter(r => r.status === 'Pass').length
     const closeCount = results.filter(r => r.status === 'Close').length
 
-    if (passCount + closeCount > 0) {
-      await sendDigestEmail(results, listings, passCount, closeCount)
-    }
+    // Always send weekly digest (even when no matches - it's a status check-in)
+    await sendWeeklyDigest({
+      results,
+      listings: listings ?? [],
+      passCount,
+      closeCount,
+      statusCounts,
+      newApplicantsThisWeek,
+      newSubmissionsThisWeek,
+      totalSuccesses,
+      activeListingsCount,
+    })
 
     return new Response(JSON.stringify({
       ok: true,
-      listings: listings.length,
-      applicants: applicants.length,
+      listings: activeListingsCount,
+      applicants: applicants?.length ?? 0,
       results: results.length,
       pass: passCount,
       close: closeCount,
@@ -280,65 +302,165 @@ function yearsSince(dateStr: unknown): number | null {
 
 function fmt(n: number): string { return Math.round(n).toLocaleString() }
 
-// ── Digest email ───────────────────────────────────────────────
+// ── Weekly Digest Email ─────────────────────────────────────────
 
-async function sendDigestEmail(
-  results: Array<{ listing_id: string; email: string; full_name: string; status: string; failed_fields: string }>,
-  listings: Array<Record<string, string>>,
-  passCount: number,
+interface DigestPayload {
+  results: Array<{ listing_id: string; email: string; full_name: string; status: string; failed_fields: string }>
+  listings: Array<Record<string, string>>
+  passCount: number
   closeCount: number
-) {
-  const date = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' })
-  const subject = `[CA Affordable Homes] Daily Match Report - ${date} (${passCount} Pass, ${closeCount} Close)`
+  statusCounts: Record<string, number>
+  newApplicantsThisWeek: number
+  newSubmissionsThisWeek: number
+  totalSuccesses: number
+  activeListingsCount: number
+}
+
+async function sendWeeklyDigest(payload: DigestPayload) {
+  const {
+    results, listings, passCount, closeCount,
+    statusCounts, newApplicantsThisWeek, newSubmissionsThisWeek,
+    totalSuccesses, activeListingsCount,
+  } = payload
+
+  const now = new Date()
+  const dateStr = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  const subject = `[CA Affordable Homes] Weekly Digest - ${dateStr}`
 
   const listingMap: Record<string, string> = {}
   listings.forEach(l => { listingMap[l.listing_id] = l.listing_name || l.listing_id })
 
-  const passRows = results.filter(r => r.status === 'Pass')
+  const passRows  = results.filter(r => r.status === 'Pass')
   const closeRows = results.filter(r => r.status === 'Close')
 
   function tableRows(rows: typeof passRows) {
     return rows.map(r =>
       `<tr>
-        <td style="padding:6px 8px;border-bottom:1px solid #f0f0f0;">${escHtml(r.full_name)}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid #f0f0f0;"><a href="mailto:${escHtml(r.email)}">${escHtml(r.email)}</a></td>
-        <td style="padding:6px 8px;border-bottom:1px solid #f0f0f0;">${escHtml(listingMap[r.listing_id] || r.listing_id)}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid #f0f0f0;font-size:12px;color:#666;">${escHtml(r.failed_fields || '')}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #f0f0f0;">${escHtml(r.full_name)}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #f0f0f0;"><a href="mailto:${escHtml(r.email)}" style="color:#2c5545;">${escHtml(r.email)}</a></td>
+        <td style="padding:6px 10px;border-bottom:1px solid #f0f0f0;">${escHtml(listingMap[r.listing_id] || r.listing_id)}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #f0f0f0;font-size:12px;color:#888;">${escHtml(r.failed_fields || '')}</td>
       </tr>`
     ).join('')
   }
 
+  // Pipeline status counts
+  const inMatching   = (statusCounts['new'] ?? 0) + (statusCounts['reviewing'] ?? 0) + (statusCounts['active'] ?? 0)
+  const totalMatched = statusCounts['matched'] ?? 0
+  const totalExpired = statusCounts['expired'] ?? 0
+  const totalAll     = Object.values(statusCounts).reduce((a, b) => a + b, 0)
+
+  function statBox(label: string, value: string | number, sub?: string) {
+    return `<td style="padding:0 8px;text-align:center;vertical-align:top;">
+      <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:14px 20px;min-width:100px;">
+        <div style="font-size:28px;font-weight:700;color:#2c5545;line-height:1;">${value}</div>
+        <div style="font-size:12px;color:#666;margin-top:4px;text-transform:uppercase;letter-spacing:0.05em;">${label}</div>
+        ${sub ? `<div style="font-size:11px;color:#aaa;margin-top:2px;">${sub}</div>` : ''}
+      </div>
+    </td>`
+  }
+
+  const matchSection = (passRows.length + closeRows.length) > 0 ? `
+    ${passRows.length ? `
+    <h3 style="color:#2c7a4b;margin:28px 0 10px;font-size:15px;">Pass (${passRows.length})</h3>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead><tr style="background:#f0f8f4;">
+        <th style="padding:6px 10px;text-align:left;font-weight:600;">Name</th>
+        <th style="padding:6px 10px;text-align:left;font-weight:600;">Email</th>
+        <th style="padding:6px 10px;text-align:left;font-weight:600;">Listing</th>
+        <th style="padding:6px 10px;text-align:left;font-weight:600;">Failed Fields</th>
+      </tr></thead>
+      <tbody>${tableRows(passRows)}</tbody>
+    </table>` : ''}
+    ${closeRows.length ? `
+    <h3 style="color:#b07a00;margin:28px 0 10px;font-size:15px;">Close (${closeRows.length})</h3>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead><tr style="background:#fdf8ec;">
+        <th style="padding:6px 10px;text-align:left;font-weight:600;">Name</th>
+        <th style="padding:6px 10px;text-align:left;font-weight:600;">Email</th>
+        <th style="padding:6px 10px;text-align:left;font-weight:600;">Listing</th>
+        <th style="padding:6px 10px;text-align:left;font-weight:600;">Failed Fields</th>
+      </tr></thead>
+      <tbody>${tableRows(closeRows)}</tbody>
+    </table>` : ''}
+  ` : `<p style="color:#888;font-size:14px;font-style:italic;">No Pass or Close matches this week.</p>`
+
   const html = `
-    <div style="font-family:Arial,sans-serif;max-width:800px;margin:0 auto;color:#333;">
-      <div style="background:#2c5545;padding:16px 24px;">
-        <h2 style="color:#fff;margin:0;font-size:18px;">Daily Match Report - ${escHtml(date)}</h2>
+  <div style="font-family:Arial,sans-serif;max-width:820px;margin:0 auto;color:#333;">
+
+    <!-- Header -->
+    <div style="background:#2c5545;padding:20px 28px;">
+      <h2 style="color:#fff;margin:0;font-size:20px;font-weight:600;">CA Affordable Homes - Weekly Digest</h2>
+      <p style="color:#a8c5b5;margin:4px 0 0;font-size:13px;">${escHtml(dateStr)}</p>
+    </div>
+
+    <div style="padding:28px;">
+
+      <!-- Pipeline Snapshot -->
+      <h3 style="font-size:13px;text-transform:uppercase;letter-spacing:0.08em;color:#999;margin:0 0 14px;font-weight:600;">Pipeline Snapshot</h3>
+      <table style="border-collapse:separate;border-spacing:8px 0;margin-bottom:8px;">
+        <tr>
+          ${statBox('Total Applicants', totalAll)}
+          ${statBox('In Matching', inMatching, 'new + reviewing + active')}
+          ${statBox('New This Week', newApplicantsThisWeek)}
+          ${statBox('Active Listings', activeListingsCount)}
+          ${statBox('Total Successes', totalSuccesses)}
+        </tr>
+      </table>
+
+      <!-- Applicant Status Breakdown -->
+      <div style="margin:24px 0;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px 20px;">
+        <div style="font-size:12px;text-transform:uppercase;letter-spacing:0.07em;color:#999;margin-bottom:10px;font-weight:600;">Applicants by Status</div>
+        <table style="border-collapse:collapse;font-size:13px;width:100%;">
+          <tr>
+            <td style="padding:3px 0;color:#555;">New</td>
+            <td style="padding:3px 0;font-weight:600;text-align:right;">${statusCounts['new'] ?? 0}</td>
+          </tr>
+          <tr>
+            <td style="padding:3px 0;color:#555;">Reviewing</td>
+            <td style="padding:3px 0;font-weight:600;text-align:right;">${statusCounts['reviewing'] ?? 0}</td>
+          </tr>
+          <tr>
+            <td style="padding:3px 0;color:#555;">Active</td>
+            <td style="padding:3px 0;font-weight:600;text-align:right;">${statusCounts['active'] ?? 0}</td>
+          </tr>
+          <tr style="border-top:1px solid #e5e7eb;">
+            <td style="padding:6px 0 3px;color:#555;">Matched</td>
+            <td style="padding:6px 0 3px;font-weight:600;text-align:right;">${totalMatched}</td>
+          </tr>
+          <tr>
+            <td style="padding:3px 0;color:#555;">Expired</td>
+            <td style="padding:3px 0;font-weight:600;text-align:right;">${totalExpired}</td>
+          </tr>
+        </table>
       </div>
-      <div style="padding:24px;">
-        <p style="font-size:15px;"><strong>${passCount} Pass</strong> &bull; <strong>${closeCount} Close</strong></p>
-        ${passRows.length ? `
-        <h3 style="color:#2c7a4b;margin-top:24px;">Pass (${passRows.length})</h3>
-        <table style="width:100%;border-collapse:collapse;font-size:13px;">
-          <thead><tr style="background:#f0f8f4;">
-            <th style="padding:6px 8px;text-align:left;">Name</th>
-            <th style="padding:6px 8px;text-align:left;">Email</th>
-            <th style="padding:6px 8px;text-align:left;">Listing</th>
-            <th style="padding:6px 8px;text-align:left;">Failed Fields</th>
-          </tr></thead>
-          <tbody>${tableRows(passRows)}</tbody>
-        </table>` : ''}
-        ${closeRows.length ? `
-        <h3 style="color:#b07a00;margin-top:24px;">Close (${closeRows.length})</h3>
-        <table style="width:100%;border-collapse:collapse;font-size:13px;">
-          <thead><tr style="background:#fdf8ec;">
-            <th style="padding:6px 8px;text-align:left;">Name</th>
-            <th style="padding:6px 8px;text-align:left;">Email</th>
-            <th style="padding:6px 8px;text-align:left;">Listing</th>
-            <th style="padding:6px 8px;text-align:left;">Failed Fields</th>
-          </tr></thead>
-          <tbody>${tableRows(closeRows)}</tbody>
-        </table>` : ''}
+
+      <!-- Activity This Week -->
+      <div style="margin:0 0 28px;display:flex;gap:12px;">
+        <div style="flex:1;background:#f0f8f4;border:1px solid #c8e3d4;border-radius:8px;padding:14px 18px;font-size:13px;">
+          <span style="font-weight:700;font-size:18px;color:#2c7a4b;">${newSubmissionsThisWeek}</span>
+          <span style="color:#555;margin-left:8px;">new property submission${newSubmissionsThisWeek !== 1 ? 's' : ''} this week</span>
+        </div>
       </div>
-    </div>`
+
+      <!-- Matching Results -->
+      <h3 style="font-size:13px;text-transform:uppercase;letter-spacing:0.08em;color:#999;margin:0 0 6px;font-weight:600;">Matching Results</h3>
+      <p style="font-size:14px;color:#555;margin:0 0 4px;">
+        ${passCount > 0 || closeCount > 0
+          ? `<strong style="color:#2c7a4b;">${passCount} Pass</strong> &nbsp;&bull;&nbsp; <strong style="color:#b07a00;">${closeCount} Close</strong> across all active listings`
+          : 'No matches this week.'}
+      </p>
+      ${matchSection}
+
+      <!-- Footer link -->
+      <div style="margin-top:36px;padding-top:20px;border-top:1px solid #e5e7eb;font-size:13px;color:#888;text-align:center;">
+        <a href="https://panecross.github.io/CAAffordableHomes/admin.html" style="color:#2c5545;font-weight:600;">Open Admin Portal</a>
+        &nbsp;&bull;&nbsp;
+        CA Affordable Homes - Weekly automated digest
+      </div>
+
+    </div>
+  </div>`
 
   await fetch('https://api.resend.com/emails', {
     method: 'POST',

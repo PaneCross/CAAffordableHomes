@@ -1,20 +1,20 @@
-# Triggers Supabase Edge Functions on a daily schedule
+# Triggers Supabase Edge Functions on a scheduled basis
 # Replaces the Apps Script time-driven triggers
 
 name: Scheduled Triggers
 
 on:
   schedule:
-    - cron: '0 14 * * *'   # 6 AM PST (UTC-8) = 14:00 UTC — daily matching
-    - cron: '0 15 * * *'   # 7 AM PST (UTC-8) = 15:00 UTC — expiry check
+    - cron: '0 14 * * 1'   # 6 AM PST (UTC-8) = 14:00 UTC, Mondays only — weekly digest + matching
+    - cron: '0 15 * * *'   # 7 AM PST (UTC-8) = 15:00 UTC, daily — expiry check
   workflow_dispatch:        # allow manual run from GitHub Actions UI
 
 jobs:
   daily-match:
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 14 * * *'
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 14 * * 1'
     steps:
-      - name: Run daily match engine
+      - name: Run weekly match engine and digest
         run: |
           curl -X POST \
             "https://monybdfujogcyseyjgfx.supabase.co/functions/v1/daily-match" \
