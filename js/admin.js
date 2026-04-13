@@ -1903,7 +1903,7 @@ const HELP_CONTENT = {
       },
       {
         q: 'Can I run the matching engine manually?',
-        a: 'Yes. Click the <strong>Run Matching Now</strong> button at the top right of this tab. The engine will run immediately and results will refresh automatically when it completes. The engine also runs automatically every morning.'
+        a: 'Yes. Click the <strong>Run Matching Now</strong> button at the top left of this tab. The engine will run immediately and results will refresh automatically when it completes. The engine also runs automatically every morning.'
       },
       {
         q: 'Why does a listing show no candidates?',
