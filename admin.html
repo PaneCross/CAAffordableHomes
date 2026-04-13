@@ -73,10 +73,7 @@
       <div class="tab-toolbar">
         <div class="filter-bar" id="ps-filter-bar">
           <button class="filter-btn active" data-pf="all">All</button>
-          <button class="filter-btn" data-pf="new">New</button>
-          <button class="filter-btn" data-pf="reviewing">Reviewing</button>
-          <button class="filter-btn" data-pf="approved">Approved</button>
-          <button class="filter-btn" data-pf="declined">Declined</button>
+          <button class="filter-btn" data-pf="non-promoted">Non-Promoted</button>
           <button class="filter-btn" data-pf="promoted">Promoted</button>
         </div>
         <button class="btn-primary btn-sm" id="ps-add-btn"><i class="fa-solid fa-plus"></i> Add Submission</button>
@@ -106,7 +103,7 @@
           <button class="filter-btn active" data-prgf="active">Active</button>
           <button class="filter-btn" data-prgf="inactive">Inactive</button>
         </div>
-        <button class="btn-primary btn-sm" id="prog-add-btn"><i class="fa-solid fa-plus"></i> Add Community</button>
+        <button class="btn-primary btn-sm" id="prog-add-btn"><i class="fa-solid fa-plus"></i> Add Program</button>
       </div>
       <div id="prog-area"><div class="loading-state"><i class="fa-solid fa-circle-notch fa-spin"></i><p>Loading...</p><p class="wake-hint">Still loading — the database may be waking up after inactivity. This usually takes 20-30 seconds and will resolve automatically.</p></div></div>
     </section>
@@ -171,8 +168,14 @@
         <div class="form-group"><label for="lf-name">Display Name</label><input id="lf-name" class="form-input" placeholder="Villa Rosa"></div>
       </div>
       <div class="form-row3">
-        <div class="form-group"><label for="lf-active">Active for Matching</label>
-          <select id="lf-active" class="form-input"><option value="YES">YES</option><option value="NO">NO</option></select>
+        <div class="form-group">
+          <label class="toggle-label">
+            <span>In Matching</span>
+            <span class="toggle-switch">
+              <input type="checkbox" id="lf-active" class="toggle-input">
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            </span>
+          </label>
         </div>
         <div class="form-group"><label for="lf-units">Units Available</label><input id="lf-units" class="form-input" type="number" min="0" placeholder="e.g. 4"></div>
         <div class="form-group"><label for="lf-type">Listing Type</label>
@@ -247,7 +250,7 @@
 <div id="prog-modal-overlay" class="modal-overlay">
   <div class="modal-box">
     <div class="modal-header">
-      <h2 id="prog-modal-title">Add Community</h2>
+      <h2 id="prog-modal-title">Add Program</h2>
       <button class="modal-close" id="prog-modal-close"><i class="fa-solid fa-xmark"></i></button>
     </div>
     <div class="modal-body">
@@ -341,20 +344,34 @@
     </div>
     <div class="modal-body" id="il-modal-body"></div>
     <div class="modal-footer">
-      <div style="flex:1;">
-        <label for="il-status-select" style="font-size:.82rem;font-weight:500;margin-right:.5rem;">Status:</label>
-        <select id="il-status-select" class="form-input" style="width:auto;display:inline-block;">
-          <option value="new">new</option>
-          <option value="reviewing">reviewing</option>
-          <option value="active">active</option>
-          <option value="matched">matched</option>
-          <option value="expired">expired</option>
-        </select>
-        <button class="btn-primary btn-sm" id="il-status-save-btn" style="margin-left:.5rem;">
-          <i class="fa-solid fa-check"></i> Save Status
-        </button>
-      </div>
+      <button class="btn-danger btn-sm" id="il-delete-btn"><i class="fa-solid fa-trash"></i> Delete Applicant</button>
       <button class="btn-secondary" id="il-modal-close2">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SUCCESS DETAIL MODAL
+══════════════════════════════════════════════════════════ -->
+<div id="success-modal-overlay" class="modal-overlay">
+  <div class="modal-box modal-lg">
+    <div class="modal-header">
+      <h2 id="success-modal-title">Success Detail</h2>
+      <button class="modal-close" id="success-modal-close"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body" id="success-modal-body"></div>
+    <div class="modal-footer" style="flex-direction:column;gap:.75rem;align-items:stretch;">
+      <div>
+        <label style="font-size:.82rem;font-weight:600;display:block;margin-bottom:.35rem;color:var(--text);">Final Notes</label>
+        <textarea id="success-final-notes" class="form-input" rows="3" placeholder="Add any final notes about this placement..."></textarea>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <button class="btn-danger btn-sm" id="success-delete-btn"><i class="fa-solid fa-trash"></i> Delete Record</button>
+        <div style="display:flex;gap:.5rem;">
+          <button class="btn-secondary" id="success-modal-close2">Close</button>
+          <button class="btn-primary btn-sm" id="success-save-notes-btn"><i class="fa-solid fa-check"></i> Save Notes</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>

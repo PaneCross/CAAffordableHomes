@@ -260,7 +260,8 @@ function renderPS() {
   filterBtns.forEach(b => b.classList.toggle('active', b.dataset.pf === psFilter))
 
   let rows = psData
-  if (psFilter !== 'all') rows = psData.filter(r => (r.status||'new') === psFilter)
+  if (psFilter === 'promoted') rows = psData.filter(r => (r.status||'new') === 'promoted')
+  else if (psFilter === 'non-promoted') rows = psData.filter(r => (r.status||'new') !== 'promoted')
   if (!rows.length) { setArea('ps-area', emptyState('No submissions match this filter.')); return }
 
   rows = sortRows(rows, psSort)
@@ -270,7 +271,6 @@ function renderPS() {
     { label: 'Contact', col: 'contact_name' },
     { label: 'Address', col: 'prop_address' },
     { label: 'AMI',     col: 'ami_percent' },
-    { label: 'Status',  col: 'status' },
     { label: 'Actions', col: null },
   ]
 
@@ -287,7 +287,6 @@ function renderPS() {
         <td><strong>${esc(r.contact_name||'')}</strong><br><span style="font-size:.78rem;color:#888;">${esc(r.contact_email||'')}</span></td>
         <td>${esc(r.prop_address||'')}</td>
         <td>${esc(r.ami_percent ? r.ami_percent+'%' : '')}</td>
-        <td><span class="status-pill ${pillCls(r.status||'new')}">${esc(r.status||'new')}</span></td>
         <td class="action-cell" onclick="event.stopPropagation()">
           ${(r.status||'new') !== 'promoted'
             ? `<button class="btn-primary btn-xs" onclick="promoteToListing(${psData.indexOf(r)})"><i class="fa-solid fa-arrow-up-right-from-square"></i> Promote</button>`
@@ -462,7 +461,7 @@ function openLSTModal(idx, prefill) {
   document.getElementById('lst-modal-title').textContent = editingLstRow ? 'Edit Listing' : (promotingPsId ? 'Promote to Listing' : 'Add Listing')
   document.getElementById('lf-id').value          = p.listing_id || ''
   document.getElementById('lf-name').value        = p.listing_name || ''
-  document.getElementById('lf-active').value      = p.active || 'NO'
+  document.getElementById('lf-active').checked     = (p.active || 'YES') === 'YES'
   document.getElementById('lf-units').value       = p.units_available ?? ''
   document.getElementById('lf-type').value        = p.listing_type || 'affordable'
   document.getElementById('lf-address').value     = p.address || ''
@@ -538,7 +537,7 @@ document.getElementById('lst-save-btn').addEventListener('click', async () => {
   const listing = {
     listing_id:   id,
     listing_name: document.getElementById('lf-name').value.trim() || id,
-    active:       document.getElementById('lf-active').value,
+    active:       document.getElementById('lf-active').checked ? 'YES' : 'NO',
     units_available: document.getElementById('lf-units').value !== '' ? parseInt(document.getElementById('lf-units').value) : null,
     listing_type: document.getElementById('lf-type').value,
     address:      document.getElementById('lf-address').value.trim(),
@@ -969,12 +968,55 @@ function openILModal(idx) {
        <div style="padding:.6rem .75rem;font-size:.85rem;white-space:pre-wrap;line-height:1.5;">${esc(r.additional_info)}</div></div>`
     : ''
 
+  const statusSection = `
+    <div class="il-status-bar">
+      <label for="il-status-select" class="il-status-label">Status</label>
+      <div class="il-status-controls">
+        <select id="il-status-select" class="form-input" style="width:auto;display:inline-block;">
+          <option value="new">new</option>
+          <option value="reviewing">reviewing</option>
+          <option value="active">active</option>
+          <option value="matched">matched</option>
+          <option value="expired">expired</option>
+        </select>
+        <button class="btn-primary btn-sm" id="il-status-save-btn">
+          <i class="fa-solid fa-check"></i> Save Status
+        </button>
+      </div>
+    </div>`
+
   document.getElementById('il-modal-body').innerHTML =
-    contactSection + householdSection + financialSection +
+    statusSection + contactSection + householdSection + financialSection +
     disclosuresSection + assetsSection + incomeSection +
     empSection + additionalSection
 
   document.getElementById('il-status-select').value = r.status || 'new'
+
+  document.getElementById('il-status-save-btn').addEventListener('click', async () => {
+    if (!viewingIlRow) return
+    const newStatus = document.getElementById('il-status-select').value
+    const { error } = await sb.from('interest_list')
+      .update({ status: newStatus, updated_at: new Date().toISOString() })
+      .eq('id', viewingIlRow.id)
+    if (error) { toast(error.message, true); return }
+    viewingIlRow.status = newStatus
+    toast('Status updated.')
+    ilData = []
+    await loadInterestList()
+  })
+
+  document.getElementById('il-delete-btn').addEventListener('click', async () => {
+    if (!viewingIlRow) return
+    if (!confirm(`Permanently delete ${viewingIlRow.full_name || viewingIlRow.email} from the Interest List?\n\nThis will also remove all their match results. This cannot be undone.`)) return
+    const { error } = await sb.from('interest_list').delete().eq('id', viewingIlRow.id)
+    if (error) { toast(error.message, true); return }
+    await sb.from('match_results').delete().eq('email', viewingIlRow.email)
+    toast('Applicant deleted.')
+    closeILModal()
+    ilData = []
+    loadInterestList()
+  })
+
   document.getElementById('il-modal-overlay').classList.add('open')
 }
 
@@ -982,19 +1024,6 @@ function closeILModal() {
   document.getElementById('il-modal-overlay').classList.remove('open')
   viewingIlRow = null
 }
-
-document.getElementById('il-status-save-btn').addEventListener('click', async () => {
-  if (!viewingIlRow) return
-  const newStatus = document.getElementById('il-status-select').value
-  const { error } = await sb.from('interest_list')
-    .update({ status: newStatus, updated_at: new Date().toISOString() })
-    .eq('id', viewingIlRow.id)
-  if (error) { toast(error.message, true); return }
-  viewingIlRow.status = newStatus
-  toast('Status updated.')
-  ilData = []
-  await loadInterestList()
-})
 
 // ─────────────────────────────────────────────────────────────
 // UTILITIES
@@ -1382,25 +1411,138 @@ function renderSuccesses() {
     return
   }
   const html = `
-    <div style="margin-bottom:1rem;font-size:.9rem;color:#666;">${successesData.length} successful match${successesData.length !== 1 ? 'es' : ''}</div>
+    <div style="margin-bottom:1rem;font-size:.9rem;color:#666;">${successesData.length} successful match${successesData.length !== 1 ? 'es' : ''} — click any row to view details</div>
     <table class="data-table">
       <thead><tr>
         <th>Date</th>
         <th>Family</th>
         <th>Listing</th>
-        <th>Notes</th>
+        <th>Final Notes</th>
       </tr></thead>
       <tbody>
-        ${successesData.map(r => `<tr>
+        ${successesData.map((r, i) => `<tr class="clickable-row" onclick="openSuccessModal(${i})">
           <td>${fmtDate(r.approved_at)}</td>
           <td><strong>${esc(r.full_name || '')}</strong><br><span style="font-size:.78rem;color:#888;">${esc(r.email || '')}</span></td>
           <td>${esc(r.listing_name || r.listing_id || '')}</td>
-          <td style="font-size:.82rem;color:#666;">${esc(r.notes || '')}</td>
+          <td style="font-size:.82rem;color:#666;">${esc(r.final_notes || '')}</td>
         </tr>`).join('')}
       </tbody>
     </table>`
   setArea('successes-area', html)
 }
+
+let viewingSuccessRow = null
+
+function openSuccessModal(idx) {
+  viewingSuccessRow = successesData[idx]
+  const r = viewingSuccessRow
+
+  // Find matching IL record and listing record from cached data
+  const il = ilData.find(a => a.email === r.email) || {}
+  const lst = lstData.find(l => l.listing_id === r.listing_id) || {}
+
+  const pipelineSteps = [
+    { label: 'Form Submitted', date: il.submitted_at || null, color: '#4a7c6a' },
+    { label: 'Approved / Matched', date: r.approved_at || null, color: '#2c5545' },
+  ].filter(s => s.date)
+
+  const pipelineHtml = `
+    <div class="success-pipeline">
+      ${pipelineSteps.map((s, i) => `
+        <div class="success-pipeline-step">
+          <div class="pipeline-dot" style="background:${s.color};"></div>
+          <div>
+            <div class="pipeline-step-label">${s.label}</div>
+            <div class="pipeline-step-date">${fmtDate(s.date)}</div>
+          </div>
+        </div>
+        ${i < pipelineSteps.length - 1 ? '<div class="pipeline-connector"></div>' : ''}
+      `).join('')}
+    </div>`
+
+  const ilRows = [
+    ['Email', il.email],
+    ['Phone', il.phone],
+    ['Area Preference', il.area_preference],
+    ['Household Size', il.household_size],
+    ['Credit Score', il.credit_score_self],
+    ['SD County Resident', il.live_in_sd_county],
+    ['Status at Approval', r.status || 'matched'],
+  ].filter(([,v]) => v != null && v !== '')
+   .map(([l,v]) => `<div class="field-row"><span class="field-label">${esc(l)}</span><span class="field-value">${esc(String(v))}</span></div>`)
+   .join('')
+
+  const lstRows = [
+    ['Listing Name', lst.listing_name || r.listing_name],
+    ['Listing ID', r.listing_id],
+    ['Address', lst.prop_address || lst.address],
+    ['City', lst.city],
+    ['AMI %', lst.ami_percent ? lst.ami_percent + '%' : null],
+    ['Bedrooms', lst.bedrooms],
+    ['Price', lst.price ? '$' + lst.price : null],
+  ].filter(([,v]) => v != null && v !== '')
+   .map(([l,v]) => `<div class="field-row"><span class="field-label">${esc(l)}</span><span class="field-value">${esc(String(v))}</span></div>`)
+   .join('')
+
+  const ilNotes = il.additional_info
+    ? `<div class="field-group il-section" style="margin-top:.75rem;">
+         <div class="field-group-title" style="color:var(--muted);">Interest List Notes (read only)</div>
+         <div style="padding:.6rem .75rem;font-size:.82rem;white-space:pre-wrap;line-height:1.5;color:#666;">${esc(il.additional_info)}</div>
+       </div>`
+    : ''
+
+  document.getElementById('success-modal-title').textContent = r.full_name || r.email
+  document.getElementById('success-modal-body').innerHTML = `
+    <div class="field-group il-section" style="margin-bottom:.75rem;">
+      <div class="field-group-title">Pipeline Timeline</div>
+      ${pipelineHtml}
+    </div>
+    <div class="success-two-col">
+      <div class="field-group il-section">
+        <div class="field-group-title">Applicant</div>
+        ${ilRows || '<div style="padding:.5rem .75rem;color:#aaa;font-size:.82rem;">No cached applicant data</div>'}
+        ${ilNotes}
+      </div>
+      <div class="field-group il-section">
+        <div class="field-group-title">Property</div>
+        ${lstRows || '<div style="padding:.5rem .75rem;color:#aaa;font-size:.82rem;">No cached listing data</div>'}
+      </div>
+    </div>`
+
+  document.getElementById('success-final-notes').value = r.final_notes || ''
+  document.getElementById('success-modal-overlay').classList.add('open')
+}
+
+function closeSuccessModal() {
+  document.getElementById('success-modal-overlay').classList.remove('open')
+  viewingSuccessRow = null
+}
+
+document.getElementById('success-modal-close').addEventListener('click', closeSuccessModal)
+document.getElementById('success-modal-close2').addEventListener('click', closeSuccessModal)
+
+document.getElementById('success-save-notes-btn').addEventListener('click', async () => {
+  if (!viewingSuccessRow) return
+  const notes = document.getElementById('success-final-notes').value
+  const { error } = await sb.from('successes').update({ final_notes: notes }).eq('id', viewingSuccessRow.id)
+  if (error) { toast(error.message, true); return }
+  viewingSuccessRow.final_notes = notes
+  const idx = successesData.indexOf(viewingSuccessRow)
+  if (idx !== -1) successesData[idx].final_notes = notes
+  toast('Notes saved.')
+  renderSuccesses()
+})
+
+document.getElementById('success-delete-btn').addEventListener('click', async () => {
+  if (!viewingSuccessRow) return
+  if (!confirm(`Permanently delete this success record for ${viewingSuccessRow.full_name || viewingSuccessRow.email}?\n\nThis removes the record from the Admin portal but does not change the applicant's status on the Interest List. This cannot be undone.`)) return
+  const { error } = await sb.from('successes').delete().eq('id', viewingSuccessRow.id)
+  if (error) { toast(error.message, true); return }
+  toast('Success record deleted.')
+  closeSuccessModal()
+  successesData = []
+  loadSuccesses()
+})
 
 // =============================================================
 // HELP MODAL
@@ -1414,48 +1556,43 @@ const HELP_CONTENT = {
       {
         q: 'What do the pipeline numbers mean?',
         a: `<ul>
-          <li><strong>Applicants in matching</strong> — people on the Interest List with status <em>New</em>, <em>Reviewing</em>, or <em>Active</em>. These are the applicants the matching engine runs against each day.</li>
-          <li><strong>In Matching listings</strong> — listings marked "In Matching" (active = YES). These are the properties the engine compares applicants against.</li>
+          <li><strong>Applicants in matching</strong> — people on the Interest List with status New, Reviewing, or Active. These are the applicants the matching engine runs against each day.</li>
+          <li><strong>In Matching listings</strong> — listings set to "In Matching." These are the properties the engine compares applicants against.</li>
           <li><strong>Program-linked</strong> — listings that have a site program attached.</li>
           <li><strong>Programs</strong> — total community or developer programs you have set up.</li>
           <li><strong>Property submissions</strong> — seller inquiries submitted through the public contact form.</li>
         </ul>`
       },
       {
-        q: 'What does the Refresh button do?',
-        a: 'The <strong>Refresh</strong> button (circular arrow icon in the top-right) clears all cached data and reloads the current tab from the database. Use it if you just made a change and want to confirm it saved, or if the page has been open for a while and you want fresh numbers.'
-      },
-      {
         q: 'Why does it sometimes say "Database is waking up"?',
-        a: 'The database is on a free-tier plan that goes to sleep after a period of inactivity. The first load after it has been idle can take 20 to 30 seconds. The page will load automatically once the database responds — no need to refresh manually.'
+        a: 'The database is on a free-tier plan that goes to sleep after a period of inactivity. The first load after it has been idle can take 20 to 30 seconds. The page will load automatically once the database responds — no action needed.'
       }
     ]
   },
 
   properties: {
     title: 'Property Submissions',
-    intro: 'This tab shows all seller inquiries submitted through the public "Submit a Property" form on the website. These are people who own a property and want to know if it qualifies for the affordable housing program.',
+    intro: 'This tab shows all seller inquiries submitted through the public "Submit a Property" form on the website. These are people who own a property and want to know if it qualifies for the affordable housing program. Click any row to open the full details.',
     faq: [
       {
         q: 'What information comes in with a submission?',
-        a: 'Each submission includes the owner\'s contact info, the property address and type, bedrooms and bathrooms, asking price, and any notes they added. You can see the full details by clicking <strong>View</strong> on any card.'
+        a: 'Each submission includes the owner\'s contact info, the property address and type, bedrooms and bathrooms, asking price, and any notes they added. Click any row to see the full details and edit the record.'
       },
       {
-        q: 'What are the status options and what do they mean?',
+        q: 'What do the filter buttons do?',
         a: `<ul>
-          <li><strong>New</strong> — just submitted, not yet reviewed.</li>
-          <li><strong>Reviewing</strong> — you have opened it and are evaluating the property.</li>
-          <li><strong>Approved</strong> — the property qualifies and has been (or will be) added as a Listing.</li>
-          <li><strong>Rejected</strong> — the property does not qualify for the program.</li>
+          <li><strong>All</strong> — shows every submission.</li>
+          <li><strong>Non-Promoted</strong> — shows submissions not yet pushed to a Listing (default view).</li>
+          <li><strong>Promoted</strong> — shows submissions that have already been converted to a Listing.</li>
         </ul>`
       },
       {
-        q: 'What happens after I approve a submission?',
-        a: 'Approving a submission here does not automatically create a Listing. You need to manually go to the <strong>Listings</strong> tab and add the property there with all the details the matching engine needs.'
+        q: 'How do I move a submission to a Listing?',
+        a: 'Click the <strong>Promote</strong> button in the Actions column of any non-promoted submission. This opens the Add Listing modal pre-filled with the property\'s details so you can review and save it as an active Listing in the matching system. Once promoted, the button changes to "Promoted" and the submission is marked accordingly.'
       },
       {
-        q: 'Can I delete a submission?',
-        a: 'Yes. Click the <strong>trash icon</strong> on any card to permanently delete the submission. This cannot be undone.'
+        q: 'Can I edit a submission after it comes in?',
+        a: 'Yes. Click anywhere on the submission row to open the detail modal. You can update the contact info, property details, and status from there.'
       }
     ]
   },
@@ -1466,7 +1603,7 @@ const HELP_CONTENT = {
     faq: [
       {
         q: 'What do "In Matching" and "Not Matching" mean?',
-        a: '<strong>In Matching</strong> means the listing is active and the daily matching engine will compare all eligible applicants against it. <strong>Not Matching</strong> means the listing is paused and skipped during the matching run. Toggle this in the Edit modal using the "In Matching" switch.'
+        a: '<strong>In Matching</strong> means the listing is active and the daily matching engine will compare all eligible applicants against it. <strong>Not Matching</strong> means the listing is paused and skipped during the matching run. Use the <strong>In Matching</strong> toggle at the top of the Edit modal to switch between them.'
       },
       {
         q: 'What does "Program-Linked" mean?',
@@ -1474,23 +1611,7 @@ const HELP_CONTENT = {
       },
       {
         q: 'How do I add a new listing?',
-        a: 'Click the <strong>+ Add Listing</strong> button at the top right of the tab. Fill in the property details in the modal that appears and click Save. Required fields are highlighted if left empty.'
-      },
-      {
-        q: 'What are all the fields in the Edit modal?',
-        a: `<ul>
-          <li><strong>Site Program</strong> — links this listing to a community program. Optional.</li>
-          <li><strong>Listing Name / ID</strong> — your internal reference name and a short unique ID.</li>
-          <li><strong>In Matching</strong> — toggle on to include in daily matching, off to pause.</li>
-          <li><strong>Address, City, Zip</strong> — full property location (never shown to applicants).</li>
-          <li><strong>Price, Bedrooms, Bathrooms, Sq Ft</strong> — basic property specs.</li>
-          <li><strong>AMI %</strong> — the Area Median Income percentage this property targets (e.g., 80 for 80% AMI).</li>
-          <li><strong>Min Credit Score</strong> — the minimum credit score required to match.</li>
-          <li><strong>Max Household Size</strong> — the maximum number of people in the applicant\'s household.</li>
-          <li><strong>Max DTI %</strong> — maximum debt-to-income ratio allowed.</li>
-          <li><strong>Max Monthly Debt</strong> — maximum existing monthly debt the applicant can have.</li>
-          <li><strong>Notes</strong> — any internal notes about the property visible only to you.</li>
-        </ul>`
+        a: 'Click the <strong>+ Add Listing</strong> button in the toolbar at the top of the tab. Fill in the property details in the modal that appears and click Save.'
       },
       {
         q: 'How do I link a listing to a program?',
@@ -1498,7 +1619,7 @@ const HELP_CONTENT = {
       },
       {
         q: 'How do I delete a listing?',
-        a: 'Click the <strong>trash icon</strong> on a listing card. You will be asked to confirm before the listing is permanently deleted. Deleting a listing also removes it from future matching runs but does not delete existing match results.'
+        a: 'Click the <strong>trash icon</strong> on a listing card. You will be asked to confirm before it is permanently deleted. Once deleted, the listing is removed from the matching engine immediately. Any existing match results that reference this listing will remain in the database as a historical record on the Matches tab until the next matching run refreshes them.'
       },
       {
         q: 'What do the filter buttons do?',
@@ -1522,7 +1643,7 @@ const HELP_CONTENT = {
       },
       {
         q: 'How do I add a new program?',
-        a: 'Click <strong>+ Add Program</strong> at the top right. Fill in the program name, description, location, eligibility notes, and any relevant links. Set the status to <strong>Active</strong> to show it on the public site.'
+        a: 'Click the <strong>+ Add Program</strong> button in the toolbar at the top of the tab. Fill in the program name, description, location, eligibility notes, and any relevant links. Set the status to <strong>Active</strong> to show it on the public site.'
       },
       {
         q: 'What does Active / Inactive mean for programs?',
@@ -1545,7 +1666,7 @@ const HELP_CONTENT = {
 
   'interest-list': {
     title: 'Interest List',
-    intro: 'The Interest List contains every applicant who has submitted the contact form on the website. This is the pool of people the matching engine runs against each day. You can review applicant details, update their status, and manage their place in the pipeline here.',
+    intro: 'The Interest List contains every applicant who has submitted the contact form on the website. This is the pool of people the matching engine runs against each day. Click any row to open the applicant detail, update their status, or delete their record.',
     faq: [
       {
         q: 'What are all the status options and what do they mean?',
@@ -1559,19 +1680,15 @@ const HELP_CONTENT = {
       },
       {
         q: 'How do I change an applicant\'s status?',
-        a: 'Click <strong>Edit</strong> (pencil icon) on any applicant row. Change the Status field in the modal and click Save. Status changes take effect immediately for the next matching run.'
-      },
-      {
-        q: 'What is the "star" rank I see in the Matches tab?',
-        a: 'Applicants are ranked within each listing based on their submitted_at date — first come, first served. The top-ranked applicant (the one who submitted earliest) gets a star on the Matches tab. The rank does not appear on the Interest List tab itself.'
+        a: 'Click any row to open the applicant detail modal. The <strong>Status</strong> selector is at the top of the modal. Choose the new status and click <strong>Save Status</strong>. Changes take effect immediately for the next matching run.'
       },
       {
         q: 'What do the filter buttons do?',
         a: 'You can filter by status (All, New, Reviewing, Active, Matched, Expired) to focus on a specific group. The search box lets you find a specific applicant by name or email.'
       },
       {
-        q: 'Can I delete an applicant?',
-        a: 'Yes. Click the <strong>trash icon</strong> on an applicant row. This permanently removes them from the Interest List and all associated match results. This cannot be undone.'
+        q: 'How do I delete an applicant?',
+        a: 'Click any row to open the applicant detail modal. At the bottom of the modal is a red <strong>Delete Applicant</strong> button. You will be asked to confirm before the record is permanently removed. This also removes all their match results.'
       },
       {
         q: 'What happens when someone re-submits the form?',
@@ -1586,12 +1703,12 @@ const HELP_CONTENT = {
     faq: [
       {
         q: 'How does the matching engine work?',
-        a: 'Every morning the engine compares every applicant with status New, Reviewing, or Active against every In Matching listing. It runs 13 checks covering credit score, first-time buyer status, household size, AMI income, debt-to-income ratio, monthly debt, San Diego County residency, household together months, SDHC prior purchase, foreclosure history, bankruptcy history, judgments, and citizenship. Results are saved to the database.'
+        a: 'Every morning the engine compares every applicant with status New, Reviewing, or Active against every In Matching listing. It runs checks covering credit score, first-time buyer status, household size, AMI income, debt-to-income ratio, monthly debt, San Diego County residency, household together months, SDHC prior purchase, foreclosure history, bankruptcy history, judgments, and citizenship. Results are saved to the database.'
       },
       {
         q: 'What do Pass, Close, and Fail mean?',
         a: `<ul>
-          <li><strong>Pass</strong> — the applicant meets all 13 requirements for this listing. They are your top candidates to contact.</li>
+          <li><strong>Pass</strong> — the applicant meets all requirements for this listing. They are your top candidates to contact.</li>
           <li><strong>Close</strong> — the applicant failed 1 or 2 checks. They may still be worth reaching out to depending on the situation.</li>
           <li><strong>Fail</strong> — the applicant failed 3 or more checks. They do not qualify for this listing at this time.</li>
         </ul>`
@@ -1614,30 +1731,35 @@ const HELP_CONTENT = {
       },
       {
         q: 'Why does a listing show no candidates?',
-        a: 'Either no applicants have passed or come close to the requirements for that listing, or the matching engine has not run yet today. The engine runs automatically each morning. You can also trigger a manual run from the GitHub Actions dashboard if needed.'
-      },
-      {
-        q: 'Can I see what checks an applicant failed?',
-        a: 'Yes. Click the <strong>Details</strong> or expand icon on a candidate row to see a breakdown of which of the 13 checks they passed and which they failed.'
+        a: 'Either no applicants have passed or come close to the requirements for that listing, or the matching engine has not run yet today. The engine runs automatically each morning.'
       }
     ]
   },
 
   successes: {
     title: 'Successes',
-    intro: 'The Successes tab is a record of every applicant who has been successfully matched and placed in a home. It is your pipeline completion log.',
+    intro: 'The Successes tab is a permanent record of every applicant who has been matched and placed in a home. Click any row to open the full detail view showing the applicant profile, property info, pipeline timeline, and notes.',
     faq: [
       {
         q: 'How does a record get added here?',
-        a: 'A success record is created automatically when you click <strong>Approve</strong> on a candidate in the Matches tab. The applicant\'s status is changed to Matched and a log entry is created here with the date, name, and listing.'
+        a: 'A success record is created automatically when you click <strong>Approve</strong> on a candidate in the Matches tab. The applicant\'s status is set to Matched and a log entry is created here with the date, name, and listing.'
       },
       {
-        q: 'Can I add notes to a success record?',
-        a: 'Yes. The Notes column shows any notes that were on the applicant\'s Interest List record at the time of approval. You can edit those notes in the Interest List tab before approving if you want to capture additional context.'
+        q: 'What is in the detail popup when I click a row?',
+        a: `<ul>
+          <li><strong>Pipeline Timeline</strong> — color-coded ladder showing when they submitted and when they were approved.</li>
+          <li><strong>Applicant section</strong> — key info from their Interest List record, including any notes they submitted.</li>
+          <li><strong>Property section</strong> — details about the listing they were matched to.</li>
+          <li><strong>Final Notes</strong> — a text field where you can record the outcome, any follow-up needed, or other closing context.</li>
+        </ul>`
+      },
+      {
+        q: 'How do I add final notes to a success record?',
+        a: 'Click the row to open the detail popup. Type in the <strong>Final Notes</strong> field at the bottom and click <strong>Save Notes</strong>. Final notes appear in the table so you can see them at a glance.'
       },
       {
         q: 'Can I delete a success record?',
-        a: 'Success records are intended as a permanent log. Contact your administrator if a record needs to be removed.'
+        a: 'Yes. Open the detail popup by clicking the row, then click <strong>Delete Record</strong> at the bottom left. You will be asked to confirm. This permanently removes the success record from the admin portal but does not change the applicant\'s Matched status on the Interest List.'
       }
     ]
   }

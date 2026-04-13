@@ -484,6 +484,60 @@ textarea.form-input { resize: vertical; }
 .btn-danger:hover { opacity: .85; }
 .btn-danger.btn-xs { padding: .25rem .55rem; font-size: .72rem; }
 
+/* ── Success Modal ── */
+.success-two-col {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: .75rem;
+}
+.success-pipeline {
+  padding: .5rem .75rem; display: flex; flex-direction: column; gap: 0;
+}
+.success-pipeline-step {
+  display: flex; align-items: flex-start; gap: .65rem;
+}
+.pipeline-dot {
+  width: 12px; height: 12px; border-radius: 50%;
+  flex-shrink: 0; margin-top: .2rem;
+}
+.pipeline-connector {
+  width: 2px; height: 18px; background: #d0d0c8;
+  margin-left: 5px;
+}
+.pipeline-step-label { font-size: .82rem; font-weight: 600; color: var(--text); }
+.pipeline-step-date  { font-size: .76rem; color: var(--muted); }
+
+/* ── IL Modal Status Bar ── */
+.il-status-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--green-bg); border: 1px solid #c8e6d6;
+  border-radius: 8px; padding: .6rem .9rem;
+  margin-bottom: 1rem; flex-wrap: wrap; gap: .5rem;
+}
+.il-status-label { font-size: .82rem; font-weight: 600; color: var(--green); }
+.il-status-controls { display: flex; align-items: center; gap: .5rem; }
+
+/* ── Toggle Switch ── */
+.toggle-label {
+  display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer; gap: .5rem;
+}
+.toggle-switch { display: flex; align-items: center; flex-shrink: 0; }
+.toggle-input { position: absolute; opacity: 0; width: 0; height: 0; }
+.toggle-track {
+  position: relative; width: 40px; height: 22px;
+  background: #ccc; border-radius: 11px;
+  transition: background .2s; cursor: pointer;
+  display: flex; align-items: center;
+}
+.toggle-input:checked + .toggle-track { background: var(--green); }
+.toggle-thumb {
+  position: absolute; left: 3px;
+  width: 16px; height: 16px;
+  background: #fff; border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,.25);
+  transition: transform .2s;
+}
+.toggle-input:checked + .toggle-track .toggle-thumb { transform: translateX(18px); }
+
 /* ── Responsive ── */
 @media (max-width: 640px) {
   .admin-sidebar  { width: 180px; }
