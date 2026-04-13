@@ -926,19 +926,24 @@ function openILModal(idx) {
 
   // ── Financial ─────────────────────────────────────────────
   const financialSection = ilSection('Financial', [
-    ['Credit Score (Self)',   r.credit_score_self],
+    ['Credit Score (Self)',      r.credit_score_self],
     ['Credit Score (Co-borrower)', r.credit_score_coborrower],
-    ['Monthly Rent',          r.monthly_rent ? '$' + r.monthly_rent : null],
-    ['Monthly Debt Payments', r.monthly_debt_payments ? '$' + r.monthly_debt_payments : null],
+    ['Monthly Rent',             r.monthly_rent ? '$' + r.monthly_rent : null],
+    ['Rent Subsidized',          r.rent_subsidized],
+    ['Rent Subsidy Amount',      r.rent_subsidy_amount ? '$' + r.rent_subsidy_amount : null],
+    ['Monthly Debt Payments',    r.monthly_debt_payments ? '$' + r.monthly_debt_payments : null],
   ])
 
   // ── Disclosures ───────────────────────────────────────────
   const disclosuresSection = ilSection('Disclosures', [
-    ['US Citizen',        r.us_citizen],
-    ['Permanent Resident',r.permanent_resident],
-    ['Foreclosure',       r.foreclosure],
-    ['Bankruptcy',        r.bankruptcy],
-    ['Judgments',         r.judgments],
+    ['US Citizen',               r.us_citizen],
+    ['Permanent Resident',       r.permanent_resident],
+    ['Foreclosure / Short Sale', r.foreclosure],
+    ['Foreclosure Date',         r.foreclosure_date],
+    ['Bankruptcy',               r.bankruptcy],
+    ['Bankruptcy Discharge Date',r.bankruptcy_discharge_date],
+    ['Judgments / Liens',        r.judgments],
+    ['Judgments Detail',         r.judgments_description],
   ])
 
   // ── Assets ────────────────────────────────────────────────
@@ -973,6 +978,52 @@ function openILModal(idx) {
       </table>
     </div>` : ''
 
+  // ── Tax-Year Income ───────────────────────────────────────
+  const taxYears = [r.tax_year_labels, r.tax_1_total, r.tax_2_total, r.tax_3_total].some(Boolean)
+  const taxSection = taxYears ? (() => {
+    const labels = (r.tax_year_labels || '').split(',').map(s => s.trim())
+    const years = [1,2,3].map(n => {
+      const total  = r[`tax_${n}_total`]
+      const schedC = r[`tax_${n}_sched_c`]
+      if (!total && !schedC) return ''
+      const yr = labels[n-1] || `Year ${n}`
+      return `<div class="field-row"><span class="field-label">${esc(yr)}</span>` +
+        `<span class="field-value">${total ? '$' + esc(String(total)) : ''}${schedC ? ` (Sched C: $${esc(String(schedC))})` : ''}</span></div>`
+    }).filter(Boolean).join('')
+    return years ? `<div class="field-group il-section"><div class="field-group-title">Tax-Year Income</div>${years}</div>` : ''
+  })() : ''
+
+  // ── Non-Taxable Income ────────────────────────────────────
+  const nontaxBlocks = [1,2,3].map(n => {
+    const who    = r[`nontax_${n}_who`]
+    const source = r[`nontax_${n}_source`]
+    const amt    = r[`nontax_${n}_amount`]
+    if (!who && !source && !amt) return ''
+    const endNote = r[`nontax_${n}_end_date_yn`] === 'Yes' ? ` (ends ${r[`nontax_${n}_end_date`] || 'TBD'})` : ''
+    return `<div class="field-row">` +
+      `<span class="field-label">${esc(who || 'Member ' + n)}</span>` +
+      `<span class="field-value">${esc(source || '')}${amt ? ' — $' + esc(String(amt)) : ''}${endNote}</span></div>`
+  }).filter(Boolean).join('')
+  const nontaxHeader = r.non_taxable_income ? `<div class="field-row"><span class="field-label">Has Non-Taxable Income</span><span class="field-value">${esc(r.non_taxable_income)}</span></div>` : ''
+  const nontaxSection = (nontaxHeader || nontaxBlocks)
+    ? `<div class="field-group il-section"><div class="field-group-title">Non-Taxable Income</div>${nontaxHeader}${nontaxBlocks}</div>`
+    : ''
+
+  // ── Real Estate Agent ─────────────────────────────────────
+  const agentSection = ilSection('Real Estate Agent', [
+    ['Working with Agent', r.agent_yn],
+    ['Agent Name',         r.agent_name],
+    ['Agent Email',        r.agent_email],
+    ['Agent Phone',        r.agent_phone],
+    ['Agent DRE #',        r.agent_dre],
+  ])
+
+  // ── Household Details ─────────────────────────────────────
+  const householdDetails = ilSection('Household Details', [
+    ['Loan Signers',      r.loan_signers],
+    ['Household Members', r.household_members],
+  ])
+
   // ── Employment ────────────────────────────────────────────
   function empRow(label, val) {
     if (!val) return ''
@@ -982,18 +1033,28 @@ function openILModal(idx) {
     const name     = r[`emp_${n}_name`]
     const employer = r[`emp_${n}_employer`]
     if (!name && !employer) return ''
-    const salary = r[`emp_${n}_annual_salary`] ? '$' + r[`emp_${n}_annual_salary`] : null
-    const ytd    = r[`emp_${n}_ytd_gross`]     ? '$' + r[`emp_${n}_ytd_gross`]     : null
+    const salary   = r[`emp_${n}_annual_salary`] ? '$' + r[`emp_${n}_annual_salary`] : null
+    const hourly   = r[`emp_${n}_hourly_rate`]   ? '$' + r[`emp_${n}_hourly_rate`]   : null
+    const ytd      = r[`emp_${n}_ytd_gross`]     ? '$' + r[`emp_${n}_ytd_gross`]     : null
+    const breaks   = r[`emp_${n}_breaks`] === 'Yes'
+      ? (r[`emp_${n}_breaks_desc`] ? `Yes — ${r[`emp_${n}_breaks_desc`]}` : 'Yes')
+      : r[`emp_${n}_breaks`]
     return `<div style="border-bottom:1px solid var(--border);padding:.5rem 0 .25rem;">
       <div style="padding:.25rem .75rem;font-weight:600;font-size:.82rem;">${esc(name || employer || 'Member ' + n)}</div>
-      ${empRow('Relationship', r[`emp_${n}_relationship`])}
-      ${empRow('Employer', employer)}
-      ${empRow('Status', r[`emp_${n}_status`])}
-      ${empRow('Income Type', r[`emp_${n}_income_type`])}
-      ${empRow('Annual Salary', salary)}
-      ${empRow('YTD Gross', ytd)}
-      ${empRow('Start Date', r[`emp_${n}_start_date`])}
-      ${empRow('Pay Period End', r[`emp_${n}_pay_period_end`])}
+      ${empRow('Relationship',      r[`emp_${n}_relationship`])}
+      ${empRow('Employer',          employer)}
+      ${empRow('Employment Status', r[`emp_${n}_status`])}
+      ${empRow('Same Employer Line',r[`emp_${n}_same_line`])}
+      ${empRow('Income Type',       r[`emp_${n}_income_type`])}
+      ${empRow('Annual Salary',     salary)}
+      ${empRow('Hourly Rate',       hourly)}
+      ${empRow('Hours / Week',      r[`emp_${n}_hours_per_week`])}
+      ${empRow('YTD Gross',         ytd)}
+      ${empRow('Recent W-2',        r[`emp_${n}_w2_recent`])}
+      ${empRow('Start Date',        r[`emp_${n}_start_date`])}
+      ${empRow('End Date',          r[`emp_${n}_end_date`])}
+      ${empRow('Employment Breaks', breaks)}
+      ${empRow('Pay Period End',    r[`emp_${n}_pay_period_end`])}
     </div>`
   }).filter(Boolean).join('')
   const empSection = empBlocks ? `
@@ -1004,7 +1065,7 @@ function openILModal(idx) {
 
   // ── Additional Info ───────────────────────────────────────
   const additionalSection = r.additional_info
-    ? `<div class="field-group il-section"><div class="field-group-title">Additional Info</div>
+    ? `<div class="field-group il-section"><div class="field-group-title">Additional Info / Notes</div>
        <div style="padding:.6rem .75rem;font-size:.85rem;white-space:pre-wrap;line-height:1.5;">${esc(r.additional_info)}</div></div>`
     : ''
 
@@ -1026,8 +1087,9 @@ function openILModal(idx) {
     </div>`
 
   document.getElementById('il-modal-body').innerHTML =
-    statusSection + contactSection + householdSection + financialSection +
-    disclosuresSection + assetsSection + incomeSection +
+    statusSection + contactSection + householdSection + householdDetails +
+    financialSection + assetsSection + disclosuresSection + agentSection +
+    incomeSection + taxSection + nontaxSection +
     empSection + additionalSection
 
   document.getElementById('il-status-select').value = r.status || 'new'
@@ -1644,6 +1706,10 @@ const HELP_CONTENT = {
       {
         q: 'What do "In Matching" and "Not Matching" mean?',
         a: '<strong>In Matching</strong> means the listing is active and the daily matching engine will compare all eligible applicants against it. <strong>Not Matching</strong> means the listing is paused and skipped during the matching run. Use the <strong>In Matching</strong> toggle at the top of the Edit modal to switch between them.'
+      },
+      {
+        q: 'Which eligibility fields are actually required for matching?',
+        a: 'Only fields where you have entered a value are checked during matching. If a field is left blank, the matching engine skips that check entirely — it does not fail or penalize applicants for it. This means each listing can have its own unique combination of requirements. For example, if one listing does not care about foreclosure history, leave that field empty and it will not affect scores. If another listing requires a minimum credit score of 680, enter that value and the engine will enforce it for that listing only.'
       },
       {
         q: 'What does "Program-Linked" mean?',
