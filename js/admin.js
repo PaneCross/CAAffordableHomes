@@ -13,6 +13,7 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
 
 // ── State ─────────────────────────────────────────────────────
 let lstData = [], progData = [], ilData = [], psData = [], candidatesData = [], successesData = []
+let dashboardFetched = false
 let editingLstRow = null, editingProgRow = null, editingPsRow = null, viewingIlRow = null
 let lstFilter = 'active', progFilter = 'active', ilFilter = 'all', psFilter = 'all'
 let ilSearch = ''
@@ -129,7 +130,7 @@ function switchTab(tab) {
 
 function loadActiveTab(tab) {
   tab = tab || location.hash.replace('#','') || 'dashboard'
-  if (tab === 'dashboard')     { if (!ilData.length || !lstData.length || !progData.length || !psData.length) loadDashboard(); else renderDashboard() }
+  if (tab === 'dashboard')     { if (!dashboardFetched) loadDashboard(); else renderDashboard() }
   if (tab === 'properties')    { if (!psData.length)   loadPS();           else renderPS()           }
   if (tab === 'listings')      { if (!lstData.length)  loadListings();     else renderListings()     }
   if (tab === 'programs')      { if (!progData.length) loadPrograms();     else renderPrograms()     }
@@ -141,6 +142,7 @@ function loadActiveTab(tab) {
 document.getElementById('refresh-btn').addEventListener('click', () => {
   const tab = document.querySelector('.sb-btn.active[data-tab]')?.dataset.tab || 'dashboard'
   lstData = []; progData = []; ilData = []; psData = []; candidatesData = []; successesData = []
+  dashboardFetched = false
   loadActiveTab(tab)
 })
 
@@ -148,51 +150,29 @@ document.getElementById('refresh-btn').addEventListener('click', () => {
 // DASHBOARD
 // ─────────────────────────────────────────────────────────────
 async function loadDashboard() {
-  // If all shared caches are already populated, render immediately — no network request.
-  if (ilData.length && lstData.length && progData.length && psData.length) {
-    renderDashboard(); return
-  }
+  if (dashboardFetched) { renderDashboard(); return }
 
   setArea('dashboard-area', loading())
   try {
-    // Fetch only tables not already in memory, in parallel.
-    // Storing results in shared caches means all other tabs are instant after this.
-    const [ilRes, lstRes, progRes, psRes] = await Promise.race([
-      Promise.all([
-        ilData.length   ? { data: ilData,   error: null } : sb.from('interest_list').select('*').order('submitted_at', { ascending: false }),
-        lstData.length  ? { data: lstData,  error: null } : sb.from('listings').select('*').order('created_at', { ascending: false }),
-        progData.length ? { data: progData, error: null } : sb.from('programs').select('*').order('created_at', { ascending: false }),
-        psData.length   ? { data: psData,   error: null } : sb.from('property_submissions').select('*').order('submitted_at', { ascending: false }),
-      ]),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('TIMEOUT')), 35000)
-      ),
+    const [ilRes, lstRes, progRes, psRes] = await Promise.all([
+      sb.from('interest_list').select('*').order('submitted_at', { ascending: false }),
+      sb.from('listings').select('*').order('created_at', { ascending: false }),
+      sb.from('programs').select('*').order('created_at', { ascending: false }),
+      sb.from('property_submissions').select('*').order('submitted_at', { ascending: false }),
     ])
 
     if (ilRes.error || lstRes.error || progRes.error || psRes.error)
       throw ilRes.error || lstRes.error || progRes.error || psRes.error
 
-    // Populate shared caches so other tabs render instantly
-    if (!ilData.length)   ilData   = ilRes.data   || []
-    if (!lstData.length)  lstData  = lstRes.data  || []
-    if (!progData.length) progData = progRes.data || []
-    if (!psData.length)   psData   = psRes.data   || []
+    ilData   = ilRes.data   || []
+    lstData  = lstRes.data  || []
+    progData = progRes.data || []
+    psData   = psRes.data   || []
+    dashboardFetched = true
 
     renderDashboard()
   } catch (err) {
-    if (err?.message === 'TIMEOUT') {
-      setArea('dashboard-area', `
-        <div class="error-state">
-          <i class="fa-solid fa-database" style="font-size:1.5rem;"></i>
-          <p>The database took too long to respond.</p>
-          <p style="font-size:.82rem;color:#aaa;max-width:320px;">It should be awake now — click Retry and it will load instantly.</p>
-          <button class="btn-secondary" onclick="loadDashboard()" style="margin-top:.5rem;">
-            <i class="fa-solid fa-rotate-right"></i> Retry
-          </button>
-        </div>`)
-    } else {
-      setArea('dashboard-area', errorState(err))
-    }
+    setArea('dashboard-area', errorState(err))
   }
 }
 
