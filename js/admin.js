@@ -288,8 +288,7 @@ function renderTestimonialsAdmin() {
           <td>${esc(r.role || '')}</td>
           <td><span class="status-pill ${r.active ? 'pill-active' : 'pill-expired'}">${r.active ? 'Active' : 'Inactive'}</span></td>
           <td><div class="action-cell">
-            <button class="btn-secondary btn-xs" onclick="event.stopPropagation();openTmnModal(${r.id})"><i class="fa-solid fa-pen"></i></button>
-            <button class="btn-danger btn-xs"    onclick="event.stopPropagation();deleteTmn(${r.id})"><i class="fa-solid fa-trash"></i></button>
+            <button class="btn-danger btn-xs" onclick="event.stopPropagation();deleteTmn(${r.id})"><i class="fa-solid fa-trash"></i></button>
           </div></td>
         </tr>`).join('')}
       </tbody>
@@ -1889,8 +1888,8 @@ const HELP_CONTENT = {
       {
         q: 'What do the filter buttons do?',
         a: `<ul>
-          <li><strong>Active</strong> (default): shows only testimonials currently on the website.</li>
           <li><strong>All</strong>: shows every testimonial regardless of status.</li>
+          <li><strong>Active</strong> (default): shows only testimonials currently on the website.</li>
           <li><strong>Inactive</strong>: shows only hidden testimonials.</li>
         </ul>`
       }

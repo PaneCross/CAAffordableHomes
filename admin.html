@@ -73,8 +73,8 @@
     <section id="tab-testimonials" class="admin-tab" style="display:none;">
       <div class="tab-toolbar">
         <div class="filter-bar" id="tmn-filter-bar">
-          <button class="filter-btn active" data-tf="active">Active</button>
           <button class="filter-btn" data-tf="all">All</button>
+          <button class="filter-btn active" data-tf="active">Active</button>
           <button class="filter-btn" data-tf="inactive">Inactive</button>
         </div>
         <button class="btn-primary btn-sm" id="tmn-add-btn"><i class="fa-solid fa-plus"></i> Add Testimonial</button>
@@ -460,17 +460,22 @@
     <div class="modal-body" id="tmn-modal-body">
       <div class="field-group il-section">
         <div class="field-group-title">Testimonial Content</div>
-        <div class="field-row-vert">
-          <label class="field-label" for="tmn-quote">Quote <span style="color:var(--red);">*</span></label>
-          <textarea id="tmn-quote" class="modal-input" rows="4" placeholder="Enter the testimonial text..."></textarea>
-        </div>
-        <div class="field-row-vert" style="margin-top:.75rem;">
-          <label class="field-label" for="tmn-name">Name / Attribution</label>
-          <input type="text" id="tmn-name" class="modal-input" placeholder="e.g. Jane D., First-Time Buyer">
-        </div>
-        <div class="field-row-vert" style="margin-top:.75rem;">
-          <label class="field-label" for="tmn-role">Role / Type</label>
-          <input type="text" id="tmn-role" class="modal-input" placeholder="e.g. Affordable Housing Buyer, Developer Partner">
+        <div style="padding:.9rem 1rem;display:flex;flex-direction:column;gap:.8rem;">
+          <div>
+            <label style="display:block;font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.35rem;">Quote <span style="color:var(--red);">*</span></label>
+            <textarea id="tmn-quote" rows="5" placeholder="Type the testimonial quote here..." style="width:100%;padding:.55rem .7rem;border:1px solid var(--border);border-radius:var(--radius);font-size:.88rem;font-family:var(--font-body);color:var(--text);background:#fff;resize:vertical;line-height:1.55;box-sizing:border-box;"></textarea>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.65rem;">
+            <div>
+              <label style="display:block;font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.35rem;" for="tmn-name">Name</label>
+              <input type="text" id="tmn-name" placeholder="e.g. Jane D." style="width:100%;padding:.45rem .65rem;border:1px solid var(--border);border-radius:var(--radius);font-size:.85rem;font-family:var(--font-body);color:var(--text);background:#fff;box-sizing:border-box;">
+            </div>
+            <div>
+              <label style="display:block;font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.35rem;" for="tmn-role">Role / Type</label>
+              <input type="text" id="tmn-role" placeholder="e.g. First-Time Buyer" style="width:100%;padding:.45rem .65rem;border:1px solid var(--border);border-radius:var(--radius);font-size:.85rem;font-family:var(--font-body);color:var(--text);background:#fff;box-sizing:border-box;">
+            </div>
+          </div>
+          <div style="font-size:.76rem;color:#aaa;line-height:1.5;">On the website the attribution appears as <em>Name, Role</em> beneath the quote. Both fields are optional.</div>
         </div>
       </div>
       <div class="field-group il-section" style="margin-top:.75rem;">
