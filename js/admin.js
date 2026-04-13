@@ -157,39 +157,19 @@ document.getElementById('refresh-btn').addEventListener('click', () => {
 async function loadDashboard() {
   if (dashboardFetched) { renderDashboard(); return }
 
-  // Both DOM progress + console.error (errors bypass all console filters)
-  const dashProgress = (step, label) => {
-    console.error(`[dash] step ${step}/4 — ${label}`)
-    setArea('dashboard-area', `
-      <div class="loading-state">
-        <i class="fa-solid fa-circle-notch fa-spin"></i>
-        <p>Loading dashboard... (${step} of 4)</p>
-        <p style="font-size:.82rem;color:#aaa;margin-top:.2rem;">Waiting on: <strong>${label}</strong></p>
-        <p class="wake-hint">The database may be waking up — this usually resolves in 20-30 seconds.</p>
-      </div>`)
-  }
-
-  console.error('[dash] loadDashboard called')
-  dashProgress(1, 'Interest List')
+  setArea('dashboard-area', loading())
   try {
     // Sequential queries — avoids connection pool exhaustion during cold start.
     const ilRes = await sb.from('interest_list').select('*').order('submitted_at', { ascending: false })
-    console.error('[dash] interest_list done —', ilRes.error ? ilRes.error.message : `${ilRes.data?.length} rows`)
     if (ilRes.error) throw ilRes.error
 
-    dashProgress(2, 'Listings')
     const lstRes = await sb.from('listings').select('*').order('created_at', { ascending: false })
-    console.error('[dash] listings done —', lstRes.error ? lstRes.error.message : `${lstRes.data?.length} rows`)
     if (lstRes.error) throw lstRes.error
 
-    dashProgress(3, 'Programs')
     const progRes = await sb.from('programs').select('*').order('created_at', { ascending: false })
-    console.error('[dash] programs done —', progRes.error ? progRes.error.message : `${progRes.data?.length} rows`)
     if (progRes.error) throw progRes.error
 
-    dashProgress(4, 'Property Submissions')
     const psRes = await sb.from('property_submissions').select('*').order('submitted_at', { ascending: false })
-    console.error('[dash] property_submissions done —', psRes.error ? psRes.error.message : `${psRes.data?.length} rows`)
     if (psRes.error) throw psRes.error
 
     ilData   = ilRes.data   || []
@@ -198,10 +178,8 @@ async function loadDashboard() {
     psData   = psRes.data   || []
     dashboardFetched = true
 
-    console.error('[dash] rendering')
     renderDashboard()
   } catch (err) {
-    console.error('[dash] caught error:', err)
     setArea('dashboard-area', errorState(err))
   }
 }
