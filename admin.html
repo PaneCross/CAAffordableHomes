@@ -43,6 +43,7 @@
     <div class="sb-user" id="sb-user-email"></div>
     <div class="sb-nav">
       <button class="sb-btn active" data-tab="dashboard"><i class="fa-solid fa-gauge"></i> Dashboard</button>
+      <button class="sb-btn" data-tab="testimonials"><i class="fa-solid fa-quote-left"></i> Testimonials</button>
       <button class="sb-btn" data-tab="properties"><i class="fa-solid fa-inbox"></i> Submissions</button>
       <button class="sb-btn" data-tab="listings"><i class="fa-solid fa-building"></i> Listings</button>
       <button class="sb-btn" data-tab="programs"><i class="fa-solid fa-globe"></i> Programs</button>
@@ -66,6 +67,19 @@
     <!-- DASHBOARD -->
     <section id="tab-dashboard" class="admin-tab active">
       <div id="dashboard-area"><div class="loading-state"><i class="fa-solid fa-circle-notch fa-spin"></i><p>Loading...</p><p class="wake-hint">Still loading - the database may be waking up after inactivity. This usually takes 20-30 seconds and will resolve automatically.</p></div></div>
+    </section>
+
+    <!-- TESTIMONIALS -->
+    <section id="tab-testimonials" class="admin-tab" style="display:none;">
+      <div class="tab-toolbar">
+        <div class="filter-bar" id="tmn-filter-bar">
+          <button class="filter-btn active" data-tf="active">Active</button>
+          <button class="filter-btn" data-tf="all">All</button>
+          <button class="filter-btn" data-tf="inactive">Inactive</button>
+        </div>
+        <button class="btn-primary btn-sm" id="tmn-add-btn"><i class="fa-solid fa-plus"></i> Add Testimonial</button>
+      </div>
+      <div id="tmn-area"><div class="loading-state"><i class="fa-solid fa-circle-notch fa-spin"></i><p>Loading...</p></div></div>
     </section>
 
     <!-- PROPERTY SUBMISSIONS -->
@@ -429,6 +443,59 @@
           <button class="btn-secondary" id="success-modal-close2">Close</button>
           <button class="btn-primary btn-sm" id="success-save-notes-btn"><i class="fa-solid fa-check"></i> Save Notes</button>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     TESTIMONIAL ADD / EDIT MODAL
+══════════════════════════════════════════════════════════ -->
+<div id="tmn-modal-overlay" class="modal-overlay">
+  <div class="modal-box modal-md">
+    <div class="modal-header">
+      <h2 id="tmn-modal-title">Add Testimonial</h2>
+      <button class="modal-close" id="tmn-modal-close"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body" id="tmn-modal-body">
+      <div class="field-group il-section">
+        <div class="field-group-title">Testimonial Content</div>
+        <div class="field-row-vert">
+          <label class="field-label" for="tmn-quote">Quote <span style="color:var(--red);">*</span></label>
+          <textarea id="tmn-quote" class="modal-input" rows="4" placeholder="Enter the testimonial text..."></textarea>
+        </div>
+        <div class="field-row-vert" style="margin-top:.75rem;">
+          <label class="field-label" for="tmn-name">Name / Attribution</label>
+          <input type="text" id="tmn-name" class="modal-input" placeholder="e.g. Jane D., First-Time Buyer">
+        </div>
+        <div class="field-row-vert" style="margin-top:.75rem;">
+          <label class="field-label" for="tmn-role">Role / Type</label>
+          <input type="text" id="tmn-role" class="modal-input" placeholder="e.g. Affordable Housing Buyer, Developer Partner">
+        </div>
+      </div>
+      <div class="field-group il-section" style="margin-top:.75rem;">
+        <div class="field-group-title">Visibility</div>
+        <div style="padding:.6rem .75rem;">
+          <label style="display:block;font-size:.8rem;font-weight:500;margin-bottom:.5rem;">Show on Website</label>
+          <div class="toggle-row">
+            <span class="toggle-side-label toggle-no">No</span>
+            <label class="toggle-switch" for="tmn-active">
+              <input type="checkbox" id="tmn-active" class="toggle-input" checked>
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            </label>
+            <span class="toggle-side-label toggle-yes">Yes</span>
+          </div>
+          <div style="font-size:.78rem;color:#888;margin-top:.4rem;">Active testimonials are shown on the public website homepage.</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <div>
+        <button class="btn-danger btn-sm" id="tmn-delete-btn" style="display:none;"><i class="fa-solid fa-trash"></i> Delete</button>
+      </div>
+      <div style="display:flex;gap:.5rem;">
+        <button class="btn-secondary btn-sm" id="tmn-cancel-btn">Cancel</button>
+        <button class="btn-primary btn-sm" id="tmn-save-btn"><i class="fa-solid fa-check"></i> Save</button>
       </div>
     </div>
   </div>

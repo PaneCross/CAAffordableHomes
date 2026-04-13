@@ -12,11 +12,11 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
 })
 
 // ── State ─────────────────────────────────────────────────────
-let lstData = [], progData = [], ilData = [], psData = [], candidatesData = [], successesData = []
+let lstData = [], progData = [], ilData = [], psData = [], candidatesData = [], successesData = [], testimonialsData = []
 let dashboardFetched = false
 let helpPanelOpen = false
 let editingLstRow = null, editingProgRow = null, editingPsRow = null, viewingIlRow = null
-let lstFilter = 'active', progFilter = 'active', ilFilter = 'all', psFilter = 'non-promoted'
+let lstFilter = 'active', progFilter = 'active', ilFilter = 'all', psFilter = 'non-promoted', tmnFilter = 'active'
 let ilSearch = ''
 let promotingPsId = null  // PS row id when promoting to listing
 let ilSort  = { col: 'submitted_at', asc: false }
@@ -111,6 +111,7 @@ document.getElementById('logout-btn').addEventListener('click', () => sb.auth.si
 // ─────────────────────────────────────────────────────────────
 const TAB_TITLES = {
   dashboard:     'Dashboard',
+  testimonials:  'Testimonials',
   properties:    'Property Submissions',
   listings:      'Listings',
   programs:      'Programs',
@@ -138,6 +139,7 @@ function switchTab(tab) {
 function loadActiveTab(tab) {
   tab = tab || location.hash.replace('#','') || 'dashboard'
   if (tab === 'dashboard')     { if (!dashboardFetched) loadDashboard(); else renderDashboard() }
+  if (tab === 'testimonials')  { if (!testimonialsData.length) loadTestimonials(); else renderTestimonialsAdmin() }
   if (tab === 'properties')    { if (!psData.length)   loadPS();           else renderPS()           }
   if (tab === 'listings')      { if (!lstData.length)  loadListings();     else renderListings()     }
   if (tab === 'programs')      { if (!progData.length) loadPrograms();     else renderPrograms()     }
@@ -148,7 +150,7 @@ function loadActiveTab(tab) {
 
 document.getElementById('refresh-btn').addEventListener('click', () => {
   const tab = document.querySelector('.sb-btn.active[data-tab]')?.dataset.tab || 'dashboard'
-  lstData = []; progData = []; ilData = []; psData = []; candidatesData = []; successesData = []
+  lstData = []; progData = []; ilData = []; psData = []; candidatesData = []; successesData = []; testimonialsData = []
   dashboardFetched = false
   loadActiveTab(tab)
 })
@@ -234,6 +236,137 @@ function renderDashboard() {
   document.querySelectorAll('[data-nav]').forEach(el => {
     el.addEventListener('click', () => switchTab(el.dataset.nav))
   })
+}
+
+// =============================================================
+// TESTIMONIALS
+// =============================================================
+
+document.getElementById('tmn-filter-bar').addEventListener('click', e => {
+  const btn = e.target.closest('.filter-btn')
+  if (!btn) return
+  tmnFilter = btn.dataset.tf || 'active'
+  renderTestimonialsAdmin()
+})
+document.getElementById('tmn-add-btn').addEventListener('click', () => openTmnModal(null))
+
+async function loadTestimonials() {
+  setArea('tmn-area', loading())
+  const { data, error } = await sb.from('testimonials').select('*').order('id', { ascending: true })
+  if (error) { setArea('tmn-area', errorState(error)); return }
+  testimonialsData = data || []
+  renderTestimonialsAdmin()
+}
+
+function renderTestimonialsAdmin() {
+  const filterBtns = document.querySelectorAll('#tmn-filter-bar .filter-btn')
+  filterBtns.forEach(b => b.classList.toggle('active', b.dataset.tf === tmnFilter))
+
+  let rows = testimonialsData
+  if (tmnFilter === 'active')   rows = testimonialsData.filter(r => r.active)
+  if (tmnFilter === 'inactive') rows = testimonialsData.filter(r => !r.active)
+
+  if (!rows.length) {
+    setArea('tmn-area', emptyState(tmnFilter === 'active' ? 'No active testimonials. Click + Add Testimonial to create one.' : 'No testimonials match this filter.'))
+    return
+  }
+
+  const html = `
+    <div style="margin-bottom:1rem;font-size:.9rem;color:#666;">${rows.length} testimonial${rows.length !== 1 ? 's' : ''} - click any row to edit</div>
+    <table class="data-table">
+      <thead><tr>
+        <th>Quote</th>
+        <th>Name / Attribution</th>
+        <th>Role</th>
+        <th>Status</th>
+        <th></th>
+      </tr></thead>
+      <tbody>
+        ${rows.map(r => `<tr class="clickable-row" onclick="openTmnModal(${r.id})">
+          <td style="max-width:320px;"><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:320px;">${esc(r.quote || '')}</div></td>
+          <td>${esc(r.name || '')}</td>
+          <td>${esc(r.role || '')}</td>
+          <td><span class="status-pill ${r.active ? 'pill-active' : 'pill-expired'}">${r.active ? 'Active' : 'Inactive'}</span></td>
+          <td><div class="action-cell">
+            <button class="btn-secondary btn-xs" onclick="event.stopPropagation();openTmnModal(${r.id})"><i class="fa-solid fa-pen"></i></button>
+            <button class="btn-danger btn-xs"    onclick="event.stopPropagation();deleteTmn(${r.id})"><i class="fa-solid fa-trash"></i></button>
+          </div></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`
+  setArea('tmn-area', html)
+}
+
+let editingTmnId = null
+
+function openTmnModal(id) {
+  editingTmnId = id
+  const r = id ? testimonialsData.find(x => x.id === id) : null
+  document.getElementById('tmn-modal-title').textContent = r ? 'Edit Testimonial' : 'Add Testimonial'
+  document.getElementById('tmn-quote').value  = r?.quote || ''
+  document.getElementById('tmn-name').value   = r?.name  || ''
+  document.getElementById('tmn-role').value   = r?.role  || ''
+  document.getElementById('tmn-active').checked = r ? !!r.active : true
+  document.getElementById('tmn-delete-btn').style.display = r ? '' : 'none'
+  document.getElementById('tmn-modal-overlay').classList.add('open')
+}
+
+function closeTmnModal() {
+  document.getElementById('tmn-modal-overlay').classList.remove('open')
+  editingTmnId = null
+}
+
+document.getElementById('tmn-modal-close').addEventListener('click', closeTmnModal)
+document.getElementById('tmn-cancel-btn').addEventListener('click', closeTmnModal)
+document.getElementById('tmn-modal-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('tmn-modal-overlay')) closeTmnModal()
+})
+
+document.getElementById('tmn-save-btn').addEventListener('click', async () => {
+  const quote  = document.getElementById('tmn-quote').value.trim()
+  const name   = document.getElementById('tmn-name').value.trim()
+  const role   = document.getElementById('tmn-role').value.trim()
+  const active = document.getElementById('tmn-active').checked
+  if (!quote) { toast('Quote is required.', true); return }
+
+  const payload = { quote, name: name || null, role: role || null, active }
+
+  if (editingTmnId) {
+    const { error } = await sb.from('testimonials').update(payload).eq('id', editingTmnId)
+    if (error) { toast(error.message, true); return }
+    const idx = testimonialsData.findIndex(x => x.id === editingTmnId)
+    if (idx !== -1) testimonialsData[idx] = { ...testimonialsData[idx], ...payload }
+    toast('Testimonial updated.')
+  } else {
+    const { data, error } = await sb.from('testimonials').insert(payload).select().single()
+    if (error) { toast(error.message, true); return }
+    testimonialsData.push(data)
+    toast('Testimonial added.')
+  }
+  closeTmnModal()
+  renderTestimonialsAdmin()
+})
+
+document.getElementById('tmn-delete-btn').addEventListener('click', async () => {
+  if (!editingTmnId) return
+  const r = testimonialsData.find(x => x.id === editingTmnId)
+  if (!confirm(`Permanently delete this testimonial?\n\n"${(r?.quote || '').substring(0, 80)}..."\n\nThis cannot be undone.`)) return
+  const { error } = await sb.from('testimonials').delete().eq('id', editingTmnId)
+  if (error) { toast(error.message, true); return }
+  testimonialsData = testimonialsData.filter(x => x.id !== editingTmnId)
+  toast('Testimonial deleted.')
+  closeTmnModal()
+  renderTestimonialsAdmin()
+})
+
+async function deleteTmn(id) {
+  const r = testimonialsData.find(x => x.id === id)
+  if (!confirm(`Permanently delete this testimonial?\n\n"${(r?.quote || '').substring(0, 80)}..."\n\nThis cannot be undone.`)) return
+  const { error } = await sb.from('testimonials').delete().eq('id', id)
+  if (error) { toast(error.message, true); return }
+  testimonialsData = testimonialsData.filter(x => x.id !== id)
+  toast('Testimonial deleted.')
+  renderTestimonialsAdmin()
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1729,6 +1862,37 @@ const HELP_CONTENT = {
       {
         q: 'Why does it sometimes say "Database is waking up"?',
         a: 'The database is on a free-tier plan that goes to sleep after a period of inactivity. The first load after it has been idle can take 20 to 30 seconds. The page will load automatically once the database responds - no action needed.'
+      }
+    ]
+  },
+
+  testimonials: {
+    title: 'Testimonials',
+    intro: 'Testimonials are quotes from clients, buyers, and partners that appear on the public homepage. Active testimonials are shown automatically - inactive ones are saved but hidden from the site.',
+    faq: [
+      {
+        q: 'How do I add a new testimonial?',
+        a: 'Click the <strong>+ Add Testimonial</strong> button in the toolbar. Enter the quote text (required), the person\'s name or attribution, their role or buyer type, and set <strong>Show on Website</strong> to Yes to make it live immediately.'
+      },
+      {
+        q: 'How do I edit or remove a testimonial?',
+        a: 'Click any row in the table to open the edit modal. Update the fields and save, or click <strong>Delete</strong> to permanently remove it. You can also use the trash icon on a row to delete without opening the modal.'
+      },
+      {
+        q: 'What is the difference between Active and Inactive?',
+        a: '<strong>Active</strong> testimonials are shown on the public homepage. <strong>Inactive</strong> testimonials are saved in the system but hidden from visitors. Toggle the <strong>Show on Website</strong> switch in the edit modal to change the status.'
+      },
+      {
+        q: 'How do the Name and Role fields work?',
+        a: 'The <strong>Name</strong> field is the person\'s name or initials. The <strong>Role</strong> field is their buyer type or partner type (for example: First-Time Buyer, Developer Partner). On the website, both are combined as the attribution below the quote. Either or both can be left blank.'
+      },
+      {
+        q: 'What do the filter buttons do?',
+        a: `<ul>
+          <li><strong>Active</strong> (default): shows only testimonials currently on the website.</li>
+          <li><strong>All</strong>: shows every testimonial regardless of status.</li>
+          <li><strong>Inactive</strong>: shows only hidden testimonials.</li>
+        </ul>`
       }
     ]
   },

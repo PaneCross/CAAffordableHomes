@@ -1,22 +1,18 @@
 /* =========================================================
-   CA Affordable Homes — listings.js
-   Fetches property listings from a published Google Sheet
-   and renders them as property cards + modal on homes.html
+   CA Affordable Homes - listings.js
+   NOTE: homes.html (which loaded this file) now redirects to
+   index.html and is no longer an active page. This file is
+   retained as a historical reference only and is not executed
+   by any live page.
 
-   HOW TO UPDATE YOUR LISTINGS:
-   1. Go to your Google Sheet
-   2. File → Share → Publish to web → select "CSV" → Copy link
-   3. Paste that link as the value of SHEET_CSV_URL below
-   4. Save this file — that's it!
+   Listings are now managed exclusively through the Supabase
+   admin portal (admin.html) and are internal-only per
+   California MLS Clear Cooperation Policy compliance.
    ========================================================= */
 
-// ─────────────────────────────────────────────────────────
-// STEP 1: Paste your Google Sheet CSV URL here.
-// ─────────────────────────────────────────────────────────
-const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSLIxTKpwY7klY87Ac612ZDTJJg8AxTD35MPPjLATKp5qoAenw7j4SEhT4S9KnMrEP5cjbvwNEYu1Nb/pub?gid=0&single=true&output=csv';
-
-// Apps Script endpoint — same one used by contact.html
-const LISTINGS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw0MOVFTvtDia4k_bcGVtgcwb-7EhWczMzSdLpaesRDUqV4ZmUpJ6CU75B09ee9tXHO/exec';
+// Sheet/Apps Script references removed - no longer used.
+const SHEET_CSV_URL    = ''
+const LISTINGS_SCRIPT_URL = ''
 
 // ─────────────────────────────────────────────────────────
 // LISTINGS SHEET — column headers in order (Phase 4 schema)
