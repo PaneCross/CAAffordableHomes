@@ -583,7 +583,7 @@ header {
   position: absolute;
   inset: 0;
   background-size: cover;
-  background-position: center;
+  background-position: center 70%;
   background-repeat: no-repeat;
 }
 
