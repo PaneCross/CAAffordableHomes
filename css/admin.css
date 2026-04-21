@@ -767,12 +767,18 @@ textarea.form-input { resize: vertical; }
   }
   .sidebar-close-btn:hover { color: #fff; }
 
-  /* ── App shell: remove forced viewport height on mobile ──
-     #app has min-height:100vh in base CSS. admin-main is flex:1 inside
-     it, so it stretches to fill #app's height even with min-height:0 on
-     admin-main. Setting #app to min-height:0 lets content determine
-     height naturally — no blank space on short-content tabs. ── */
-  #app { min-height: 0; }
+  /* ── App shell: remove forced height; contain horizontal overflow ──
+     min-height:100vh on #app causes blank space (admin-main is flex:1
+     so it stretches to fill the parent). Setting min-height:0 fixes that.
+
+     overflow-x:hidden is the critical fix for Submissions/Successes:
+     wide data tables push the document wider than the viewport. On iOS
+     Safari, position:fixed elements are laid out relative to the layout
+     viewport width, so a wider-than-viewport document makes the fixed
+     footer appear misaligned or oversized. Clipping at #app ensures the
+     document never exceeds viewport width while the table area's own
+     overflow-x:auto still lets the table scroll internally. ── */
+  #app { min-height: 0; overflow-x: hidden; }
 
   /* ── Main content: full width, padded for header + footer ── */
   .admin-main {
@@ -781,6 +787,8 @@ textarea.form-input { resize: vertical; }
     padding-top: var(--mobile-header-h);
     padding-bottom: var(--mobile-footer-h);
     min-height: 0;
+    min-width: 0;   /* flex items default to min-width:auto; 0 prevents expansion beyond parent */
+    width: 100%;
   }
   /* When help panel opens on mobile, don't shift main — panel goes full-width on top */
   .admin-main.help-open { margin-right: 0 !important; }
