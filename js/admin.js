@@ -1046,7 +1046,6 @@ function openProgModal(idx, prefill) {
     el.classList.toggle('pf-auto-field', isAutoMode)
   })
   document.getElementById('pf-auto-banner').style.display = isAutoMode ? 'block' : 'none'
-  document.getElementById('prog-sync-btn').style.display  = isAutoMode ? ''      : 'none'
 
   document.getElementById('prog-modal-overlay').classList.add('open')
 }

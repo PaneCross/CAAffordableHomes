@@ -400,7 +400,10 @@
 
       <!-- Auto-calculated fields (from linked listings) -->
       <div id="pf-auto-banner" class="pf-auto-banner">
-        <i class="fa-solid fa-rotate"></i> The fields below are calculated automatically from linked listings. To change them, edit the values on the <strong>Listings</strong> tab.
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;">
+          <span><i class="fa-solid fa-rotate"></i> These fields are calculated from linked listings. Edit values on the <strong>Listings</strong> tab.</span>
+          <button class="btn-ghost btn-sm" id="prog-sync-btn" type="button" style="flex-shrink:0;"><i class="fa-solid fa-rotate"></i> Sync Now</button>
+        </div>
       </div>
       <div class="form-row3">
         <div class="form-group"><label for="pf-zip">Zip Code</label><input id="pf-zip" class="form-input" placeholder="e.g. 92101"></div>
@@ -428,7 +431,6 @@
     <div class="modal-footer">
       <div id="pf-linked-listings-label" style="flex:1;font-size:.78rem;color:#555;"></div>
       <button class="btn-secondary" id="prog-cancel-btn">Cancel</button>
-      <button class="btn-ghost btn-sm" id="prog-sync-btn" style="display:none;"><i class="fa-solid fa-rotate"></i> Sync Now</button>
       <button class="btn-primary" id="prog-save-btn"><i class="fa-solid fa-floppy-disk"></i> Save Community</button>
     </div>
   </div>
