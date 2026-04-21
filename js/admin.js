@@ -277,6 +277,25 @@ function renderTestimonialsAdmin() {
     return
   }
 
+  // ── Mobile card layout ──
+  if (window.innerWidth <= 768) {
+    const cards = rows.map(r => {
+      const quote = r.quote ? esc(r.quote) : ''
+      const attribution = [r.name, r.role].filter(Boolean).map(esc).join(' &bull; ')
+      return `<div class="tmn-mobile-card" onclick="openTmnModal(${r.id})">
+        <div class="tmn-mc-top">
+          <span class="status-pill ${r.active ? 'pill-active' : 'pill-expired'}" style="font-size:.68rem;padding:.1rem .45rem;flex-shrink:0;">${r.active ? 'Active' : 'Inactive'}</span>
+          <button class="btn-danger btn-xs" onclick="event.stopPropagation();deleteTmn(${r.id})" style="flex-shrink:0;"><i class="fa-solid fa-trash"></i></button>
+        </div>
+        <div class="tmn-mc-quote"><i class="fa-solid fa-quote-left" aria-hidden="true"></i> ${quote}</div>
+        ${attribution ? `<div class="tmn-mc-attribution">${attribution}</div>` : ''}
+      </div>`
+    }).join('')
+    setArea('tmn-area', `<div class="tmn-card-list">${cards}</div>`)
+    return
+  }
+
+  // ── Desktop table layout ──
   const html = `
     <div style="margin-bottom:1rem;font-size:.9rem;color:#666;">${rows.length} testimonial${rows.length !== 1 ? 's' : ''} - click any row to edit</div>
     <table class="data-table">
@@ -2621,6 +2640,12 @@ window.addEventListener('resize', () => {
     // Successes: renderSuccesses() reads all state from globals — just call it
     if (tab === 'successes' && successesData.length) {
       renderSuccesses()
+      return
+    }
+
+    // Testimonials: renderTestimonialsAdmin() reads all state from globals
+    if (tab === 'testimonials' && testimonialsData.length) {
+      renderTestimonialsAdmin()
     }
   }, 150)  // 150ms debounce — smooth during drag, snappy at rest
 })
