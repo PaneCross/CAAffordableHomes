@@ -4,10 +4,10 @@
 ---
 
 ## Project Status
-- **Phase 9 complete** — Major legal/compliance redesign: Available Homes page removed, listing exposure eliminated, area preference replaces listing interest, applicant match emails removed
-- **Phase 10 in progress** — Supabase migration: database, Edge Functions, new admin.html. Apps Script being retired.
+- **Phase 11 complete** — AMI table, org inquiries, program card redesign, weekly digest, matching engine update
+- **Phase 10 complete** — Supabase migration: database, Edge Functions, new admin.html. Apps Script retired.
 - **Not yet live** — currently hosted on GitHub Pages (test environment)
-- **Next up** — complete Supabase cutover (run schema SQL, deploy Edge Functions, set secrets), then go-live prep
+- **Next up** — deploy updated Edge Functions, go-live prep
 
 ## ⚠️ Legal Context — Why Homes Page Was Removed
 California MLS Clear Cooperation Policy (adopted by NAR and all major CA MLSs): any property publicly marketed must be submitted to the MLS within 1 business day. A public-facing Available Homes page with addresses/prices/photos constitutes public marketing. The compliant model is: Kacee maintains listings and requirements internally, the matching engine runs privately, and she reaches out manually when a match is identified. **Users must never see a specific address, price, or listing detail without Kacee initiating that contact.**
@@ -253,21 +253,23 @@ CLOSE_THRESHOLD = 2  // max failed fields to score "Close" (vs "Fail")
 
 ## Known Pending Items
 
-### Phase 10 cutover (do when TJ returns)
-1. **Run schema SQL** — paste `supabase/migrations/001_schema.sql` into Supabase SQL Editor and run once.
-2. **Create admin user** — Supabase dashboard → Authentication → Users → Add user (email + password, auto-confirm).
-3. **Set Edge Function secrets** — Supabase dashboard → Edge Functions → Manage secrets (4 secrets: URL, service key, Resend key, notify email).
-4. **Deploy Edge Functions** — `supabase functions deploy submit-interest/daily-match/check-expiry --project-ref monybdfujogcyseyjgfx` (requires Supabase CLI: `npm i -g supabase`).
-5. **Add GitHub Actions secret** — repo Settings → Secrets → Actions → New: `SUPABASE_SERVICE_KEY`.
-6. **Verify Resend domain** — resend.com → Domains → add `caaffordablehomes.com` and add DNS records. Until then, send from `onboarding@resend.dev` (sandbox, limited to verified addresses).
-7. **Update FROM_EMAIL in Edge Functions** — change `noreply@caaffordablehomes.com` to `onboarding@resend.dev` for testing, then to verified domain at go-live.
-8. **Migrate existing Sheet data** — export each Sheets tab as CSV, import to Supabase via Table Editor or SQL INSERT.
+### Phase 11 deploy steps (run these)
+1. **Run 008_phase11.sql** — already run by TJ. Schema is live.
+2. **Deploy daily-match** — source changed (ami_table + programs JOIN + income-8). Run:
+   `supabase functions deploy daily-match --project-ref monybdfujogcyseyjgfx --no-verify-jwt`
+3. **Deploy submit-inquiry** — new Edge Function for org inquiries. Run:
+   `supabase functions deploy submit-inquiry --project-ref monybdfujogcyseyjgfx --no-verify-jwt`
+   (already done in prior session; redeploy if needed)
+
+### Phase 10 cutover (completed)
+- Schema SQL run, Edge Functions deployed with --no-verify-jwt, GitHub Actions secret added.
 
 ### Ongoing / go-live
-9. **Repeating block header renumbering bug** — income/employment block numbers go wrong when removing and re-adding. Needs `renumberIncomeBlocks()` / `renumberEmpBlocks()` in `contact.html`.
-10. **NOTIFY_EMAIL switch** — change `tj@nostos.tech` → Kacee's email in Supabase Edge Function secrets at go-live.
-11. **Social links** — footer Facebook/Instagram hrefs are `#` on all pages.
-12. **Hero background image** — Unsplash placeholder; replace with licensed image at go-live.
+4. **Repeating block header renumbering bug** — income/employment block numbers go wrong when removing and re-adding. Needs `renumberIncomeBlocks()` / `renumberEmpBlocks()` in `contact.html`.
+5. **NOTIFY_EMAIL switch** — change `tj@nostos.tech` → Kacee's email in Supabase Edge Function secrets at go-live.
+6. **Social links** — footer Facebook/Instagram hrefs are `#` on all pages.
+7. **Available homes counter on programs page** — requires a public DB view or partial anon SELECT on listings (units_available only). Listings table is currently authenticated-only.
+8. **Verify Resend domain** — switch FROM_EMAIL from `onboarding@resend.dev` to `noreply@caaffordablehomes.com` after domain verified.
 
 ---
 
@@ -284,3 +286,5 @@ CLOSE_THRESHOLD = 2  // max failed fields to score "Close" (vs "Fail")
 | 7 | Annual expiry lifecycle — `checkExpiryDates()` (Trigger C), `sendRenewalReminderEmail()` with same-email instruction, re-enrollment path in `doPost`, `renewal_reminder_sent` column |
 | 8 | Kacee round-3 content updates — wording edits across all pages, removed "Our Commitment" section (index), removed "Our Approach" section (about), added "What We Offer" services section (about), Services page removed from nav/footer + meta redirect to about.html, EHO logo + DRE licensing in all footers, `feature-grid--2x2` CSS class added |
 | 9 | Legal/compliance redesign — Available Homes page redirected to index, removed from nav/footer sitewide; listing interest checkboxes replaced with San Diego area preference; `sendApplicantMatchEmail` and `handleMLSContact` removed from Apps Script; `?action=getListings` endpoint removed; `listing_interest_summary` column renamed `area_preference`; all applicant-facing emails now listing-agnostic |
+| 10 | Supabase migration — full DB schema, RLS policies, Edge Functions (submit-interest, daily-match, check-expiry), admin.html portal with Google auth, GitHub Actions cron. Apps Script retired. |
+| 11 | AMI table + org inquiries + program redesign — listings: replace 9 per-person income columns with JSONB ami_table (8x4 HH size x AMI%); programs: new fields zip_code/property_type/ami_percent, remove program_type/first_time_buyer/household_size_limit; org_inquiries table + admin tab + Edge Function; interest list extended to 8 income members; programs.js redesign (area as card title); weekly digest cron (Monday); matching engine updated for ami_table with legacy fallback |
