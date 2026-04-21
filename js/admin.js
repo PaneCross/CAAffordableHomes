@@ -1990,13 +1990,36 @@ function renderSuccesses() {
 
 let viewingSuccessRow = null
 
-function openSuccessModal(idx) {
+async function openSuccessModal(idx) {
   viewingSuccessRow = successesData[idx]
   const r = viewingSuccessRow
 
-  // Find matching IL record and listing record from cached data
-  const il = ilData.find(a => a.email === r.email) || {}
-  const lst = lstData.find(l => l.listing_id === r.listing_id) || {}
+  // Show modal immediately with a loading state while we resolve IL + listing data
+  document.getElementById('success-modal-title').textContent = r.full_name || r.email
+  document.getElementById('success-modal-body').innerHTML =
+    '<div style="text-align:center;padding:2rem;color:var(--muted);">' +
+    '<i class="fa-solid fa-circle-notch fa-spin" style="font-size:1.5rem;"></i>' +
+    '<p style="margin-top:.75rem;font-size:.88rem;">Loading details...</p></div>'
+  document.getElementById('success-modal-overlay').classList.add('open')
+
+  // Find matching IL record — use cache if warm, otherwise fetch directly from DB
+  // (ilData is only populated when the Interest List tab has been visited this session)
+  let il = ilData.find(a => a.email === r.email) || null
+  if (!il && r.email) {
+    const { data } = await sb.from('interest_list').select('*').eq('email', r.email).maybeSingle()
+    il = data || {}
+  } else {
+    il = il || {}
+  }
+
+  // Same for listing record
+  let lst = lstData.find(l => l.listing_id === r.listing_id) || null
+  if (!lst && r.listing_id) {
+    const { data } = await sb.from('listings').select('*').eq('listing_id', r.listing_id).maybeSingle()
+    lst = data || {}
+  } else {
+    lst = lst || {}
+  }
 
   // Build pipeline from status_history (admin events) plus known anchors
   const STATUS_COLORS = { new: '#6aab7c', reviewing: '#4a7c6a', active: '#2c7c8a', matched: '#2c5545', expired: '#aaa' }
@@ -2081,7 +2104,6 @@ function openSuccessModal(idx) {
     </div>`
 
   document.getElementById('success-final-notes').value = r.final_notes || ''
-  document.getElementById('success-modal-overlay').classList.add('open')
 }
 
 function closeSuccessModal() {
