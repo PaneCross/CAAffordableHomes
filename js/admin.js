@@ -404,6 +404,37 @@ function renderPS() {
 
   rows = sortRows(rows, psSort)
 
+  // ── Mobile card layout ──
+  if (window.innerWidth <= 768) {
+    const cards = rows.map(r => {
+      const idx = psData.indexOf(r)
+      const isPromoted = (r.status||'new') === 'promoted'
+      const promoteBtn = isPromoted
+        ? `<span class="ps-mc-promoted"><i class="fa-solid fa-check"></i> Promoted</span>`
+        : `<button class="btn-primary btn-xs" onclick="event.stopPropagation();promoteToListing(${idx})"><i class="fa-solid fa-arrow-up-right-from-square"></i> Promote</button>`
+      const metaParts = []
+      if (r.ami_percent) metaParts.push(`<span><i class="fa-solid fa-percent"></i> ${esc(r.ami_percent)}% AMI</span>`)
+      if (r.bedrooms)    metaParts.push(`<span><i class="fa-solid fa-bed"></i> ${esc(r.bedrooms)} bd</span>`)
+      if (r.bathrooms)   metaParts.push(`<span><i class="fa-solid fa-bath"></i> ${esc(r.bathrooms)} ba</span>`)
+      if (r.affordable_price) metaParts.push(`<span><i class="fa-solid fa-tag"></i> $${esc(r.affordable_price)}</span>`)
+      return `<div class="ps-mobile-card${isPromoted ? ' ps-mc-is-promoted' : ''}" onclick="openPSModal(${idx})">
+        <div class="ps-mc-top">
+          <span class="ps-mc-name">${esc(r.contact_name||'Unknown')}</span>
+          <span class="ps-mc-date">${fmtDate(r.submitted_at)}</span>
+        </div>
+        ${r.contact_email ? `<div class="ps-mc-email"><i class="fa-solid fa-envelope"></i> ${esc(r.contact_email)}</div>` : ''}
+        ${r.prop_address  ? `<div class="ps-mc-address"><i class="fa-solid fa-location-dot"></i> ${esc(r.prop_address)}</div>` : ''}
+        ${metaParts.length ? `<div class="ps-mc-meta">${metaParts.join('')}</div>` : ''}
+        <div class="ps-mc-actions" onclick="event.stopPropagation()">${promoteBtn}
+          <button class="btn-secondary btn-xs" onclick="openPSModal(${idx})"><i class="fa-solid fa-pen"></i> Edit</button>
+        </div>
+      </div>`
+    }).join('')
+    setArea('ps-area', `<div class="ps-card-list">${cards}</div>`)
+    return
+  }
+
+  // ── Desktop table layout ──
   const psCols = [
     { label: 'Date',    col: 'submitted_at' },
     { label: 'Contact', col: 'contact_name' },
@@ -1911,6 +1942,31 @@ function renderSuccesses() {
     setArea('successes-area', emptyState('No successes yet. Approve a candidate in the Matches tab to log one here.'))
     return
   }
+
+  const countLine = `${successesData.length} successful match${successesData.length !== 1 ? 'es' : ''} - tap any card to view details`
+
+  // ── Mobile card layout ──
+  if (window.innerWidth <= 768) {
+    const cards = successesData.map((r, i) => {
+      const listing = esc(r.listing_name || r.listing_id || '')
+      const notes   = r.final_notes ? esc(r.final_notes).slice(0, 80) + (r.final_notes.length > 80 ? '...' : '') : ''
+      return `<div class="sc-mobile-card" onclick="openSuccessModal(${i})">
+        <div class="sc-mc-top">
+          <span class="sc-mc-name">${esc(r.full_name || 'Unknown')}</span>
+          <span class="sc-mc-date">${fmtDate(r.approved_at)}</span>
+        </div>
+        ${r.email   ? `<div class="sc-mc-email"><i class="fa-solid fa-envelope"></i> ${esc(r.email)}</div>` : ''}
+        ${listing   ? `<div class="sc-mc-listing"><i class="fa-solid fa-house"></i> ${listing}</div>` : ''}
+        ${notes     ? `<div class="sc-mc-notes">${notes}</div>` : ''}
+      </div>`
+    }).join('')
+    setArea('successes-area', `
+      <div style="margin-bottom:.75rem;font-size:.85rem;color:#666;">${countLine}</div>
+      <div class="sc-card-list">${cards}</div>`)
+    return
+  }
+
+  // ── Desktop table layout ──
   const html = `
     <div style="margin-bottom:1rem;font-size:.9rem;color:#666;">${successesData.length} successful match${successesData.length !== 1 ? 'es' : ''} - click any row to view details</div>
     <table class="data-table">
@@ -2478,6 +2534,18 @@ window.addEventListener('resize', () => {
         matchRenderData.il,
         openBlocks
       )
+      return
+    }
+
+    // Property Submissions: renderPS() reads all state from globals — just call it
+    if (tab === 'property-submissions' && psData.length) {
+      renderPS()
+      return
+    }
+
+    // Successes: renderSuccesses() reads all state from globals — just call it
+    if (tab === 'successes' && successesData.length) {
+      renderSuccesses()
     }
   }, 150)  // 150ms debounce — smooth during drag, snappy at rest
 })

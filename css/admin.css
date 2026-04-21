@@ -995,4 +995,70 @@ textarea.form-input { resize: vertical; }
     font-size: .72rem; color: #bbb; text-align: center;
     padding: .35rem; border-top: 1px dashed #ddd; margin: .1rem 0;
   }
+
+  /* ── Property Submissions: mobile card layout ── */
+  .ps-card-list {
+    display: flex; flex-direction: column; gap: .6rem;
+  }
+  .ps-mobile-card {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: 10px; padding: .8rem .95rem;
+    cursor: pointer; transition: box-shadow .15s, border-color .15s;
+    -webkit-tap-highlight-color: transparent;
+    border-left: 3px solid #ccc;
+  }
+  .ps-mobile-card:active { box-shadow: 0 2px 10px rgba(0,0,0,.1); }
+  .ps-mc-is-promoted { border-left-color: var(--green); background: #fafffe; }
+  .ps-mc-top {
+    display: flex; align-items: flex-start;
+    justify-content: space-between; gap: .5rem;
+    margin-bottom: .25rem;
+  }
+  .ps-mc-name  { font-weight: 600; font-size: .92rem; }
+  .ps-mc-date  { font-size: .75rem; color: var(--muted); flex-shrink: 0; padding-top: .1rem; }
+  .ps-mc-email, .ps-mc-address {
+    font-size: .8rem; color: #555; margin-bottom: .14rem;
+  }
+  .ps-mc-email i, .ps-mc-address i { margin-right: .3rem; color: #aaa; }
+  .ps-mc-meta {
+    display: flex; flex-wrap: wrap; gap: .3rem .7rem;
+    font-size: .73rem; color: #888; margin: .35rem 0 .1rem;
+  }
+  .ps-mc-meta i { margin-right: .2rem; color: #aaa; }
+  .ps-mc-actions {
+    display: flex; flex-wrap: wrap; gap: .35rem;
+    padding-top: .45rem; border-top: 1px solid var(--border); margin-top: .45rem;
+  }
+  .ps-mc-promoted {
+    font-size: .75rem; color: var(--green); font-weight: 600;
+  }
+  .ps-mc-promoted i { margin-right: .2rem; }
+
+  /* ── Successes: mobile card layout ── */
+  .sc-card-list {
+    display: flex; flex-direction: column; gap: .6rem;
+  }
+  .sc-mobile-card {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: 10px; padding: .8rem .95rem;
+    cursor: pointer; transition: box-shadow .15s, border-color .15s;
+    -webkit-tap-highlight-color: transparent;
+    border-left: 3px solid var(--green);
+  }
+  .sc-mobile-card:active { box-shadow: 0 2px 10px rgba(0,0,0,.1); border-color: var(--green-light); }
+  .sc-mc-top {
+    display: flex; align-items: flex-start;
+    justify-content: space-between; gap: .5rem;
+    margin-bottom: .25rem;
+  }
+  .sc-mc-name  { font-weight: 600; font-size: .92rem; }
+  .sc-mc-date  { font-size: .75rem; color: var(--muted); flex-shrink: 0; padding-top: .1rem; }
+  .sc-mc-email, .sc-mc-listing {
+    font-size: .8rem; color: #555; margin-bottom: .14rem;
+  }
+  .sc-mc-email i, .sc-mc-listing i { margin-right: .3rem; color: #aaa; }
+  .sc-mc-notes {
+    font-size: .76rem; color: #888; font-style: italic;
+    margin-top: .3rem; line-height: 1.4;
+  }
 }
