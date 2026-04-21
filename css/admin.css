@@ -710,8 +710,8 @@ textarea.form-input { resize: vertical; }
    ══════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
 
-  /* ── Mobile sticky header ── */
-  #mobile-header {
+  /* ── Mobile sticky header (only when logged in) ── */
+  body.admin-logged-in #mobile-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -740,6 +740,9 @@ textarea.form-input { resize: vertical; }
     white-space: nowrap;
   }
   .mobile-header-spacer { width: 40px; flex-shrink: 0; }
+
+  /* ── Sidebar: hide Refresh + Sign Out (they live in mobile footer) ── */
+  .sb-footer { display: none; }
 
   /* ── Sidebar: off-canvas from left ── */
   .admin-sidebar {
@@ -788,8 +791,8 @@ textarea.form-input { resize: vertical; }
   /* ── Tab content padding ── */
   .admin-tab { padding: 1rem .85rem; }
 
-  /* ── Mobile footer bar ── */
-  #mobile-footer-bar {
+  /* ── Mobile footer bar (only when logged in) ── */
+  body.admin-logged-in #mobile-footer-bar {
     display: flex;
     position: fixed; bottom: 0; left: 0; right: 0;
     height: var(--mobile-footer-h);
@@ -930,4 +933,53 @@ textarea.form-input { resize: vertical; }
   }
   .il-mc-meta i { margin-right: .2rem; }
   .il-mc-area { font-style: italic; text-align: right; max-width: 55%; }
+
+  /* ── Matches: mobile candidate card layout ── */
+  .match-mobile-list {
+    display: flex; flex-direction: column; gap: .55rem; margin-top: .6rem;
+  }
+  .match-mobile-card {
+    border: 1px solid var(--border); border-radius: 9px;
+    padding: .75rem .9rem; border-left: 3px solid #ccc;
+    background: var(--white);
+  }
+  .match-mc-pass    { border-left-color: #2e7d32; background: #fafffe; }
+  .match-mc-close   { border-left-color: #7a5800; background: #fffdf5; }
+  .match-mc-opted-out { opacity: .7; background: #fafaf8; border-left-color: #ccc; }
+  .match-mc-star    { box-shadow: 0 0 0 1px rgba(44,85,69,.25); }
+  .match-mc-header  {
+    display: flex; align-items: flex-start; gap: .45rem; margin-bottom: .35rem;
+  }
+  .match-mc-rank {
+    font-weight: 700; font-size: .76rem; color: var(--muted);
+    flex-shrink: 0; padding-top: .15rem; min-width: 26px;
+  }
+  .match-mc-name-block {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column; gap: .08rem;
+  }
+  .match-mc-name-block strong { font-size: .87rem; }
+  .match-mc-candidate-email {
+    font-size: .74rem; color: var(--muted);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .match-mc-meta {
+    display: flex; flex-wrap: wrap; gap: .4rem .75rem;
+    font-size: .73rem; color: #888; margin-bottom: .35rem;
+  }
+  .match-mc-meta i { margin-right: .15rem; color: #aaa; }
+  .match-mc-fails {
+    font-size: .71rem; color: #888; line-height: 1.45;
+    background: #f9f8f5; border-radius: 5px;
+    padding: .28rem .5rem; margin-bottom: .35rem;
+  }
+  .match-mc-fails i { color: #c0823a; margin-right: .2rem; }
+  .match-mc-actions {
+    display: flex; flex-wrap: wrap; gap: .3rem;
+    padding-top: .4rem; border-top: 1px solid var(--border); margin-top: .1rem;
+  }
+  .match-mc-divider {
+    font-size: .72rem; color: #bbb; text-align: center;
+    padding: .35rem; border-top: 1px dashed #ddd; margin: .1rem 0;
+  }
 }

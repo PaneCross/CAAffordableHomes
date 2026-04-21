@@ -67,11 +67,13 @@ function showLogin() {
   appInitialized = false
   document.getElementById('login-screen').style.display = 'flex'
   document.getElementById('app').style.display = 'none'
+  document.body.classList.remove('admin-logged-in')
 }
 
 function showApp(session) {
   document.getElementById('login-screen').style.display = 'none'
   document.getElementById('app').style.display = 'flex'
+  document.body.classList.add('admin-logged-in')
   document.getElementById('sb-user-email').textContent = session.user.email
   if (!appInitialized) {
     appInitialized = true
@@ -1620,13 +1622,104 @@ function renderMatches(listings, results, cands, il, openBlocks = new Set()) {
       </tr>`
     }
 
-    const activeRows = activeCandidates.map((item, i) => buildRow(item, i + 1, false)).join('')
+    const isMobile = window.innerWidth <= 768
 
-    const optedOutSection = optedOutCandidates.length ? `
-      <tr class="match-opted-out-divider">
-        <td colspan="7">Opted out of this property (${optedOutCandidates.length})</td>
-      </tr>
-      ${optedOutCandidates.map(item => buildRow(item, 0, true)).join('')}` : ''
+    // ── Mobile card builder ──────────────────────────────────
+    const buildMobileCard = (item, rank, isOptedOut) => {
+      const r   = item
+      const ilR = item.ilRow
+      const cnd = item.cand
+      const isPass = r.status === 'Pass'
+      const statusBadge = isPass
+        ? '<span class="match-badge match-pass">Pass</span>'
+        : '<span class="match-badge match-close">Close</span>'
+
+      if (isOptedOut) {
+        return `<div class="match-mobile-card match-mc-opted-out">
+          <div class="match-mc-header">
+            <div class="match-mc-name-block">
+              <strong>${esc(r.full_name || r.email)}</strong>
+              <span class="match-mc-candidate-email">${esc(r.email)}</span>
+            </div>
+            <span class="match-badge match-opted-out">Opted Out</span>
+          </div>
+          <div class="match-mc-actions">
+            <button class="btn-secondary btn-xs" onclick="optIn('${esc(lst.listing_id)}','${esc(r.email)}')"><i class="fa-solid fa-rotate-left"></i> Opt Back In</button>
+          </div>
+        </div>`
+      }
+
+      const isStar = rank === 1 && !cnd
+      const failDetail = r.failed_fields
+        ? `<div class="match-mc-fails"><i class="fa-solid fa-circle-exclamation"></i> ${esc(r.failed_fields)}</div>` : ''
+
+      let actionHtml
+      if (!cnd) {
+        actionHtml = `
+          <button class="btn-primary btn-xs" onclick="startReview('${esc(lst.listing_id)}','${esc(r.email)}')"><i class="fa-solid fa-magnifying-glass"></i> Start Review</button>
+          <button class="btn-secondary btn-xs" onclick="optOut('${esc(lst.listing_id)}','${esc(r.email)}')"><i class="fa-solid fa-ban"></i> Opt Out</button>`
+      } else if (cnd.status === 'in_review') {
+        actionHtml = `
+          <span class="status-pill pill-reviewing">In Review</span>
+          <button class="btn-primary btn-xs" onclick="approveCandidate(${cnd.id},'${esc(lst.listing_id)}','${esc(lst.listing_name||lst.listing_id)}','${esc(r.email)}','${esc(r.full_name||'')}')"><i class="fa-solid fa-check"></i> Approve</button>
+          <button class="btn-danger btn-xs" onclick="declineCandidate(${cnd.id})"><i class="fa-solid fa-xmark"></i> Decline</button>
+          <button class="btn-secondary btn-xs" onclick="optOut('${esc(lst.listing_id)}','${esc(r.email)}')"><i class="fa-solid fa-ban"></i> Opt Out</button>`
+      } else if (cnd.status === 'approved') {
+        actionHtml = `<span class="status-pill pill-matched">Approved</span>`
+      } else {
+        actionHtml = `
+          <span class="status-pill pill-expired">Declined</span>
+          <button class="btn-secondary btn-xs" onclick="startReview('${esc(lst.listing_id)}','${esc(r.email)}')"><i class="fa-solid fa-rotate-left"></i> Re-assign</button>`
+      }
+
+      return `<div class="match-mobile-card ${isPass ? 'match-mc-pass' : 'match-mc-close'}${isStar ? ' match-mc-star' : ''}">
+        <div class="match-mc-header">
+          <span class="match-mc-rank">#${rank}${isStar ? ' <span class="priority-star">★</span>' : ''}</span>
+          <div class="match-mc-name-block">
+            <strong>${esc(r.full_name || r.email)}</strong>
+            <span class="match-mc-candidate-email">${esc(r.email)}</span>
+          </div>
+          ${statusBadge}
+        </div>
+        ${failDetail}
+        <div class="match-mc-meta">
+          <span><i class="fa-solid fa-calendar-days"></i> ${ilR ? fmtDate(ilR.submitted_at) : 'N/A'}</span>
+          ${ilR?.credit_score_self ? `<span><i class="fa-solid fa-credit-card"></i> ${ilR.credit_score_self}</span>` : ''}
+          ${ilR?.household_size   ? `<span><i class="fa-solid fa-people-group"></i> ${ilR.household_size}</span>` : ''}
+        </div>
+        <div class="match-mc-actions">${actionHtml}</div>
+      </div>`
+    }
+
+    // ── Build rows/cards ─────────────────────────────────────
+    const activeContent = isMobile
+      ? activeCandidates.map((item, i) => buildMobileCard(item, i + 1, false)).join('')
+      : activeCandidates.map((item, i) => buildRow(item, i + 1, false)).join('')
+
+    const optedOutContent = optedOutCandidates.length
+      ? isMobile
+        ? `<div class="match-mc-divider">Opted out of this listing (${optedOutCandidates.length})</div>
+           ${optedOutCandidates.map(item => buildMobileCard(item, 0, true)).join('')}`
+        : `<tr class="match-opted-out-divider">
+             <td colspan="7">Opted out of this property (${optedOutCandidates.length})</td>
+           </tr>
+           ${optedOutCandidates.map(item => buildRow(item, 0, true)).join('')}`
+      : ''
+
+    const bodyContent = isMobile
+      ? `<div class="match-mobile-list">${activeContent}${optedOutContent}</div>`
+      : `<table class="data-table" style="margin-top:.5rem;">
+           <thead><tr>
+             <th style="width:60px;">Priority</th>
+             <th>Applicant</th>
+             <th>Submitted</th>
+             <th>Credit</th>
+             <th>HH Size</th>
+             <th>Match</th>
+             <th>Actions</th>
+           </tr></thead>
+           <tbody>${activeContent}${optedOutContent}</tbody>
+         </table>`
 
     const blockId = esc(lst.listing_id).replace(/[^a-zA-Z0-9]/g, '-')
     return `<div class="match-listing-block">
@@ -1642,18 +1735,7 @@ function renderMatches(listings, results, cands, il, openBlocks = new Set()) {
         </div>
       </div>
       <div id="match-body-${blockId}" style="display:none;">
-        <table class="data-table" style="margin-top:.5rem;">
-          <thead><tr>
-            <th style="width:60px;">Priority</th>
-            <th>Applicant</th>
-            <th>Submitted</th>
-            <th>Credit</th>
-            <th>HH Size</th>
-            <th>Match</th>
-            <th>Actions</th>
-          </tr></thead>
-          <tbody>${activeRows}${optedOutSection}</tbody>
-        </table>
+        ${bodyContent}
       </div>
     </div>`
   }).filter(Boolean).join('')
@@ -2331,7 +2413,13 @@ function closeMobileNav() {
   document.body.style.overflow = ''
 }
 
-document.getElementById('mobile-menu-btn').addEventListener('click', openMobileNav)
+document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+  if (document.querySelector('.admin-sidebar').classList.contains('mobile-open')) {
+    closeMobileNav()
+  } else {
+    openMobileNav()
+  }
+})
 document.getElementById('sidebar-close-btn').addEventListener('click', closeMobileNav)
 document.getElementById('sidebar-overlay').addEventListener('click', closeMobileNav)
 
