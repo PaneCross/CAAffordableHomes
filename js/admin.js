@@ -1104,40 +1104,61 @@ function renderIL() {
 
   rows = sortRows(rows, ilSort)
 
-  const ilCols = [
-    { label: 'Name',           col: 'full_name' },
-    { label: 'Email',          col: 'email' },
-    { label: 'Phone',          col: 'phone' },
-    { label: 'Submitted',      col: 'submitted_at' },
-    { label: 'Status',         col: 'status' },
-    { label: 'Area Preference',col: 'area_preference' },
-  ]
-
-  const html = `<table class="data-table">
-    <thead><tr>
-      ${ilCols.map(c =>
-        `<th class="sortable${ilSort.col === c.col ? ' sort-active' : ''}" data-sort-il="${c.col}">${c.label} ${sortArrow(ilSort, c.col)}</th>`
-      ).join('')}
-    </tr></thead>
-    <tbody>
-      ${rows.map(r => `<tr class="clickable-row" onclick="openILModal(${ilData.indexOf(r)})">
-        <td><strong>${esc(r.full_name || '')}</strong></td>
-        <td>${esc(r.email || '')}</td>
-        <td>${esc(r.phone || '')}</td>
-        <td>${fmtDate(r.submitted_at)}</td>
-        <td><span class="status-pill ${ilPillCls(r.status)}">${esc(r.status || '')}</span></td>
-        <td style="font-size:.78rem;color:#666;max-width:200px;white-space:normal;">${esc((r.area_preference || '').substring(0, 80))}</td>
-      </tr>`).join('')}
-    </tbody>
-  </table>`
-  setArea('il-area', html)
-  document.querySelectorAll('[data-sort-il]').forEach(th =>
-    th.addEventListener('click', () => {
-      const col = th.dataset.sortIl
-      ilSort = { col, asc: ilSort.col === col ? !ilSort.asc : true }
-      renderIL()
-    })
-  )
+  if (window.innerWidth <= 768) {
+    // ── Mobile: card layout ──────────────────────────────────
+    const cards = rows.map(r => {
+      const idx  = ilData.indexOf(r)
+      const area = (r.area_preference || '').substring(0, 50)
+      return `<div class="il-mobile-card" onclick="openILModal(${idx})">
+        <div class="il-mc-top">
+          <span class="il-mc-name">${esc(r.full_name || 'Unknown')}</span>
+          <span class="status-pill ${ilPillCls(r.status)}">${esc(r.status || '')}</span>
+        </div>
+        <div class="il-mc-email">${esc(r.email || '')}</div>
+        ${r.phone ? `<div class="il-mc-sub">${esc(r.phone)}</div>` : ''}
+        <div class="il-mc-meta">
+          <span><i class="fa-solid fa-calendar-days" aria-hidden="true"></i> ${fmtDate(r.submitted_at)}</span>
+          ${area ? `<span class="il-mc-area"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> ${esc(area)}</span>` : ''}
+        </div>
+      </div>`
+    }).join('')
+    setArea('il-area', `<div class="il-card-list">${cards}</div>`)
+  } else {
+    // ── Desktop: sortable data table ─────────────────────────
+    const ilCols = [
+      { label: 'Name',           col: 'full_name' },
+      { label: 'Email',          col: 'email' },
+      { label: 'Phone',          col: 'phone' },
+      { label: 'Submitted',      col: 'submitted_at' },
+      { label: 'Status',         col: 'status' },
+      { label: 'Area Preference',col: 'area_preference' },
+    ]
+    const html = `<table class="data-table">
+      <thead><tr>
+        ${ilCols.map(c =>
+          `<th class="sortable${ilSort.col === c.col ? ' sort-active' : ''}" data-sort-il="${c.col}">${c.label} ${sortArrow(ilSort, c.col)}</th>`
+        ).join('')}
+      </tr></thead>
+      <tbody>
+        ${rows.map(r => `<tr class="clickable-row" onclick="openILModal(${ilData.indexOf(r)})">
+          <td><strong>${esc(r.full_name || '')}</strong></td>
+          <td>${esc(r.email || '')}</td>
+          <td>${esc(r.phone || '')}</td>
+          <td>${fmtDate(r.submitted_at)}</td>
+          <td><span class="status-pill ${ilPillCls(r.status)}">${esc(r.status || '')}</span></td>
+          <td style="font-size:.78rem;color:#666;max-width:200px;white-space:normal;">${esc((r.area_preference || '').substring(0, 80))}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`
+    setArea('il-area', html)
+    document.querySelectorAll('[data-sort-il]').forEach(th =>
+      th.addEventListener('click', () => {
+        const col = th.dataset.sortIl
+        ilSort = { col, asc: ilSort.col === col ? !ilSort.asc : true }
+        renderIL()
+      })
+    )
+  }
 }
 
 function ilSection(title, pairs) {

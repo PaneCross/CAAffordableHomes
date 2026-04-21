@@ -447,7 +447,7 @@ textarea.form-input { resize: vertical; }
 }
 .modal-header h2 { font-family: var(--font-serif); font-size: 1.15rem; font-weight: 500; }
 .modal-close { background: none; border: none; font-size: 1.1rem; cursor: pointer; color: var(--muted); }
-.modal-body { flex: 1; overflow-y: auto; padding: 1.25rem; }
+.modal-body { flex: 1; overflow-y: auto; padding: 1.25rem; overscroll-behavior: contain; }
 .modal-footer {
   display: flex; align-items: flex-start; gap: .75rem;
   padding: .85rem 1.25rem; border-top: 1px solid var(--border);
@@ -770,6 +770,9 @@ textarea.form-input { resize: vertical; }
     margin-right: 0 !important;
     padding-top: var(--mobile-header-h);
     padding-bottom: var(--mobile-footer-h);
+    /* Use dynamic viewport height so iOS browser chrome doesn't create blank space */
+    min-height: 100vh;
+    min-height: 100dvh;
   }
   /* When help panel opens on mobile, don't shift main — panel goes full-width on top */
   .admin-main.help-open { margin-right: 0 !important; }
@@ -893,4 +896,38 @@ textarea.form-input { resize: vertical; }
 
   /* ── Login card: full-width on very small screens ── */
   .login-card { width: calc(100vw - 2rem); padding: 2rem 1.25rem; }
+
+  /* ── Lock body scroll when a modal is open on mobile ── */
+  body:has(.modal-overlay.open) {
+    overflow: hidden;
+    touch-action: none;
+  }
+
+  /* ── Interest list: mobile card layout ── */
+  .il-card-list {
+    display: flex; flex-direction: column; gap: .6rem;
+  }
+  .il-mobile-card {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: 10px; padding: .8rem .95rem;
+    cursor: pointer; transition: box-shadow .15s, border-color .15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .il-mobile-card:active { box-shadow: 0 2px 10px rgba(0,0,0,.1); border-color: var(--green-light); }
+  .il-mc-top {
+    display: flex; align-items: center;
+    justify-content: space-between; gap: .5rem;
+    margin-bottom: .3rem;
+  }
+  .il-mc-name { font-weight: 600; font-size: .92rem; }
+  .il-mc-email { font-size: .8rem; color: #555; margin-bottom: .18rem; }
+  .il-mc-sub   { font-size: .78rem; color: var(--muted); margin-bottom: .15rem; }
+  .il-mc-meta  {
+    display: flex; align-items: flex-start;
+    justify-content: space-between; gap: .4rem;
+    font-size: .73rem; color: #999;
+    margin-top: .35rem; flex-wrap: wrap;
+  }
+  .il-mc-meta i { margin-right: .2rem; }
+  .il-mc-area { font-style: italic; text-align: right; max-width: 55%; }
 }
