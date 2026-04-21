@@ -2393,11 +2393,22 @@ const HELP_CONTENT = {
       },
       {
         q: 'What does Active / Inactive mean for programs?',
-        a: '<strong>Active</strong> programs are published and visible to visitors on the website. <strong>Inactive</strong> programs are hidden from the public but remain in the database for your records.'
+        a: '<strong>Available</strong> programs are published and visible to visitors on the public website. <strong>Inactive</strong> programs are hidden from the public but remain in the database for your records. <strong>Coming Soon</strong> programs are visible on the site but indicate that homes are not yet ready. Programs can also be set to Inactive <em>automatically</em> when all linked listings sell out - see the question about auto-sync below.'
       },
       {
         q: 'Can I edit a program after creating it?',
-        a: 'Yes. Click the <strong>Edit</strong> button (pencil icon) on any program card to open the edit modal. Changes are saved immediately to the database and update the public website on the next page load.'
+        a: 'Yes. Click the <strong>Edit</strong> button (pencil icon) on any program card to open the edit modal. Changes are saved immediately to the database and update the public website on the next page load. Note that some fields are filled in automatically from linked listings - see the question about auto-sync below for details on which ones.'
+      },
+      {
+        q: 'How does the auto-sync from listings work?',
+        a: `When a program has listings linked to it, several of its display fields are calculated automatically from those listings and shown as read-only in the edit modal. You update them by editing the linked listings directly, not the program. The fields that are auto-calculated are:
+          <ul>
+            <li><strong>Zip Code</strong>: all distinct zip codes from active linked listings, comma-separated.</li>
+            <li><strong>Bedrooms</strong>: the range from the lowest to the highest bedroom count across active linked listings (e.g. 2-4).</li>
+            <li><strong>Household Size</strong>: the range from the smallest minimum to the largest maximum household size across active linked listings.</li>
+            <li><strong>Price Range</strong>: the lowest and highest price across active linked listings (e.g. $400,000 - $465,000).</li>
+          </ul>
+          The fields you always set manually on the program are: <strong>Community Name</strong>, <strong>Area</strong>, <strong>AMI %</strong>, <strong>Property Type</strong>, <strong>Status</strong>, and <strong>Notes</strong>. The <strong>Sync Now</strong> button in the edit modal forces an immediate recalculation if you need it. When all linked listings sell out and are deactivated, the program is automatically set to <strong>Inactive</strong> and removed from the public website. You can re-activate it manually at any time.`
       },
       {
         q: 'What do the filter buttons do?',
