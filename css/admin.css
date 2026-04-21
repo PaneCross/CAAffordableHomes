@@ -773,9 +773,11 @@ textarea.form-input { resize: vertical; }
     margin-right: 0 !important;
     padding-top: var(--mobile-header-h);
     padding-bottom: var(--mobile-footer-h);
-    /* Use dynamic viewport height so iOS browser chrome doesn't create blank space */
-    min-height: 100vh;
-    min-height: 100dvh;
+    /* No min-height on mobile — the footer is position:fixed so it's always
+       visible at the bottom of the viewport. Forcing min-height to fill the
+       viewport creates a large blank area on short-content tabs (Submissions,
+       Successes, etc.). Let content determine the height naturally. */
+    min-height: 0;
   }
   /* When help panel opens on mobile, don't shift main — panel goes full-width on top */
   .admin-main.help-open { margin-right: 0 !important; }
