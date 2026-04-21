@@ -728,6 +728,7 @@ function openLSTModal(idx, prefill) {
   document.getElementById('lf-type').value        = p.listing_type || 'affordable'
   document.getElementById('lf-address').value     = p.address || ''
   document.getElementById('lf-city').value        = p.city || ''
+  document.getElementById('lf-zip').value         = p.zip_code || ''
   document.getElementById('lf-price').value       = p.price || ''
   document.getElementById('lf-beds').value        = p.bedrooms || ''
   document.getElementById('lf-baths').value       = p.bathrooms || ''
@@ -744,8 +745,10 @@ function openLSTModal(idx, prefill) {
   document.getElementById('lf-sdmonths').value      = p.sd_residency_months || ''
   document.getElementById('lf-hhtogether').value    = p.household_together_months || ''
   document.getElementById('lf-ftb-years').value     = p.no_ownership_years || ''
-  document.getElementById('lf-minassets').value     = p.min_assets || ''
-  document.getElementById('lf-maxassets').value     = p.max_assets || ''
+  document.getElementById('lf-hhmin').value          = p.min_household_size || ''
+  document.getElementById('lf-hhmax').value          = p.max_household_size || ''
+  document.getElementById('lf-minassets').value      = p.min_assets || ''
+  document.getElementById('lf-maxassets').value      = p.max_assets || ''
   // Populate AMI table from JSONB
   const amiTable = p.ami_table || {}
   ;[1,2,3,4,5,6,7,8].forEach(row => {
@@ -824,6 +827,7 @@ document.getElementById('lst-save-btn').addEventListener('click', async () => {
     listing_type: document.getElementById('lf-type').value,
     address:      document.getElementById('lf-address').value.trim(),
     city:         document.getElementById('lf-city').value.trim(),
+    zip_code:     document.getElementById('lf-zip').value.trim() || null,
     price:        document.getElementById('lf-price').value.trim(),
     bedrooms:     document.getElementById('lf-beds').value.trim(),
     bathrooms:    document.getElementById('lf-baths').value.trim(),
@@ -841,6 +845,8 @@ document.getElementById('lst-save-btn').addEventListener('click', async () => {
     sd_residency_months:        document.getElementById('lf-sdmonths').value.trim() || null,
     household_together_months:  document.getElementById('lf-hhtogether').value.trim() || null,
     no_ownership_years:         document.getElementById('lf-ftb-years').value.trim() || null,
+    min_household_size:         document.getElementById('lf-hhmin').value.trim() || null,
+    max_household_size:         document.getElementById('lf-hhmax').value.trim() || null,
     min_assets:                 document.getElementById('lf-minassets').value.trim() || null,
     max_assets:                 document.getElementById('lf-maxassets').value.trim() || null,
     ami_table:                  Object.keys(amiTableOut).length ? amiTableOut : null,
@@ -963,10 +969,11 @@ function renderPrograms() {
         </div>
         <div class="prog-card-body">
           ${p.property_type ? `<div class="prog-detail"><span class="prog-detail-label"><i class="fa-solid fa-house" style="width:14px;color:#888;margin-right:.3rem;"></i>Type</span><span class="prog-detail-value">${esc(p.property_type)}</span></div>` : ''}
-          ${p.ami_percent ? `<div class="prog-detail"><span class="prog-detail-label"><i class="fa-solid fa-chart-bar" style="width:14px;color:#888;margin-right:.3rem;"></i>AMI %</span><span class="prog-detail-value">${esc(String(p.ami_percent))}%</span></div>` : ''}
-          ${p.zip_code ? `<div class="prog-detail"><span class="prog-detail-label"><i class="fa-solid fa-location-dot" style="width:14px;color:#888;margin-right:.3rem;"></i>Zip</span><span class="prog-detail-value">${esc(p.zip_code)}</span></div>` : ''}
-          ${p.bedrooms ? `<div class="prog-detail"><span class="prog-detail-label"><i class="fa-solid fa-bed" style="width:14px;color:#888;margin-right:.3rem;"></i>Bedrooms</span><span class="prog-detail-value">${esc(p.bedrooms)}</span></div>` : ''}
-          ${p.price_range ? `<div class="prog-detail"><span class="prog-detail-label"><i class="fa-solid fa-tag" style="width:14px;color:#888;margin-right:.3rem;"></i>Price Range</span><span class="prog-detail-value">${esc(p.price_range)}</span></div>` : ''}
+          ${p.ami_percent    ? `<div class="prog-detail"><span class="prog-detail-label"><i class="fa-solid fa-chart-bar" style="width:14px;color:#888;margin-right:.3rem;"></i>AMI %</span><span class="prog-detail-value">${esc(String(p.ami_percent))}</span></div>` : ''}
+          ${p.zip_code       ? `<div class="prog-detail"><span class="prog-detail-label"><i class="fa-solid fa-location-dot" style="width:14px;color:#888;margin-right:.3rem;"></i>Zip</span><span class="prog-detail-value">${esc(p.zip_code)}</span></div>` : ''}
+          ${p.bedrooms       ? `<div class="prog-detail"><span class="prog-detail-label"><i class="fa-solid fa-bed" style="width:14px;color:#888;margin-right:.3rem;"></i>Bedrooms</span><span class="prog-detail-value">${esc(p.bedrooms)}</span></div>` : ''}
+          ${p.household_size ? `<div class="prog-detail"><span class="prog-detail-label"><i class="fa-solid fa-people-group" style="width:14px;color:#888;margin-right:.3rem;"></i>HH Size</span><span class="prog-detail-value">${esc(p.household_size)}</span></div>` : ''}
+          ${p.price_range    ? `<div class="prog-detail"><span class="prog-detail-label"><i class="fa-solid fa-tag" style="width:14px;color:#888;margin-right:.3rem;"></i>Price Range</span><span class="prog-detail-value">${esc(p.price_range)}</span></div>` : ''}
           ${p.notes ? `<div style="font-size:.78rem;color:#888;background:rgba(0,0,0,.04);border-radius:6px;padding:.45rem .6rem;margin-top:.2rem;">${esc(p.notes)}</div>` : ''}
           <div class="prog-listings-block">
             <div class="prog-listings-header"><i class="fa-solid fa-link" style="font-size:.6rem;"></i> Linked Listings${lnkLst.length ? ` (${lnkLst.length})` : ''}</div>
@@ -995,14 +1002,15 @@ function openProgModal(idx, prefill) {
   editingProgRow = idx !== null && idx !== undefined ? progData[idx] : null
   const p = editingProgRow || prefill || {}
   document.getElementById('prog-modal-title').textContent = editingProgRow ? 'Edit Community' : (prefill ? 'Push to Site' : 'Add Community')
-  document.getElementById('pf-name').value    = p.community_name || ''
-  document.getElementById('pf-area').value    = p.area           || ''
-  document.getElementById('pf-zip').value     = p.zip_code       || ''
-  document.getElementById('pf-ami-pct').value = p.ami_percent    || ''
-  document.getElementById('pf-beds').value    = p.bedrooms       || ''
-  document.getElementById('pf-price').value   = p.price_range    || ''
-  document.getElementById('pf-status').value  = p.status         || 'Available'
-  document.getElementById('pf-notes').value   = p.notes          || ''
+  document.getElementById('pf-name').value        = p.community_name || ''
+  document.getElementById('pf-area').value        = p.area           || ''
+  document.getElementById('pf-zip').value         = p.zip_code       || ''
+  document.getElementById('pf-ami-pct').value     = p.ami_percent    || ''
+  document.getElementById('pf-hh-size').value     = p.household_size || ''
+  document.getElementById('pf-beds').value        = p.bedrooms       || ''
+  document.getElementById('pf-price').value       = p.price_range    || ''
+  document.getElementById('pf-status').value      = p.status         || 'Available'
+  document.getElementById('pf-notes').value       = p.notes          || ''
   document.getElementById('pf-src-listing').value = p.source_listing_id || ''
   // Property type: handle "Other" case
   const knownTypes = ['Single Family Home','Detached','Townhome','Condo','Duplex','Manufactured Home']
@@ -1028,6 +1036,18 @@ function openProgModal(idx, prefill) {
       : ''
   }
 
+  // Auto-mode: when linked listings exist, the aggregate fields are read-only
+  // and Kacee should edit via the Listings tab instead.
+  const isAutoMode = lnkLst.length > 0
+  const autoFieldIds = ['pf-zip', 'pf-ami-pct', 'pf-hh-size', 'pf-beds', 'pf-price']
+  autoFieldIds.forEach(fid => {
+    const el = document.getElementById(fid)
+    el.readOnly = isAutoMode
+    el.classList.toggle('pf-auto-field', isAutoMode)
+  })
+  document.getElementById('pf-auto-banner').style.display = isAutoMode ? 'block' : 'none'
+  document.getElementById('prog-sync-btn').style.display  = isAutoMode ? ''      : 'none'
+
   document.getElementById('prog-modal-overlay').classList.add('open')
 }
 
@@ -1039,6 +1059,25 @@ function closeProgModal() {
 document.getElementById('pf-property-type').addEventListener('change', function () {
   document.getElementById('pf-property-type-other-row').style.display =
     this.value === 'Other' ? 'block' : 'none'
+})
+
+// "Sync Now" button — manually triggers sync_program_from_listings RPC
+// then reloads the programs tab so updated values are visible.
+document.getElementById('prog-sync-btn').addEventListener('click', async () => {
+  const progName = document.getElementById('pf-name').value.trim()
+  if (!progName) return
+  const btn = document.getElementById('prog-sync-btn')
+  btn.disabled = true
+  btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Syncing...'
+  const { error } = await sb.rpc('sync_program_from_listings', { p_community_name: progName })
+  btn.disabled = false
+  btn.innerHTML = '<i class="fa-solid fa-rotate"></i> Sync Now'
+  if (error) { toast('Sync failed: ' + error.message, true); return }
+  toast('Program synced from listings.')
+  closeProgModal()
+  progData = []; lstData = []
+  await loadPrograms()
+  if (!lstData.length) await loadListingsQuiet()
 })
 
 document.getElementById('prog-save-btn').addEventListener('click', async () => {
@@ -1055,17 +1094,18 @@ document.getElementById('prog-save-btn').addEventListener('click', async () => {
     : ptSel
 
   const prog = {
-    community_name:  name,
+    community_name:   name,
     area,
-    zip_code:        document.getElementById('pf-zip').value.trim()     || null,
-    ami_percent:     document.getElementById('pf-ami-pct').value.trim() || null,
-    property_type:   property_type || null,
-    bedrooms:        document.getElementById('pf-beds').value.trim()    || null,
-    price_range:     document.getElementById('pf-price').value.trim()   || null,
-    status:          document.getElementById('pf-status').value,
-    notes:           document.getElementById('pf-notes').value.trim()   || null,
+    zip_code:         document.getElementById('pf-zip').value.trim()      || null,
+    ami_percent:      document.getElementById('pf-ami-pct').value.trim()  || null,
+    household_size:   document.getElementById('pf-hh-size').value.trim()  || null,
+    property_type:    property_type || null,
+    bedrooms:         document.getElementById('pf-beds').value.trim()     || null,
+    price_range:      document.getElementById('pf-price').value.trim()    || null,
+    status:           document.getElementById('pf-status').value,
+    notes:            document.getElementById('pf-notes').value.trim()    || null,
     source_listing_id: document.getElementById('pf-src-listing').value.trim() || null,
-    updated_at:      new Date().toISOString(),
+    updated_at:       new Date().toISOString(),
   }
 
   let error

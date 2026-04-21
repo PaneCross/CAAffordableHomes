@@ -245,9 +245,10 @@
 
       <div class="lst-section lst-section-white">
         <div class="form-section-label">Property Details</div>
-        <div class="form-row2">
+        <div class="form-row3">
           <div class="form-group"><label for="lf-address">Address</label><input id="lf-address" class="form-input"></div>
           <div class="form-group"><label for="lf-city">City</label><input id="lf-city" class="form-input"></div>
+          <div class="form-group"><label for="lf-zip">Zip Code</label><input id="lf-zip" class="form-input" placeholder="92101"></div>
         </div>
         <div class="form-row3">
           <div class="form-group"><label for="lf-price">Price ($)</label><input id="lf-price" class="form-input" placeholder="450000"></div>
@@ -286,6 +287,10 @@
             </tbody>
           </table>
         </div>
+      <div class="form-row2">
+        <div class="form-group"><label for="lf-hhmin">Min Household Size</label><input id="lf-hhmin" class="form-input" type="number" placeholder="e.g. 1"></div>
+        <div class="form-group"><label for="lf-hhmax">Max Household Size</label><input id="lf-hhmax" class="form-input" type="number" placeholder="e.g. 8"></div>
+      </div>
       <div class="form-row2">
         <div class="form-group"><label for="lf-credit">Min Credit Score</label><input id="lf-credit" class="form-input" type="number" placeholder="640"></div>
         <div class="form-group"><label for="lf-ftb">First-Time Buyer</label>
@@ -370,37 +375,44 @@
       <button class="modal-close" id="prog-modal-close"><i class="fa-solid fa-xmark"></i></button>
     </div>
     <div class="modal-body">
+      <!-- Always-manual fields -->
       <div class="form-row2">
         <div class="form-group"><label for="pf-name">Community Name *</label><input id="pf-name" class="form-input"></div>
         <div class="form-group"><label for="pf-area">Area *</label><input id="pf-area" class="form-input" placeholder="e.g. North County Coastal"></div>
       </div>
-      <div class="form-row2">
-        <div class="form-group"><label for="pf-zip">Zip Code</label><input id="pf-zip" class="form-input" placeholder="e.g. 92101"></div>
-        <div class="form-group"><label for="pf-ami-pct">AMI %</label><input id="pf-ami-pct" class="form-input" type="number" placeholder="e.g. 80"></div>
-      </div>
-      <div class="form-row2">
-        <div class="form-group">
-          <label for="pf-property-type">Property Type</label>
-          <select id="pf-property-type" class="form-input">
-            <option value="">-- Select --</option>
-            <option value="Single Family Home">Single Family Home</option>
-            <option value="Detached">Detached</option>
-            <option value="Townhome">Townhome</option>
-            <option value="Condo">Condo</option>
-            <option value="Duplex">Duplex</option>
-            <option value="Manufactured Home">Manufactured Home</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
-        <div class="form-group"><label for="pf-beds">Bedrooms</label><input id="pf-beds" class="form-input"></div>
+      <div class="form-group">
+        <label for="pf-property-type">Property Type</label>
+        <select id="pf-property-type" class="form-input">
+          <option value="">-- Select --</option>
+          <option value="Single Family Home">Single Family Home</option>
+          <option value="Detached">Detached</option>
+          <option value="Townhome">Townhome</option>
+          <option value="Condo">Condo</option>
+          <option value="Duplex">Duplex</option>
+          <option value="Manufactured Home">Manufactured Home</option>
+          <option value="Other">Other</option>
+        </select>
       </div>
       <div class="form-group" id="pf-property-type-other-row" style="display:none;">
         <label for="pf-property-type-other">Property Type (describe)</label>
         <input id="pf-property-type-other" class="form-input" placeholder="Describe the property type">
       </div>
-      <div class="form-row2">
-        <div class="form-group"><label for="pf-price">Price Range</label><input id="pf-price" class="form-input"></div>
+
+      <!-- Auto-calculated fields (from linked listings) -->
+      <div id="pf-auto-banner" class="pf-auto-banner">
+        <i class="fa-solid fa-rotate"></i> The fields below are calculated automatically from linked listings. To change them, edit the values on the <strong>Listings</strong> tab.
       </div>
+      <div class="form-row3">
+        <div class="form-group"><label for="pf-zip">Zip Code</label><input id="pf-zip" class="form-input" placeholder="e.g. 92101"></div>
+        <div class="form-group"><label for="pf-ami-pct">AMI %</label><input id="pf-ami-pct" class="form-input" placeholder="e.g. 80"></div>
+        <div class="form-group"><label for="pf-hh-size">Household Size</label><input id="pf-hh-size" class="form-input" placeholder="e.g. 2-6"></div>
+      </div>
+      <div class="form-row2">
+        <div class="form-group"><label for="pf-beds">Bedrooms</label><input id="pf-beds" class="form-input" placeholder="e.g. 2-4"></div>
+        <div class="form-group"><label for="pf-price">Price Range</label><input id="pf-price" class="form-input" placeholder="e.g. $400,000 - $450,000"></div>
+      </div>
+
+      <!-- Status / notes -->
       <div class="form-row2">
         <div class="form-group"><label for="pf-status">Status</label>
           <select id="pf-status" class="form-input">
@@ -416,6 +428,7 @@
     <div class="modal-footer">
       <div id="pf-linked-listings-label" style="flex:1;font-size:.78rem;color:#555;"></div>
       <button class="btn-secondary" id="prog-cancel-btn">Cancel</button>
+      <button class="btn-ghost btn-sm" id="prog-sync-btn" style="display:none;"><i class="fa-solid fa-rotate"></i> Sync Now</button>
       <button class="btn-primary" id="prog-save-btn"><i class="fa-solid fa-floppy-disk"></i> Save Community</button>
     </div>
   </div>

@@ -242,7 +242,32 @@ body { font-family: var(--font-body); color: var(--text); background: var(--bg);
 .btn-danger:hover    { background: #ffe0de; }
 .btn-sm { padding: .3rem .65rem; font-size: .76rem; }
 .btn-xs { padding: .2rem .45rem; font-size: .72rem; }
+.btn-ghost {
+  display: inline-flex; align-items: center; gap: .4rem;
+  padding: .3rem .7rem; border-radius: var(--radius);
+  font-size: .78rem; font-weight: 500; cursor: pointer; white-space: nowrap;
+  background: transparent; color: var(--green);
+  border: 1px solid var(--green-light); transition: all .15s;
+}
+.btn-ghost:hover { background: var(--green-bg); }
 button:disabled { opacity: .55; cursor: not-allowed; }
+
+/* ── Program auto-sync UI ── */
+.pf-auto-banner {
+  display: none;
+  background: #f0f7f0; border: 1px solid #c8dcc8;
+  border-radius: 7px; padding: .55rem .75rem;
+  font-size: .8rem; color: #3a6a3a;
+  margin-bottom: .75rem; line-height: 1.4;
+}
+.pf-auto-banner i { margin-right: .35rem; }
+.pf-auto-field {
+  background: #f5f8f5 !important;
+  color: #555 !important;
+  cursor: default !important;
+  border-color: #c8dcc8 !important;
+  pointer-events: none;
+}
 
 /* ── Forms ── */
 .form-group { display: flex; flex-direction: column; gap: .3rem; margin-bottom: .75rem; }

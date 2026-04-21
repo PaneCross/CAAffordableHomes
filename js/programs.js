@@ -60,13 +60,14 @@ function renderPrograms(rows, unitMap) {
 }
 
 function buildProgramCard(row, unitMap) {
-  var area          = (row['area']          || '').trim()
-  var communityName = (row['community_name']|| '').trim()
-  var propertyType  = (row['property_type'] || '').trim()
+  var area          = (row['area']           || '').trim()
+  var communityName = (row['community_name'] || '').trim()
+  var propertyType  = (row['property_type']  || '').trim()
   var amiPercent    = row['ami_percent'] != null ? String(row['ami_percent']).trim() : ''
-  var zipCode       = (row['zip_code']      || '').trim()
-  var bedrooms      = (row['bedrooms']      || '').trim()
-  var priceRange    = (row['price_range']   || '').trim()
+  var zipCode       = (row['zip_code']       || '').trim()
+  var bedrooms      = (row['bedrooms']       || '').trim()
+  var priceRange    = (row['price_range']    || '').trim()
+  var householdSize = (row['household_size'] || '').trim()
   var status        = (row['status']        || 'Available').trim()
   var notes         = (row['notes']         || '').trim()
   var availUnits    = (unitMap && communityName) ? (unitMap[communityName] || 0) : 0
@@ -83,10 +84,11 @@ function buildProgramCard(row, unitMap) {
 
   /* Detail rows */
   var detailsHTML = ''
-  if (propertyType) detailsHTML += detailRow('fa-house',       'Property Type', propertyType)
-  if (zipCode)      detailsHTML += detailRow('fa-location-dot','Zip Code',      zipCode)
-  if (bedrooms)     detailsHTML += detailRow('fa-bed',         'Bedrooms',      bedrooms)
-  if (priceRange)   detailsHTML += detailRow('fa-tag',         'Price Range',   priceRange)
+  if (propertyType)  detailsHTML += detailRow('fa-house',        'Property Type',  propertyType)
+  if (zipCode)       detailsHTML += detailRow('fa-location-dot', 'Zip Code',       zipCode)
+  if (bedrooms)      detailsHTML += detailRow('fa-bed',          'Bedrooms',       bedrooms)
+  if (householdSize) detailsHTML += detailRow('fa-people-group', 'Household Size', householdSize)
+  if (priceRange)    detailsHTML += detailRow('fa-tag',          'Price Range',    priceRange)
 
   var card = document.createElement('article')
   card.className = 'program-card ' + cardAccent
