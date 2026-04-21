@@ -1072,7 +1072,7 @@ function openProgModal(idx, prefill) {
   // Auto-mode: when linked listings exist, the aggregate fields are read-only
   // and Kacee should edit via the Listings tab instead.
   const isAutoMode = lnkLst.length > 0
-  const autoFieldIds = ['pf-zip', 'pf-ami-pct', 'pf-hh-size', 'pf-beds', 'pf-price']
+  const autoFieldIds = ['pf-zip', 'pf-hh-size', 'pf-beds', 'pf-price']
   autoFieldIds.forEach(fid => {
     const el = document.getElementById(fid)
     el.readOnly = isAutoMode
