@@ -366,6 +366,14 @@ textarea.form-input { resize: vertical; }
   font-size: .74rem; color: #ccc; font-style: italic;
 }
 
+/* ── Program card: available units row ── */
+.prog-units-row {
+  margin-top: .55rem; padding-top: .5rem;
+  border-top: 1px solid rgba(0,0,0,.07);
+  font-size: .78rem; color: #555;
+  display: flex; align-items: center; gap: .35rem;
+}
+
 /* ── Listing card: linked program row ── */
 .lst-prog-link {
   margin-top: .5rem; padding-top: .5rem;

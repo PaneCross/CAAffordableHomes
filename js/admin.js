@@ -915,6 +915,9 @@ function renderPrograms() {
       const bgCls = s === 'available' ? 'prog-card--available' : s === 'coming soon' ? 'prog-card--soon' : 'prog-card--inactive'
       const badgeCls = s === 'available' ? 'pill-active' : s === 'coming soon' ? 'pill-reviewing' : 'pill-expired'
       const lnkLst = progToListings[p.community_name] || []
+      const availUnits = lstData
+        .filter(l => l.linked_program_id === p.community_name && l.active === 'YES' && l.units_available > 0)
+        .reduce((sum, l) => sum + (l.units_available || 0), 0)
       return `<div class="prog-card ${bgCls}">
         <div class="prog-card-header">
           <div style="min-width:0;flex:1;">
@@ -935,6 +938,12 @@ function renderPrograms() {
             ${lnkLst.length
               ? `<div class="prog-listings-pills">${lnkLst.map(name => `<span class="prog-listing-pill">${esc(name)}</span>`).join('')}</div>`
               : `<div class="prog-listings-empty">None linked yet</div>`}
+          </div>
+          <div class="prog-units-row">
+            <i class="fa-solid fa-house-chimney" style="font-size:.7rem;"></i>
+            ${availUnits > 0
+              ? `<strong style="color:var(--green);">${availUnits}</strong> unit${availUnits === 1 ? '' : 's'} available`
+              : `<span style="color:#bbb;">No units available</span>`}
           </div>
         </div>
         <div class="prog-card-footer">
