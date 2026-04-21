@@ -96,7 +96,7 @@ async function sendWelcomeEmail(name: string, email: string) {
         <p style="font-size:16px;">Dear ${escHtml(name)},</p>
         <p>Thank you for submitting your information. You are now on the CA Affordable Homes interest list.</p>
         <p>Our team reviews each submission carefully. If your profile is a strong match for an available property,
-           Kacee will reach out to you directly with next steps.</p>
+           our team will reach out to you directly with next steps.</p>
         <p>There is nothing else you need to do right now. Your information is on file and will be considered
            as properties become available.</p>
         <p style="margin-top:32px;">Warm regards,<br>
@@ -125,7 +125,7 @@ async function sendInternalNotification(
   const hhSize     = data.household_size ? String(data.household_size) : '-'
   const monthlyDebt = data.monthly_debt_payments ? `$${data.monthly_debt_payments}` : '-'
 
-  const incomeLines = [1,2,3,4,5,6].map(n => {
+  const incomeLines = [1,2,3,4,5,6,7,8].map(n => {
     const nm = data[`income_${n}_name`]
     const amt = data[`income_${n}_annual`]
     if (!nm && !amt) return ''
