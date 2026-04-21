@@ -12,11 +12,11 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
 })
 
 // ── State ─────────────────────────────────────────────────────
-let lstData = [], progData = [], ilData = [], psData = [], candidatesData = [], successesData = [], testimonialsData = []
+let lstData = [], progData = [], ilData = [], psData = [], orgInqData = [], candidatesData = [], successesData = [], testimonialsData = []
 let dashboardFetched = false
 let helpPanelOpen = false
 let editingLstRow = null, editingProgRow = null, editingPsRow = null, viewingIlRow = null
-let lstFilter = 'active', progFilter = 'active', ilFilter = 'all', psFilter = 'non-promoted', tmnFilter = 'active'
+let lstFilter = 'active', progFilter = 'active', ilFilter = 'all', psFilter = 'non-promoted', tmnFilter = 'active', oiFilter = 'all'
 let ilSearch = ''
 let promotingPsId = null  // PS row id when promoting to listing
 let ilSort  = { col: 'submitted_at', asc: false }
@@ -110,14 +110,15 @@ document.getElementById('logout-btn').addEventListener('click', () => sb.auth.si
 // NAVIGATION
 // ─────────────────────────────────────────────────────────────
 const TAB_TITLES = {
-  dashboard:     'Dashboard',
-  testimonials:  'Testimonials',
-  properties:    'Property Submissions',
-  listings:      'Listings',
-  programs:      'Programs',
+  dashboard:       'Dashboard',
+  testimonials:    'Testimonials',
+  properties:      'Property Submissions',
+  'org-inquiries': 'Org Inquiries',
+  listings:        'Listings',
+  programs:        'Programs',
   'interest-list': 'Interest List',
-  matches:       'Matches',
-  successes:     'Successes',
+  matches:         'Matches',
+  successes:       'Successes',
 }
 
 document.querySelectorAll('.sb-btn[data-tab]').forEach(btn => {
@@ -141,6 +142,7 @@ function loadActiveTab(tab) {
   if (tab === 'dashboard')     { if (!dashboardFetched) loadDashboard(); else renderDashboard() }
   if (tab === 'testimonials')  { if (!testimonialsData.length) loadTestimonials(); else renderTestimonialsAdmin() }
   if (tab === 'properties')    { if (!psData.length)   loadPS();           else renderPS()           }
+  if (tab === 'org-inquiries') { if (!orgInqData.length) loadOrgInquiries(); else renderOrgInquiries() }
   if (tab === 'listings')      { if (!lstData.length)  loadListings();     else renderListings()     }
   if (tab === 'programs')      { if (!progData.length) loadPrograms();     else renderPrograms()     }
   if (tab === 'interest-list') { if (!ilData.length)   loadInterestList(); else renderIL()           }
@@ -518,6 +520,94 @@ async function promoteToListing(idx) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// ORG INQUIRIES
+// ─────────────────────────────────────────────────────────────
+document.getElementById('oi-filter-bar').addEventListener('click', e => {
+  const btn = e.target.closest('.filter-btn')
+  if (!btn) return
+  oiFilter = btn.dataset.oif || 'all'
+  renderOrgInquiries()
+})
+
+async function loadOrgInquiries() {
+  setArea('oi-area', loading())
+  const { data, error } = await sb.from('org_inquiries').select('*').order('submitted_at', { ascending: false })
+  if (error) { setArea('oi-area', errorState(error)); return }
+  orgInqData = data || []
+  renderOrgInquiries()
+}
+
+function renderOrgInquiries() {
+  document.querySelectorAll('#oi-filter-bar .filter-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.oif === oiFilter))
+
+  let rows = orgInqData
+  if (oiFilter === 'new')      rows = orgInqData.filter(r => r.status === 'new')
+  if (oiFilter === 'reviewed') rows = orgInqData.filter(r => r.status === 'reviewed')
+
+  if (!rows.length) { setArea('oi-area', emptyState('No org inquiries yet.')); return }
+
+  const html = `<div class="oi-list">
+    ${rows.map(r => {
+      const d = r.submitted_at ? new Date(r.submitted_at) : null
+      const dateStr = d ? d.toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' }) : ''
+      const isNew = r.status === 'new'
+      return `<div class="oi-card${isNew ? ' oi-card--new' : ''}">
+        <div class="oi-card-header">
+          <div>
+            <div class="oi-contact-name">${esc(r.contact_name || '(No name)')}</div>
+            ${r.organization ? `<div class="oi-org">${esc(r.organization)}</div>` : ''}
+          </div>
+          <div style="display:flex;align-items:center;gap:.5rem;flex-shrink:0;">
+            ${isNew ? `<span class="status-pill pill-new">New</span>` : `<span class="status-pill pill-reviewed">Reviewed</span>`}
+            <span style="font-size:.75rem;color:#aaa;">${esc(dateStr)}</span>
+          </div>
+        </div>
+        <div class="oi-card-body">
+          <div class="oi-contact-row">
+            ${r.contact_email ? `<a href="mailto:${esc(r.contact_email)}" class="oi-contact-link"><i class="fa-solid fa-envelope"></i> ${esc(r.contact_email)}</a>` : ''}
+            ${r.contact_phone ? `<a href="tel:${esc(r.contact_phone)}" class="oi-contact-link"><i class="fa-solid fa-phone"></i> ${esc(r.contact_phone)}</a>` : ''}
+          </div>
+          ${r.message ? `<div class="oi-message">${esc(r.message)}</div>` : ''}
+        </div>
+        <div class="oi-card-footer">
+          ${isNew
+            ? `<button class="btn-secondary btn-sm" onclick="markOiReviewed(${r.id})"><i class="fa-solid fa-check"></i> Mark Reviewed</button>`
+            : `<button class="btn-secondary btn-sm" onclick="markOiNew(${r.id})"><i class="fa-solid fa-rotate-left"></i> Mark New</button>`}
+          <button class="btn-danger btn-xs" onclick="deleteOi(${r.id})" style="margin-left:auto;"><i class="fa-solid fa-trash"></i></button>
+        </div>
+      </div>`
+    }).join('')}
+  </div>`
+  setArea('oi-area', html)
+}
+
+async function markOiReviewed(id) {
+  const { error } = await sb.from('org_inquiries').update({ status: 'reviewed' }).eq('id', id)
+  if (error) { toast(error.message, true); return }
+  const idx = orgInqData.findIndex(r => r.id === id)
+  if (idx >= 0) orgInqData[idx].status = 'reviewed'
+  renderOrgInquiries()
+}
+
+async function markOiNew(id) {
+  const { error } = await sb.from('org_inquiries').update({ status: 'new' }).eq('id', id)
+  if (error) { toast(error.message, true); return }
+  const idx = orgInqData.findIndex(r => r.id === id)
+  if (idx >= 0) orgInqData[idx].status = 'new'
+  renderOrgInquiries()
+}
+
+async function deleteOi(id) {
+  if (!confirm('Delete this inquiry? This cannot be undone.')) return
+  const { error } = await sb.from('org_inquiries').delete().eq('id', id)
+  if (error) { toast(error.message, true); return }
+  toast('Inquiry deleted.')
+  orgInqData = orgInqData.filter(r => r.id !== id)
+  renderOrgInquiries()
+}
+
+// ─────────────────────────────────────────────────────────────
 // LISTINGS
 // ─────────────────────────────────────────────────────────────
 document.getElementById('lst-filter-bar').addEventListener('click', e => {
@@ -608,16 +698,10 @@ function openLSTModal(idx, prefill) {
   document.getElementById('lf-baths').value       = p.bathrooms || ''
   document.getElementById('lf-sqft').value        = p.sqft || ''
   document.getElementById('lf-program-type').value = p.program_type || ''
-  document.getElementById('lf-ami').value         = p.ami_percent || ''
   document.getElementById('lf-credit').value      = p.min_credit_score || ''
+  document.getElementById('lf-ftb').value         = p.first_time_buyer_required || ''
   document.getElementById('lf-dti').value         = p.max_dti_percent || ''
   document.getElementById('lf-debt').value        = p.max_monthly_debt || ''
-  document.getElementById('lf-minhh').value       = p.min_household_size || ''
-  document.getElementById('lf-maxhh').value       = p.max_household_size || ''
-  document.getElementById('lf-ftb').value         = p.first_time_buyer_required || ''
-  document.getElementById('lf-inc1').value        = p.max_income_1person || ''
-  document.getElementById('lf-inc4').value        = p.max_income_4person || ''
-  document.getElementById('lf-inc6').value        = p.max_income_6person || ''
   document.getElementById('lf-sdres').value       = p.sd_county_residency_required || 'YES'
   document.getElementById('lf-prog-notes').value  = p.program_notes || ''
   document.getElementById('lf-int-notes').value   = p.internal_notes || ''
@@ -625,12 +709,16 @@ function openLSTModal(idx, prefill) {
   document.getElementById('lf-sdmonths').value      = p.sd_residency_months || ''
   document.getElementById('lf-hhtogether').value    = p.household_together_months || ''
   document.getElementById('lf-ftb-years').value     = p.no_ownership_years || ''
-  document.getElementById('lf-inc2').value          = p.max_income_2person || ''
-  document.getElementById('lf-inc3').value          = p.max_income_3person || ''
-  document.getElementById('lf-inc5').value          = p.max_income_5person || ''
-  document.getElementById('lf-mininc').value        = p.min_income || ''
   document.getElementById('lf-minassets').value     = p.min_assets || ''
   document.getElementById('lf-maxassets').value     = p.max_assets || ''
+  // Populate AMI table from JSONB
+  const amiTable = p.ami_table || {}
+  ;[1,2,3,4,5,6,7,8].forEach(row => {
+    ;[50,80,100,120].forEach(col => {
+      const el = document.getElementById(`lf-ami-${row}-${col}`)
+      if (el) el.value = (amiTable[row] && amiTable[row][col] != null) ? amiTable[row][col] : ''
+    })
+  })
   document.getElementById('lf-mindown').value       = p.min_down_payment_pct || ''
   document.getElementById('lf-maxdown').value       = p.max_down_payment_pct || ''
   document.getElementById('lf-minempmo').value      = p.min_employment_months || ''
@@ -658,16 +746,7 @@ function openLSTModal(idx, prefill) {
     openProgModal(null, {
       community_name: p.listing_name || p.listing_id || '',
       area:           p.city || '',
-      program_type:   p.program_type || '',
-      ami_range:      p.ami_percent ? p.ami_percent + '% AMI' : '',
       bedrooms:       p.bedrooms || '',
-      household_size_limit: p.max_household_size
-        ? (p.min_household_size && p.min_household_size !== p.max_household_size
-            ? `${p.min_household_size}-${p.max_household_size}`
-            : p.max_household_size)
-        : '',
-      first_time_buyer: p.first_time_buyer_required === 'YES' ? 'Required'
-        : p.first_time_buyer_required === 'NO' ? 'Not Required' : '',
       price_range:    p.price || '',
       status:         'Available',
       notes:          p.program_notes || '',
@@ -691,6 +770,17 @@ document.getElementById('lst-save-btn').addEventListener('click', async () => {
   const btn = document.getElementById('lst-save-btn')
   btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Saving...'
 
+  // Build ami_table JSONB from grid inputs
+  const amiTableOut = {}
+  ;[1,2,3,4,5,6,7,8].forEach(row => {
+    const rowData = {}
+    ;[50,80,100,120].forEach(col => {
+      const v = (document.getElementById(`lf-ami-${row}-${col}`) || {}).value || ''
+      if (v.trim() !== '') rowData[col] = Number(v)
+    })
+    if (Object.keys(rowData).length) amiTableOut[row] = rowData
+  })
+
   const listing = {
     listing_id:   id,
     listing_name: document.getElementById('lf-name').value.trim() || id,
@@ -704,16 +794,10 @@ document.getElementById('lst-save-btn').addEventListener('click', async () => {
     bathrooms:    document.getElementById('lf-baths').value.trim(),
     sqft:         document.getElementById('lf-sqft').value.trim(),
     program_type: document.getElementById('lf-program-type').value.trim(),
-    ami_percent:  document.getElementById('lf-ami').value.trim(),
     min_credit_score:    document.getElementById('lf-credit').value.trim(),
     max_dti_percent:     document.getElementById('lf-dti').value.trim(),
     max_monthly_debt:    document.getElementById('lf-debt').value.trim(),
-    min_household_size:  document.getElementById('lf-minhh').value.trim(),
-    max_household_size:  document.getElementById('lf-maxhh').value.trim(),
     first_time_buyer_required: document.getElementById('lf-ftb').value,
-    max_income_1person:  document.getElementById('lf-inc1').value.trim(),
-    max_income_4person:  document.getElementById('lf-inc4').value.trim(),
-    max_income_6person:  document.getElementById('lf-inc6').value.trim(),
     sd_county_residency_required: document.getElementById('lf-sdres').value,
     program_notes:  document.getElementById('lf-prog-notes').value.trim(),
     internal_notes: document.getElementById('lf-int-notes').value.trim(),
@@ -722,12 +806,9 @@ document.getElementById('lst-save-btn').addEventListener('click', async () => {
     sd_residency_months:        document.getElementById('lf-sdmonths').value.trim() || null,
     household_together_months:  document.getElementById('lf-hhtogether').value.trim() || null,
     no_ownership_years:         document.getElementById('lf-ftb-years').value.trim() || null,
-    max_income_2person:         document.getElementById('lf-inc2').value.trim() || null,
-    max_income_3person:         document.getElementById('lf-inc3').value.trim() || null,
-    max_income_5person:         document.getElementById('lf-inc5').value.trim() || null,
-    min_income:                 document.getElementById('lf-mininc').value.trim() || null,
     min_assets:                 document.getElementById('lf-minassets').value.trim() || null,
     max_assets:                 document.getElementById('lf-maxassets').value.trim() || null,
+    ami_table:                  Object.keys(amiTableOut).length ? amiTableOut : null,
     min_down_payment_pct:       document.getElementById('lf-mindown').value.trim() || null,
     max_down_payment_pct:       document.getElementById('lf-maxdown').value.trim() || null,
     min_employment_months:      document.getElementById('lf-minempmo').value.trim() || null,
@@ -843,8 +924,9 @@ function renderPrograms() {
           <span class="status-pill ${badgeCls}" style="flex-shrink:0;">${esc(p.status || '')}</span>
         </div>
         <div class="prog-card-body">
-          ${p.program_type ? `<div class="prog-detail"><span class="prog-detail-label"><i class="fa-solid fa-building" style="width:14px;color:#888;margin-right:.3rem;"></i>Program Type</span><span class="prog-detail-value">${esc(p.program_type)}</span></div>` : ''}
-          ${p.ami_range ? `<div class="prog-detail"><span class="prog-detail-label"><i class="fa-solid fa-chart-bar" style="width:14px;color:#888;margin-right:.3rem;"></i>AMI Range</span><span class="prog-detail-value">${esc(p.ami_range)}</span></div>` : ''}
+          ${p.property_type ? `<div class="prog-detail"><span class="prog-detail-label"><i class="fa-solid fa-house" style="width:14px;color:#888;margin-right:.3rem;"></i>Type</span><span class="prog-detail-value">${esc(p.property_type)}</span></div>` : ''}
+          ${p.ami_percent ? `<div class="prog-detail"><span class="prog-detail-label"><i class="fa-solid fa-chart-bar" style="width:14px;color:#888;margin-right:.3rem;"></i>AMI %</span><span class="prog-detail-value">${esc(String(p.ami_percent))}%</span></div>` : ''}
+          ${p.zip_code ? `<div class="prog-detail"><span class="prog-detail-label"><i class="fa-solid fa-location-dot" style="width:14px;color:#888;margin-right:.3rem;"></i>Zip</span><span class="prog-detail-value">${esc(p.zip_code)}</span></div>` : ''}
           ${p.bedrooms ? `<div class="prog-detail"><span class="prog-detail-label"><i class="fa-solid fa-bed" style="width:14px;color:#888;margin-right:.3rem;"></i>Bedrooms</span><span class="prog-detail-value">${esc(p.bedrooms)}</span></div>` : ''}
           ${p.price_range ? `<div class="prog-detail"><span class="prog-detail-label"><i class="fa-solid fa-tag" style="width:14px;color:#888;margin-right:.3rem;"></i>Price Range</span><span class="prog-detail-value">${esc(p.price_range)}</span></div>` : ''}
           ${p.notes ? `<div style="font-size:.78rem;color:#888;background:rgba(0,0,0,.04);border-radius:6px;padding:.45rem .6rem;margin-top:.2rem;">${esc(p.notes)}</div>` : ''}
@@ -869,17 +951,22 @@ function openProgModal(idx, prefill) {
   editingProgRow = idx !== null && idx !== undefined ? progData[idx] : null
   const p = editingProgRow || prefill || {}
   document.getElementById('prog-modal-title').textContent = editingProgRow ? 'Edit Community' : (prefill ? 'Push to Site' : 'Add Community')
-  document.getElementById('pf-name').value   = p.community_name  || ''
-  document.getElementById('pf-area').value   = p.area            || ''
-  document.getElementById('pf-type').value   = p.program_type    || ''
-  document.getElementById('pf-ami').value    = p.ami_range       || ''
-  document.getElementById('pf-beds').value   = p.bedrooms        || ''
-  document.getElementById('pf-hh').value     = p.household_size_limit || ''
-  document.getElementById('pf-ftb').value    = p.first_time_buyer || ''
-  document.getElementById('pf-price').value  = p.price_range     || ''
-  document.getElementById('pf-status').value = p.status          || 'Available'
-  document.getElementById('pf-notes').value  = p.notes           || ''
+  document.getElementById('pf-name').value    = p.community_name || ''
+  document.getElementById('pf-area').value    = p.area           || ''
+  document.getElementById('pf-zip').value     = p.zip_code       || ''
+  document.getElementById('pf-ami-pct').value = p.ami_percent    || ''
+  document.getElementById('pf-beds').value    = p.bedrooms       || ''
+  document.getElementById('pf-price').value   = p.price_range    || ''
+  document.getElementById('pf-status').value  = p.status         || 'Available'
+  document.getElementById('pf-notes').value   = p.notes          || ''
   document.getElementById('pf-src-listing').value = p.source_listing_id || ''
+  // Property type: handle "Other" case
+  const knownTypes = ['Single Family Home','Detached','Townhome','Condo','Duplex','Manufactured Home']
+  const ptVal = p.property_type || ''
+  const isKnown = ptVal === '' || knownTypes.includes(ptVal)
+  document.getElementById('pf-property-type').value = isKnown ? ptVal : 'Other'
+  document.getElementById('pf-property-type-other-row').style.display = isKnown ? 'none' : 'block'
+  document.getElementById('pf-property-type-other').value = isKnown ? '' : ptVal
 
   // Build linked listings list from lstData
   const progName = p.community_name || ''
@@ -905,6 +992,11 @@ function closeProgModal() {
   editingProgRow = null
 }
 
+document.getElementById('pf-property-type').addEventListener('change', function () {
+  document.getElementById('pf-property-type-other-row').style.display =
+    this.value === 'Other' ? 'block' : 'none'
+})
+
 document.getElementById('prog-save-btn').addEventListener('click', async () => {
   const name = document.getElementById('pf-name').value.trim()
   const area = document.getElementById('pf-area').value.trim()
@@ -913,19 +1005,23 @@ document.getElementById('prog-save-btn').addEventListener('click', async () => {
   const btn = document.getElementById('prog-save-btn')
   btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Saving...'
 
+  const ptSel = document.getElementById('pf-property-type').value
+  const property_type = ptSel === 'Other'
+    ? (document.getElementById('pf-property-type-other').value.trim() || 'Other')
+    : ptSel
+
   const prog = {
-    community_name:       name,
+    community_name:  name,
     area,
-    program_type:         document.getElementById('pf-type').value.trim(),
-    ami_range:            document.getElementById('pf-ami').value.trim(),
-    bedrooms:             document.getElementById('pf-beds').value.trim(),
-    household_size_limit: document.getElementById('pf-hh').value.trim(),
-    first_time_buyer:     document.getElementById('pf-ftb').value.trim(),
-    price_range:          document.getElementById('pf-price').value.trim(),
-    status:               document.getElementById('pf-status').value,
-    notes:                document.getElementById('pf-notes').value.trim(),
-    source_listing_id:    document.getElementById('pf-src-listing').value.trim() || null,
-    updated_at:           new Date().toISOString(),
+    zip_code:        document.getElementById('pf-zip').value.trim()     || null,
+    ami_percent:     document.getElementById('pf-ami-pct').value.trim() || null,
+    property_type:   property_type || null,
+    bedrooms:        document.getElementById('pf-beds').value.trim()    || null,
+    price_range:     document.getElementById('pf-price').value.trim()   || null,
+    status:          document.getElementById('pf-status').value,
+    notes:           document.getElementById('pf-notes').value.trim()   || null,
+    source_listing_id: document.getElementById('pf-src-listing').value.trim() || null,
+    updated_at:      new Date().toISOString(),
   }
 
   let error

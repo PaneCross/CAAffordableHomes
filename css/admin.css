@@ -608,6 +608,67 @@ textarea.form-input { resize: vertical; }
 }
 .toggle-input:checked + .toggle-track .toggle-thumb { transform: translateX(18px); }
 
+/* ── AMI input table (listing modal eligibility) ── */
+.ami-table-wrap { margin: .75rem 0 1rem; overflow-x: auto; }
+.ami-input-table {
+  width: 100%; border-collapse: collapse; font-size: .8rem;
+}
+.ami-input-table th {
+  background: #e8f4ee; color: var(--green); font-weight: 600;
+  text-transform: uppercase; font-size: .68rem; letter-spacing: .05em;
+  padding: .45rem .5rem; text-align: center; border: 1px solid #c8e0d4;
+}
+.ami-input-table th:first-child { text-align: left; }
+.ami-input-table td {
+  padding: .3rem .4rem; border: 1px solid #ddeedd; vertical-align: middle;
+}
+.ami-input-table td:first-child {
+  font-size: .78rem; font-weight: 500; color: #555; white-space: nowrap;
+  background: #f6fbf7; padding-left: .65rem;
+}
+.ami-input-table tr:nth-child(even) td { background: #fbfefb; }
+.ami-input-table tr:nth-child(even) td:first-child { background: #f0f9f2; }
+.ami-cell {
+  width: 100%; min-width: 80px; padding: .3rem .4rem;
+  border: 1px solid #cde; border-radius: 4px; font-size: .78rem;
+  text-align: right; font-family: var(--font-body);
+  background: #fff; color: var(--text);
+}
+.ami-cell:focus { outline: none; border-color: var(--green); background: #f0faf4; }
+.ami-cell::placeholder { color: #ccc; }
+
+/* ── Org Inquiries list ── */
+.oi-list { display: flex; flex-direction: column; gap: .75rem; max-width: 760px; }
+.oi-card {
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: 10px; overflow: hidden;
+}
+.oi-card--new { border-left: 3px solid #1a5276; }
+.oi-card-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  padding: .8rem 1rem .5rem; gap: 1rem;
+}
+.oi-contact-name { font-weight: 600; font-size: .92rem; }
+.oi-org { font-size: .78rem; color: var(--muted); margin-top: .1rem; }
+.oi-card-body { padding: .25rem 1rem .65rem; }
+.oi-contact-row { display: flex; flex-wrap: wrap; gap: .75rem; margin-bottom: .4rem; }
+.oi-contact-link {
+  font-size: .8rem; color: var(--green); text-decoration: none;
+  display: flex; align-items: center; gap: .3rem;
+}
+.oi-contact-link:hover { text-decoration: underline; }
+.oi-message {
+  font-size: .82rem; color: #444; background: #f9fafb;
+  border-radius: 6px; padding: .55rem .75rem; line-height: 1.55;
+  white-space: pre-wrap; margin-top: .35rem;
+}
+.oi-card-footer {
+  display: flex; align-items: center; gap: .5rem;
+  padding: .55rem 1rem; border-top: 1px solid var(--border);
+  background: #fafaf8;
+}
+.pill-reviewed { background: #eafaf1; color: #1e8449; }
+
 /* ── Responsive ── */
 @media (max-width: 640px) {
   .admin-sidebar  { width: 180px; }

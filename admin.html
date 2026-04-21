@@ -51,9 +51,10 @@
 
       <div class="sb-group-label">Pipeline</div>
       <button class="sb-btn" data-tab="properties"><i class="fa-solid fa-inbox"></i> Submissions</button>
+      <button class="sb-btn" data-tab="org-inquiries"><i class="fa-solid fa-handshake"></i> Org Inquiries</button>
       <button class="sb-btn" data-tab="listings"><i class="fa-solid fa-building"></i> Listings</button>
       <button class="sb-btn" data-tab="interest-list"><i class="fa-solid fa-users"></i> Interest List</button>
-      <button class="sb-btn" data-tab="matches"><i class="fa-solid fa-handshake"></i> Matches</button>
+      <button class="sb-btn" data-tab="matches"><i class="fa-solid fa-magnifying-glass"></i> Matches</button>
       <button class="sb-btn" data-tab="successes"><i class="fa-solid fa-star"></i> Successes</button>
     </div>
     <div class="sb-footer">
@@ -98,6 +99,18 @@
         <button class="btn-primary btn-sm" id="ps-add-btn"><i class="fa-solid fa-plus"></i> Add Submission</button>
       </div>
       <div id="ps-area"><div class="loading-state"><i class="fa-solid fa-circle-notch fa-spin"></i><p>Loading...</p><p class="wake-hint">Still loading - the database may be waking up after inactivity. This usually takes 20-30 seconds and will resolve automatically.</p></div></div>
+    </section>
+
+    <!-- ORG INQUIRIES -->
+    <section id="tab-org-inquiries" class="admin-tab" style="display:none;">
+      <div class="tab-toolbar">
+        <div class="filter-bar" id="oi-filter-bar">
+          <button class="filter-btn active" data-oif="all">All</button>
+          <button class="filter-btn" data-oif="new">New</button>
+          <button class="filter-btn" data-oif="reviewed">Reviewed</button>
+        </div>
+      </div>
+      <div id="oi-area"><div class="loading-state"><i class="fa-solid fa-circle-notch fa-spin"></i><p>Loading...</p></div></div>
     </section>
 
     <!-- LISTINGS -->
@@ -230,26 +243,39 @@
 
       <div class="lst-section lst-section-green">
         <div class="form-section-label">Eligibility Requirements</div>
-        <div class="eligibility-helper"><i class="fa-solid fa-circle-info"></i> All fields are optional. Only fields you fill in will be checked during matching. Leave a field blank to skip that requirement for this listing.</div>
+        <div class="eligibility-helper"><i class="fa-solid fa-circle-info"></i> Enter the max annual household income in the AMI table below. Leave a cell blank if that household size is ineligible at that AMI level. All other fields are optional.</div>
+        <div class="ami-table-wrap">
+          <table class="ami-input-table">
+            <thead>
+              <tr>
+                <th>Household</th>
+                <th>50% AMI</th>
+                <th>80% AMI</th>
+                <th>100% AMI</th>
+                <th>120% AMI</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>1 Person</td><td><input type="number" class="ami-cell" id="lf-ami-1-50" placeholder="--"></td><td><input type="number" class="ami-cell" id="lf-ami-1-80" placeholder="--"></td><td><input type="number" class="ami-cell" id="lf-ami-1-100" placeholder="--"></td><td><input type="number" class="ami-cell" id="lf-ami-1-120" placeholder="--"></td></tr>
+              <tr><td>2 People</td><td><input type="number" class="ami-cell" id="lf-ami-2-50" placeholder="--"></td><td><input type="number" class="ami-cell" id="lf-ami-2-80" placeholder="--"></td><td><input type="number" class="ami-cell" id="lf-ami-2-100" placeholder="--"></td><td><input type="number" class="ami-cell" id="lf-ami-2-120" placeholder="--"></td></tr>
+              <tr><td>3 People</td><td><input type="number" class="ami-cell" id="lf-ami-3-50" placeholder="--"></td><td><input type="number" class="ami-cell" id="lf-ami-3-80" placeholder="--"></td><td><input type="number" class="ami-cell" id="lf-ami-3-100" placeholder="--"></td><td><input type="number" class="ami-cell" id="lf-ami-3-120" placeholder="--"></td></tr>
+              <tr><td>4 People</td><td><input type="number" class="ami-cell" id="lf-ami-4-50" placeholder="--"></td><td><input type="number" class="ami-cell" id="lf-ami-4-80" placeholder="--"></td><td><input type="number" class="ami-cell" id="lf-ami-4-100" placeholder="--"></td><td><input type="number" class="ami-cell" id="lf-ami-4-120" placeholder="--"></td></tr>
+              <tr><td>5 People</td><td><input type="number" class="ami-cell" id="lf-ami-5-50" placeholder="--"></td><td><input type="number" class="ami-cell" id="lf-ami-5-80" placeholder="--"></td><td><input type="number" class="ami-cell" id="lf-ami-5-100" placeholder="--"></td><td><input type="number" class="ami-cell" id="lf-ami-5-120" placeholder="--"></td></tr>
+              <tr><td>6 People</td><td><input type="number" class="ami-cell" id="lf-ami-6-50" placeholder="--"></td><td><input type="number" class="ami-cell" id="lf-ami-6-80" placeholder="--"></td><td><input type="number" class="ami-cell" id="lf-ami-6-100" placeholder="--"></td><td><input type="number" class="ami-cell" id="lf-ami-6-120" placeholder="--"></td></tr>
+              <tr><td>7 People</td><td><input type="number" class="ami-cell" id="lf-ami-7-50" placeholder="--"></td><td><input type="number" class="ami-cell" id="lf-ami-7-80" placeholder="--"></td><td><input type="number" class="ami-cell" id="lf-ami-7-100" placeholder="--"></td><td><input type="number" class="ami-cell" id="lf-ami-7-120" placeholder="--"></td></tr>
+              <tr><td>8 People</td><td><input type="number" class="ami-cell" id="lf-ami-8-50" placeholder="--"></td><td><input type="number" class="ami-cell" id="lf-ami-8-80" placeholder="--"></td><td><input type="number" class="ami-cell" id="lf-ami-8-100" placeholder="--"></td><td><input type="number" class="ami-cell" id="lf-ami-8-120" placeholder="--"></td></tr>
+            </tbody>
+          </table>
+        </div>
       <div class="form-row2">
-        <div class="form-group"><label for="lf-ami">AMI %</label><input id="lf-ami" class="form-input" type="number" placeholder="80"></div>
         <div class="form-group"><label for="lf-credit">Min Credit Score</label><input id="lf-credit" class="form-input" type="number" placeholder="640"></div>
-      </div>
-      <div class="form-row2">
-        <div class="form-group"><label for="lf-dti">Max DTI %</label><input id="lf-dti" class="form-input" type="number" placeholder="45"></div>
-        <div class="form-group"><label for="lf-debt">Max Monthly Debt ($)</label><input id="lf-debt" class="form-input" type="number"></div>
-      </div>
-      <div class="form-row3">
-        <div class="form-group"><label for="lf-minhh">Min Household Size</label><input id="lf-minhh" class="form-input" type="number"></div>
-        <div class="form-group"><label for="lf-maxhh">Max Household Size</label><input id="lf-maxhh" class="form-input" type="number"></div>
         <div class="form-group"><label for="lf-ftb">First-Time Buyer</label>
           <select id="lf-ftb" class="form-input"><option value="">N/A</option><option value="YES">Required</option><option value="NO">Not Required</option></select>
         </div>
       </div>
-      <div class="form-row3">
-        <div class="form-group"><label for="lf-inc1">Max Income (1 person)</label><input id="lf-inc1" class="form-input" type="number"></div>
-        <div class="form-group"><label for="lf-inc4">Max Income (4 person)</label><input id="lf-inc4" class="form-input" type="number"></div>
-        <div class="form-group"><label for="lf-inc6">Max Income (6 person)</label><input id="lf-inc6" class="form-input" type="number"></div>
+      <div class="form-row2">
+        <div class="form-group"><label for="lf-dti">Max DTI %</label><input id="lf-dti" class="form-input" type="number" placeholder="45"></div>
+        <div class="form-group"><label for="lf-debt">Max Monthly Debt ($)</label><input id="lf-debt" class="form-input" type="number"></div>
       </div>
       <div class="form-row2">
         <div class="form-group"><label for="lf-sdres">SD County Residency Required</label>
@@ -261,21 +287,15 @@
         <div class="form-group"><label for="lf-hhtogether">Household Together (months)</label><input id="lf-hhtogether" class="form-input" type="number" placeholder="12"></div>
         <div class="form-group"><label for="lf-ftb-years">No Ownership (years)</label><input id="lf-ftb-years" class="form-input" type="number" placeholder="3"></div>
       </div>
-      <div class="form-row3">
-        <div class="form-group"><label for="lf-inc2">Max Income (2 person)</label><input id="lf-inc2" class="form-input" type="number"></div>
-        <div class="form-group"><label for="lf-inc3">Max Income (3 person)</label><input id="lf-inc3" class="form-input" type="number"></div>
-        <div class="form-group"><label for="lf-inc5">Max Income (5 person)</label><input id="lf-inc5" class="form-input" type="number"></div>
-      </div>
       <div class="form-row2">
-        <div class="form-group"><label for="lf-mininc">Min Income ($)</label><input id="lf-mininc" class="form-input" type="number"></div>
         <div class="form-group"><label for="lf-minassets">Min Assets ($)</label><input id="lf-minassets" class="form-input" type="number"></div>
-      </div>
-      <div class="form-row2">
         <div class="form-group"><label for="lf-maxassets">Max Assets ($)</label><input id="lf-maxassets" class="form-input" type="number"></div>
-        <div class="form-group"><label for="lf-mindown">Min Down Payment (%)</label><input id="lf-mindown" class="form-input" type="number" placeholder="3"></div>
       </div>
       <div class="form-row2">
+        <div class="form-group"><label for="lf-mindown">Min Down Payment (%)</label><input id="lf-mindown" class="form-input" type="number" placeholder="3"></div>
         <div class="form-group"><label for="lf-maxdown">Max Down Payment (%)</label><input id="lf-maxdown" class="form-input" type="number"></div>
+      </div>
+      <div class="form-row2">
         <div class="form-group"><label for="lf-minempmo">Min Employment (months)</label><input id="lf-minempmo" class="form-input" type="number" placeholder="24"></div>
       </div>
       <div class="form-row3">
@@ -336,15 +356,30 @@
         <div class="form-group"><label for="pf-area">Area *</label><input id="pf-area" class="form-input" placeholder="e.g. North County Coastal"></div>
       </div>
       <div class="form-row2">
-        <div class="form-group"><label for="pf-type">Program Type</label><input id="pf-type" class="form-input"></div>
-        <div class="form-group"><label for="pf-ami">AMI Range</label><input id="pf-ami" class="form-input" placeholder="e.g. 80% AMI"></div>
+        <div class="form-group"><label for="pf-zip">Zip Code</label><input id="pf-zip" class="form-input" placeholder="e.g. 92101"></div>
+        <div class="form-group"><label for="pf-ami-pct">AMI %</label><input id="pf-ami-pct" class="form-input" type="number" placeholder="e.g. 80"></div>
       </div>
       <div class="form-row2">
+        <div class="form-group">
+          <label for="pf-property-type">Property Type</label>
+          <select id="pf-property-type" class="form-input">
+            <option value="">-- Select --</option>
+            <option value="Single Family Home">Single Family Home</option>
+            <option value="Detached">Detached</option>
+            <option value="Townhome">Townhome</option>
+            <option value="Condo">Condo</option>
+            <option value="Duplex">Duplex</option>
+            <option value="Manufactured Home">Manufactured Home</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
         <div class="form-group"><label for="pf-beds">Bedrooms</label><input id="pf-beds" class="form-input"></div>
-        <div class="form-group"><label for="pf-hh">Household Size Limit</label><input id="pf-hh" class="form-input"></div>
+      </div>
+      <div class="form-group" id="pf-property-type-other-row" style="display:none;">
+        <label for="pf-property-type-other">Property Type (describe)</label>
+        <input id="pf-property-type-other" class="form-input" placeholder="Describe the property type">
       </div>
       <div class="form-row2">
-        <div class="form-group"><label for="pf-ftb">First-Time Buyer</label><input id="pf-ftb" class="form-input"></div>
         <div class="form-group"><label for="pf-price">Price Range</label><input id="pf-price" class="form-input"></div>
       </div>
       <div class="form-row2">
