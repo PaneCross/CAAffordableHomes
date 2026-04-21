@@ -15,6 +15,7 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
 let lstData = [], progData = [], ilData = [], psData = [], orgInqData = [], candidatesData = [], successesData = [], testimonialsData = []
 let dashboardFetched = false
 let helpPanelOpen = false
+let matchRenderData = null   // cached args for renderMatches() — used by resize listener
 let editingLstRow = null, editingProgRow = null, editingPsRow = null, viewingIlRow = null
 let lstFilter = 'active', progFilter = 'active', ilFilter = 'all', psFilter = 'non-promoted', tmnFilter = 'active', oiFilter = 'new'
 let ilSearch = ''
@@ -1512,7 +1513,8 @@ async function loadMatches() {
     if (ilErr)  throw ilErr
 
     candidatesData = cands || []
-    renderMatches(listings || [], results || [], cands || [], il || [], openBlocks)
+    matchRenderData = { listings: listings || [], results: results || [], cands: cands || [], il: il || [] }
+    renderMatches(matchRenderData.listings, matchRenderData.results, matchRenderData.cands, matchRenderData.il, openBlocks)
   } catch(e) {
     setArea('matches-area', errorState(e))
   }
@@ -2434,3 +2436,48 @@ document.querySelectorAll('.sb-btn[data-tab]').forEach(btn => {
 document.getElementById('mf-help-btn').addEventListener('click', openHelp)
 document.getElementById('mf-refresh-btn').addEventListener('click', refreshCurrentTab)
 document.getElementById('mf-signout-btn').addEventListener('click', () => sb.auth.signOut())
+
+// =============================================================
+// DYNAMIC VIEWPORT RESIZE
+// Re-renders the active tab when crossing the mobile breakpoint
+// so toggling DevTools responsive mode (or rotating a phone)
+// switches between card and table layouts without a page reload.
+// =============================================================
+
+const MOBILE_BP = 768
+let lastIsMobile = window.innerWidth <= MOBILE_BP
+let resizeBreakpointTimer = null
+
+window.addEventListener('resize', () => {
+  clearTimeout(resizeBreakpointTimer)
+  resizeBreakpointTimer = setTimeout(() => {
+    const isMobile = window.innerWidth <= MOBILE_BP
+    if (isMobile === lastIsMobile) return   // no breakpoint crossing — nothing to do
+    lastIsMobile = isMobile
+
+    const tab = document.querySelector('.sb-btn.active[data-tab]')?.dataset.tab
+    if (!tab) return
+
+    // Interest list: renderIL() reads all state from globals — just call it
+    if (tab === 'interest-list' && ilData.length) {
+      renderIL()
+      return
+    }
+
+    // Matches: re-render with stored args, preserving which blocks are expanded
+    if (tab === 'matches' && matchRenderData) {
+      const openBlocks = new Set(
+        Array.from(document.querySelectorAll('[id^="match-body-"]'))
+          .filter(el => el.style.display !== 'none')
+          .map(el => el.id.replace('match-body-', ''))
+      )
+      renderMatches(
+        matchRenderData.listings,
+        matchRenderData.results,
+        matchRenderData.cands,
+        matchRenderData.il,
+        openBlocks
+      )
+    }
+  }, 150)  // 150ms debounce — smooth during drag, snappy at rest
+})

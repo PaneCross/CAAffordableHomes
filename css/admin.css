@@ -767,16 +767,19 @@ textarea.form-input { resize: vertical; }
   }
   .sidebar-close-btn:hover { color: #fff; }
 
+  /* ── App shell: remove forced viewport height on mobile ──
+     #app has min-height:100vh in base CSS. admin-main is flex:1 inside
+     it, so it stretches to fill #app's height even with min-height:0 on
+     admin-main. Setting #app to min-height:0 lets content determine
+     height naturally — no blank space on short-content tabs. ── */
+  #app { min-height: 0; }
+
   /* ── Main content: full width, padded for header + footer ── */
   .admin-main {
     margin-left: 0 !important;
     margin-right: 0 !important;
     padding-top: var(--mobile-header-h);
     padding-bottom: var(--mobile-footer-h);
-    /* No min-height on mobile — the footer is position:fixed so it's always
-       visible at the bottom of the viewport. Forcing min-height to fill the
-       viewport creates a large blank area on short-content tabs (Submissions,
-       Successes, etc.). Let content determine the height naturally. */
     min-height: 0;
   }
   /* When help panel opens on mobile, don't shift main — panel goes full-width on top */
