@@ -2037,6 +2037,47 @@ const HELP_CONTENT = {
     ]
   },
 
+  'org-inquiries': {
+    title: 'Org Inquiries',
+    intro: 'Org Inquiries are partnership and organization inquiry messages submitted through the contact page. These are builders, nonprofits, housing agencies, and other partners who want to learn more about working with CA Affordable Homes. New inquiries land here unread and are ready for your review.',
+    faq: [
+      {
+        q: 'How does a new inquiry come in?',
+        a: 'When someone fills out the organization or developer inquiry form on the contact page and submits, the record is saved immediately to the database and appears here with a <strong>New</strong> status. You will also receive an email notification at the team inbox.'
+      },
+      {
+        q: 'What do the filter buttons do?',
+        a: `<ul>
+          <li><strong>New</strong> (default): shows only unreviewed inquiries that still need your attention.</li>
+          <li><strong>Reviewed</strong>: shows inquiries you have already marked as reviewed.</li>
+          <li><strong>All</strong>: shows every inquiry regardless of status.</li>
+        </ul>`
+      },
+      {
+        q: 'How do I mark an inquiry as reviewed?',
+        a: 'Click the <strong>Mark Reviewed</strong> button on any New inquiry card. The status changes to Reviewed immediately and the card moves out of the New filter. If you need to reopen it, click <strong>Mark as New</strong> to move it back.'
+      },
+      {
+        q: 'How do I reply to an inquiry?',
+        a: 'Click the email address link on the inquiry card. Your default email application will open a new message pre-addressed to that contact. If a phone number was provided, click it to initiate a call on devices that support it.'
+      },
+      {
+        q: 'How do I delete an inquiry?',
+        a: 'Click the <strong>Delete</strong> button on the inquiry card and confirm the prompt. The record is permanently removed and cannot be recovered.'
+      },
+      {
+        q: 'What information comes in with an inquiry?',
+        a: `<ul>
+          <li><strong>Organization name</strong> and <strong>contact person name</strong></li>
+          <li><strong>Email address</strong> and <strong>phone number</strong> (if provided)</li>
+          <li><strong>Area of interest</strong>: the San Diego region(s) the organization is focused on</li>
+          <li><strong>Message</strong>: their inquiry description or details</li>
+          <li><strong>Submitted date and time</strong></li>
+        </ul>`
+      }
+    ]
+  },
+
   listings: {
     title: 'Listings',
     intro: 'Listings are the internal property records that the matching engine runs against. They are never shown to applicants on the website - all listing data stays inside this admin portal. This tab is where you create, edit, and manage all properties in the system.',
