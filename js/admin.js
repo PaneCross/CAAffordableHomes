@@ -16,7 +16,7 @@ let lstData = [], progData = [], ilData = [], psData = [], orgInqData = [], cand
 let dashboardFetched = false
 let helpPanelOpen = false
 let editingLstRow = null, editingProgRow = null, editingPsRow = null, viewingIlRow = null
-let lstFilter = 'active', progFilter = 'active', ilFilter = 'all', psFilter = 'non-promoted', tmnFilter = 'active', oiFilter = 'all'
+let lstFilter = 'active', progFilter = 'active', ilFilter = 'all', psFilter = 'non-promoted', tmnFilter = 'active', oiFilter = 'new'
 let ilSearch = ''
 let promotingPsId = null  // PS row id when promoting to listing
 let ilSort  = { col: 'submitted_at', asc: false }
