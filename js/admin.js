@@ -150,12 +150,13 @@ function loadActiveTab(tab) {
   if (tab === 'successes')     loadSuccesses()
 }
 
-document.getElementById('refresh-btn').addEventListener('click', () => {
+function refreshCurrentTab() {
   const tab = document.querySelector('.sb-btn.active[data-tab]')?.dataset.tab || 'dashboard'
-  lstData = []; progData = []; ilData = []; psData = []; candidatesData = []; successesData = []; testimonialsData = []
+  lstData = []; progData = []; ilData = []; psData = []; orgInqData = []; candidatesData = []; successesData = []; testimonialsData = []
   dashboardFetched = false
   loadActiveTab(tab)
-})
+}
+document.getElementById('refresh-btn').addEventListener('click', refreshCurrentTab)
 
 // ─────────────────────────────────────────────────────────────
 // DASHBOARD
@@ -2292,3 +2293,35 @@ function closeHelp() {
 
 document.getElementById('help-btn').addEventListener('click', openHelp)
 document.getElementById('help-panel-close').addEventListener('click', closeHelp)
+
+// =============================================================
+// MOBILE NAV
+// =============================================================
+
+function openMobileNav() {
+  document.querySelector('.admin-sidebar').classList.add('mobile-open')
+  document.getElementById('sidebar-overlay').classList.add('active')
+  document.body.style.overflow = 'hidden'
+}
+
+function closeMobileNav() {
+  document.querySelector('.admin-sidebar').classList.remove('mobile-open')
+  document.getElementById('sidebar-overlay').classList.remove('active')
+  document.body.style.overflow = ''
+}
+
+document.getElementById('mobile-menu-btn').addEventListener('click', openMobileNav)
+document.getElementById('sidebar-close-btn').addEventListener('click', closeMobileNav)
+document.getElementById('sidebar-overlay').addEventListener('click', closeMobileNav)
+
+// Close sidebar after selecting a tab on mobile
+document.querySelectorAll('.sb-btn[data-tab]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (window.innerWidth <= 768) closeMobileNav()
+  })
+})
+
+// Mobile footer bar actions
+document.getElementById('mf-help-btn').addEventListener('click', openHelp)
+document.getElementById('mf-refresh-btn').addEventListener('click', refreshCurrentTab)
+document.getElementById('mf-signout-btn').addEventListener('click', () => sb.auth.signOut())

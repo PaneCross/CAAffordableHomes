@@ -37,8 +37,19 @@
 ══════════════════════════════════════════════════════════ -->
 <div id="app" style="display:none;">
 
+  <!-- Sidebar backdrop (mobile) -->
+  <div id="sidebar-overlay"></div>
+
+  <!-- Mobile sticky header (shown on mobile only) -->
+  <div id="mobile-header">
+    <button id="mobile-menu-btn" aria-label="Open navigation"><i class="fa-solid fa-bars"></i></button>
+    <span class="mobile-header-title">CA Affordable Homes</span>
+    <div class="mobile-header-spacer"></div>
+  </div>
+
   <!-- Sidebar -->
   <nav class="admin-sidebar">
+    <button id="sidebar-close-btn" class="sidebar-close-btn" aria-label="Close navigation"><i class="fa-solid fa-xmark"></i></button>
     <div class="sb-logo">CA Affordable Homes</div>
     <div class="sb-user" id="sb-user-email"></div>
     <div class="sb-nav">
@@ -62,6 +73,13 @@
       <button class="sb-btn" id="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Sign Out</button>
     </div>
   </nav>
+
+  <!-- Mobile footer bar (shown on mobile only) -->
+  <div id="mobile-footer-bar">
+    <button class="mf-btn" id="mf-help-btn"><i class="fa-solid fa-circle-question"></i><span>Help</span></button>
+    <button class="mf-btn" id="mf-refresh-btn"><i class="fa-solid fa-rotate"></i><span>Refresh</span></button>
+    <button class="mf-btn mf-btn-danger" id="mf-signout-btn"><i class="fa-solid fa-right-from-bracket"></i><span>Sign Out</span></button>
+  </div>
 
   <!-- Main -->
   <main class="admin-main" id="admin-main">
