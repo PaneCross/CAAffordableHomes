@@ -77,13 +77,9 @@ function buildProgramCard(row, unitMap) {
   var badgeClass  = isAvail ? 'pc-badge--available' : 'pc-badge--soon'
   var cardAccent  = isAvail ? 'program-card--available' : 'program-card--soon'
 
-  /* AMI tag */
-  var amiTagHTML = amiPercent
-    ? '<span class="pc-ami-tag">Up to ' + escHTML(amiPercent) + '% AMI</span>'
-    : ''
-
-  /* Detail rows */
+  /* Detail rows — AMI is first in the list, not a separate tag */
   var detailsHTML = ''
+  if (amiPercent)    detailsHTML += detailRow('fa-percent',      'AMI Limit',      'Up to ' + amiPercent + '%')
   if (propertyType)  detailsHTML += detailRow('fa-house',        'Property Type',  propertyType)
   if (zipCode)       detailsHTML += detailRow('fa-location-dot', 'Zip Code',       zipCode)
   if (bedrooms)      detailsHTML += detailRow('fa-bed',          'Bedrooms',       bedrooms)
@@ -93,25 +89,22 @@ function buildProgramCard(row, unitMap) {
   var card = document.createElement('article')
   card.className = 'program-card ' + cardAccent
 
-  var unitsHTML = ''
-  if (isAvail && availUnits > 0) {
-    unitsHTML = '<span class="pc-units-badge">' +
-      '<i class="fa-solid fa-house-chimney" aria-hidden="true"></i> ' +
-      availUnits + (availUnits === 1 ? ' home available' : ' homes available') +
-    '</span>'
-  }
+  /* Units line sits under the title inside the title block */
+  var unitsLineHTML = (isAvail && availUnits > 0)
+    ? '<p class="pc-units-line">' +
+        '<i class="fa-solid fa-house-chimney" aria-hidden="true"></i> ' +
+        availUnits + (availUnits === 1 ? ' home available' : ' homes available') +
+      '</p>'
+    : ''
 
   card.innerHTML =
     '<div class="pc-header">' +
       '<div class="pc-title-block">' +
         '<h3 class="pc-name">' + escHTML(area || 'San Diego Area') + '</h3>' +
+        unitsLineHTML +
       '</div>' +
-      '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:.3rem;flex-shrink:0;">' +
-        '<span class="pc-badge ' + badgeClass + '">' + escHTML(status) + '</span>' +
-        unitsHTML +
-      '</div>' +
+      '<span class="pc-badge ' + badgeClass + '">' + escHTML(status) + '</span>' +
     '</div>' +
-    (amiTagHTML ? '<div class="pc-ami-row">' + amiTagHTML + '</div>' : '') +
     (detailsHTML ? '<ul class="pc-details" role="list">' + detailsHTML + '</ul>' : '') +
     (notes
       ? '<div class="pc-notes"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> ' + escHTML(notes) + '</div>'
