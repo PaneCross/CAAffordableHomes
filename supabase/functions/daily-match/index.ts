@@ -35,6 +35,17 @@ Deno.serve(async (req) => {
       .eq('active', 'YES')
     if (lstErr) throw lstErr
 
+    // Load programs to get ami_percent per listing (keyed by community_name)
+    const { data: programs } = await supabase
+      .from('programs')
+      .select('community_name, ami_percent')
+    const progAmiMap: Record<string, number | null> = {}
+    if (programs) {
+      programs.forEach((p: Record<string, unknown>) => {
+        if (p.community_name) progAmiMap[String(p.community_name)] = parseNum(p.ami_percent, null)
+      })
+    }
+
     // Load eligible applicants (for matching)
     const { data: applicants, error: apErr } = await supabase
       .from('interest_list')
@@ -69,8 +80,9 @@ Deno.serve(async (req) => {
 
     if (listings && listings.length > 0 && applicants && applicants.length > 0) {
       for (const listing of listings) {
+        const amiPct = listing.linked_program_id ? (progAmiMap[listing.linked_program_id] ?? null) : null
         for (const ap of applicants) {
-          const { status, failedFields } = evaluateApplicant(ap, listing)
+          const { status, failedFields } = evaluateApplicant(ap, listing, amiPct)
           results.push({
             listing_id:    listing.listing_id,
             email:         ap.email,
@@ -124,7 +136,7 @@ Deno.serve(async (req) => {
 
 // ── Matching Engine ────────────────────────────────────────────
 
-function evaluateApplicant(ap: Record<string, string>, req: Record<string, string>) {
+function evaluateApplicant(ap: Record<string, unknown>, req: Record<string, unknown>, amiPct: number | null) {
   const failed: string[] = []
 
   // Helper: only true when a YES/NO field is explicitly set to YES.
@@ -155,23 +167,53 @@ function evaluateApplicant(ap: Record<string, string>, req: Record<string, strin
     failed.push(`Owned real estate in last ${parseNum(req.no_ownership_years, 3)} years`)
   }
 
-  // 3 — Household size (skipped if listing fields are blank)
+  // 3 — Household size: use ami_table when present, else legacy min/max columns
   const hhSize = parseNum(ap.household_size, null)
-  const minHH  = parseNum(req.min_household_size, null)
-  const maxHH  = parseNum(req.max_household_size, null)
-  if (hhSize !== null) {
-    if (minHH !== null && hhSize < minHH) failed.push(`Household size too small (${hhSize}, min ${minHH})`)
-    if (maxHH !== null && hhSize > maxHH) failed.push(`Household size too large (${hhSize}, max ${maxHH})`)
+  const amiTable = req.ami_table as Record<string, Record<string, number | null>> | null | undefined
+
+  if (amiTable && hhSize !== null) {
+    const hhKey = String(Math.min(Math.max(Math.round(hhSize), 1), 8))
+    const hhRow = amiTable[hhKey]
+    if (!hhRow || Object.keys(hhRow).length === 0) {
+      failed.push(`Household size not eligible for this program (${hhSize} person)`)
+    }
+  } else if (!amiTable) {
+    // Legacy: min/max household size columns
+    const minHH = parseNum(req.min_household_size, null)
+    const maxHH = parseNum(req.max_household_size, null)
+    if (hhSize !== null) {
+      if (minHH !== null && hhSize < minHH) failed.push(`Household size too small (${hhSize}, min ${minHH})`)
+      if (maxHH !== null && hhSize > maxHH) failed.push(`Household size too large (${hhSize}, max ${maxHH})`)
+    }
   }
 
-  // 4 — Income (skipped if listing has no income limits)
+  // 4 — Income: use ami_table when present, else legacy per-person income columns
   const annualIncome = getApplicantIncome(ap)
   if (annualIncome !== null && hhSize !== null) {
-    const sizeKey = `max_income_${Math.min(Math.max(Math.round(hhSize), 1), 6)}person`
-    const maxInc  = parseNum(req[sizeKey], null)
-    const minInc  = parseNum(req.min_income, null)
-    if (maxInc !== null && annualIncome > maxInc) failed.push(`Income too high ($${fmt(annualIncome)}, max $${fmt(maxInc)})`)
-    if (minInc !== null && annualIncome < minInc) failed.push(`Income too low ($${fmt(annualIncome)}, min $${fmt(minInc)})`)
+    if (amiTable) {
+      const hhKey = String(Math.min(Math.max(Math.round(hhSize), 1), 8))
+      const hhRow = amiTable[hhKey]
+      if (hhRow && Object.keys(hhRow).length > 0) {
+        let maxInc: number | null = null
+        if (amiPct !== null && hhRow[String(amiPct)] != null) {
+          maxInc = Number(hhRow[String(amiPct)])
+        } else {
+          // No specific AMI % - use highest populated limit (least restrictive)
+          const vals = Object.values(hhRow).filter(v => v != null) as number[]
+          if (vals.length) maxInc = Math.max(...vals)
+        }
+        if (maxInc !== null && annualIncome > maxInc) {
+          failed.push(`Income too high ($${fmt(annualIncome)}, max $${fmt(maxInc)})`)
+        }
+      }
+    } else {
+      // Legacy: per-person income columns (cap at 6 for old data)
+      const sizeKey = `max_income_${Math.min(Math.max(Math.round(hhSize), 1), 6)}person`
+      const maxInc = parseNum(req[sizeKey], null)
+      const minInc = parseNum(req.min_income, null)
+      if (maxInc !== null && annualIncome > maxInc) failed.push(`Income too high ($${fmt(annualIncome)}, max $${fmt(maxInc)})`)
+      if (minInc !== null && annualIncome < minInc) failed.push(`Income too low ($${fmt(annualIncome)}, min $${fmt(minInc)})`)
+    }
   }
 
   // 5 — Monthly debt + DTI (each skipped independently if listing field is blank)
@@ -261,16 +303,16 @@ function evaluateApplicant(ap: Record<string, string>, req: Record<string, strin
   return { status, failedFields: failed }
 }
 
-function getApplicantIncome(ap: Record<string, string>): number | null {
+function getApplicantIncome(ap: Record<string, unknown>): number | null {
   let total = 0; let found = false
-  for (let i = 1; i <= 6; i++) {
+  for (let i = 1; i <= 8; i++) {
     const v = parseNum(ap[`income_${i}_annual`], null)
     if (v !== null) { total += v; found = true }
   }
   return found ? total : null
 }
 
-function getTotalAssets(ap: Record<string, string>): number | null {
+function getTotalAssets(ap: Record<string, unknown>): number | null {
   const fields = ['asset_checking','asset_savings','asset_401k','asset_other']
   let total = 0; let found = false
   for (const f of fields) {

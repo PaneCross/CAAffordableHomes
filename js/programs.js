@@ -1,7 +1,7 @@
 /* =========================================================
    CA Affordable Homes — programs.js
-   Fetches available program criteria from Supabase and
-   renders them as program cards on programs.html.
+   Fetches program criteria from Supabase and renders cards.
+   Area = website card title (community_name is admin-only).
    ========================================================= */
 
 var SUPABASE_URL = 'https://monybdfujogcyseyjgfx.supabase.co'
@@ -19,7 +19,7 @@ if (programsGrid) loadPrograms()
 function loadPrograms() {
   showProgramsLoading()
 
-  fetch(SUPABASE_URL + '/rest/v1/programs?status=in.("Available","Coming Soon")&order=community_name.asc&select=*', {
+  fetch(SUPABASE_URL + '/rest/v1/programs?status=in.("Available","Coming Soon")&order=area.asc&select=*', {
     headers: {
       'apikey': SUPABASE_KEY,
       'Authorization': 'Bearer ' + SUPABASE_KEY,
@@ -53,44 +53,43 @@ function renderPrograms(rows) {
 }
 
 function buildProgramCard(row) {
-  var name        = (row['community_name']       || '').trim()
-  var area        = (row['area']                 || '').trim()
-  var programType = (row['program_type']         || '').trim()
-  var amiRange    = (row['ami_range']            || '').trim()
-  var bedrooms    = (row['bedrooms']             || '').trim()
-  var householdSz = (row['household_size_limit'] || '').trim()
-  var ftb         = (row['first_time_buyer']     || '').trim()
-  var priceRange  = (row['price_range']          || '').trim()
-  var status      = (row['status']               || 'Available').trim()
-  var notes       = (row['notes']                || '').trim()
+  var area         = (row['area']          || '').trim()
+  var propertyType = (row['property_type'] || '').trim()
+  var amiPercent   = row['ami_percent'] != null ? String(row['ami_percent']).trim() : ''
+  var zipCode      = (row['zip_code']      || '').trim()
+  var bedrooms     = (row['bedrooms']      || '').trim()
+  var priceRange   = (row['price_range']   || '').trim()
+  var status       = (row['status']        || 'Available').trim()
+  var notes        = (row['notes']         || '').trim()
 
   var statusLower = status.toLowerCase()
-  var badgeClass  = statusLower === 'available' ? 'pc-badge--available' : 'pc-badge--soon'
+  var isAvail = statusLower === 'available'
+  var badgeClass  = isAvail ? 'pc-badge--available' : 'pc-badge--soon'
+  var cardAccent  = isAvail ? 'program-card--available' : 'program-card--soon'
 
-  /* Tags */
-  var tagsHTML = ''
-  if (amiRange)    tagsHTML += '<span class="tag">' + escHTML(amiRange)    + '</span>'
-  if (programType) tagsHTML += '<span class="tag">' + escHTML(programType) + '</span>'
+  /* AMI tag */
+  var amiTagHTML = amiPercent
+    ? '<span class="pc-ami-tag">Up to ' + escHTML(amiPercent) + '% AMI</span>'
+    : ''
 
   /* Detail rows */
   var detailsHTML = ''
-  if (bedrooms)    detailsHTML += detailRow('fa-bed',        'Bedrooms',             bedrooms)
-  if (householdSz) detailsHTML += detailRow('fa-users',      'Household Size Limit', householdSz)
-  if (ftb)         detailsHTML += detailRow('fa-house',      'First-Time Buyer',     ftb)
-  if (priceRange)  detailsHTML += detailRow('fa-tag',        'Price Range',          priceRange)
+  if (propertyType) detailsHTML += detailRow('fa-house',       'Property Type', propertyType)
+  if (zipCode)      detailsHTML += detailRow('fa-location-dot','Zip Code',      zipCode)
+  if (bedrooms)     detailsHTML += detailRow('fa-bed',         'Bedrooms',      bedrooms)
+  if (priceRange)   detailsHTML += detailRow('fa-tag',         'Price Range',   priceRange)
 
   var card = document.createElement('article')
-  card.className = 'program-card'
+  card.className = 'program-card ' + cardAccent
 
   card.innerHTML =
     '<div class="pc-header">' +
       '<div class="pc-title-block">' +
-        '<h3 class="pc-name">' + escHTML(name || 'Community Program') + '</h3>' +
-        (area ? '<p class="pc-area"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> ' + escHTML(area) + '</p>' : '') +
+        '<h3 class="pc-name">' + escHTML(area || 'San Diego Area') + '</h3>' +
       '</div>' +
       '<span class="pc-badge ' + badgeClass + '">' + escHTML(status) + '</span>' +
     '</div>' +
-    (tagsHTML ? '<div class="pc-tags">' + tagsHTML + '</div>' : '') +
+    (amiTagHTML ? '<div class="pc-ami-row">' + amiTagHTML + '</div>' : '') +
     (detailsHTML ? '<ul class="pc-details" role="list">' + detailsHTML + '</ul>' : '') +
     (notes
       ? '<div class="pc-notes"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> ' + escHTML(notes) + '</div>'
