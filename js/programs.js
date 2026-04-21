@@ -19,22 +19,29 @@ if (programsGrid) loadPrograms()
 function loadPrograms() {
   showProgramsLoading()
 
-  fetch(SUPABASE_URL + '/rest/v1/programs?status=in.("Available","Coming Soon")&order=area.asc&select=*', {
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': 'Bearer ' + SUPABASE_KEY,
-    }
-  })
-    .then(function (r) {
-      if (!r.ok) throw new Error('HTTP ' + r.status)
-      return r.json()
-    })
-    .then(function (rows) {
-      if (!rows || rows.length === 0) {
-        showProgramsEmpty()
-      } else {
-        renderPrograms(rows)
+  Promise.all([
+    fetch(SUPABASE_URL + '/rest/v1/programs?status=in.("Available","Coming Soon")&order=area.asc&select=*', {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+    }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json() }),
+    fetch(SUPABASE_URL + '/rest/v1/rpc/get_program_unit_counts', {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: '{}'
+    }).then(function (r) { return r.ok ? r.json() : [] }).catch(function () { return [] })
+  ])
+    .then(function (results) {
+      var rows   = results[0]
+      var counts = results[1]
+
+      if (!rows || rows.length === 0) { showProgramsEmpty(); return }
+
+      var unitMap = {}
+      if (Array.isArray(counts)) {
+        counts.forEach(function (c) {
+          if (c.program_name) unitMap[c.program_name] = Number(c.available_units) || 0
+        })
       }
+      renderPrograms(rows, unitMap)
     })
     .catch(function (err) {
       console.error('[CA Affordable Homes] programs.js failed to load:', err)
@@ -45,22 +52,24 @@ function loadPrograms() {
 /* ---------------------------------------------------------
    Render
    --------------------------------------------------------- */
-function renderPrograms(rows) {
+function renderPrograms(rows, unitMap) {
   programsGrid.innerHTML = ''
   rows.forEach(function (row) {
-    programsGrid.appendChild(buildProgramCard(row))
+    programsGrid.appendChild(buildProgramCard(row, unitMap || {}))
   })
 }
 
-function buildProgramCard(row) {
-  var area         = (row['area']          || '').trim()
-  var propertyType = (row['property_type'] || '').trim()
-  var amiPercent   = row['ami_percent'] != null ? String(row['ami_percent']).trim() : ''
-  var zipCode      = (row['zip_code']      || '').trim()
-  var bedrooms     = (row['bedrooms']      || '').trim()
-  var priceRange   = (row['price_range']   || '').trim()
-  var status       = (row['status']        || 'Available').trim()
-  var notes        = (row['notes']         || '').trim()
+function buildProgramCard(row, unitMap) {
+  var area          = (row['area']          || '').trim()
+  var communityName = (row['community_name']|| '').trim()
+  var propertyType  = (row['property_type'] || '').trim()
+  var amiPercent    = row['ami_percent'] != null ? String(row['ami_percent']).trim() : ''
+  var zipCode       = (row['zip_code']      || '').trim()
+  var bedrooms      = (row['bedrooms']      || '').trim()
+  var priceRange    = (row['price_range']   || '').trim()
+  var status        = (row['status']        || 'Available').trim()
+  var notes         = (row['notes']         || '').trim()
+  var availUnits    = (unitMap && communityName) ? (unitMap[communityName] || 0) : 0
 
   var statusLower = status.toLowerCase()
   var isAvail = statusLower === 'available'
@@ -82,12 +91,23 @@ function buildProgramCard(row) {
   var card = document.createElement('article')
   card.className = 'program-card ' + cardAccent
 
+  var unitsHTML = ''
+  if (isAvail && availUnits > 0) {
+    unitsHTML = '<span class="pc-units-badge">' +
+      '<i class="fa-solid fa-house-chimney" aria-hidden="true"></i> ' +
+      availUnits + (availUnits === 1 ? ' home available' : ' homes available') +
+    '</span>'
+  }
+
   card.innerHTML =
     '<div class="pc-header">' +
       '<div class="pc-title-block">' +
         '<h3 class="pc-name">' + escHTML(area || 'San Diego Area') + '</h3>' +
       '</div>' +
-      '<span class="pc-badge ' + badgeClass + '">' + escHTML(status) + '</span>' +
+      '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:.3rem;flex-shrink:0;">' +
+        '<span class="pc-badge ' + badgeClass + '">' + escHTML(status) + '</span>' +
+        unitsHTML +
+      '</div>' +
     '</div>' +
     (amiTagHTML ? '<div class="pc-ami-row">' + amiTagHTML + '</div>' : '') +
     (detailsHTML ? '<ul class="pc-details" role="list">' + detailsHTML + '</ul>' : '') +

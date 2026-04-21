@@ -2846,6 +2846,22 @@ body.modal-open { overflow: hidden; }
   gap: 0.4rem;
 }
 
+/* Available units badge */
+.pc-units-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: #d4f0e0;
+  color: #1c5e3a;
+  border: 1px solid #a8dfc0;
+  border-radius: 20px;
+  padding: 0.18rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.pc-units-badge .fa-solid { font-size: 0.65rem; }
+
 /* AMI highlight tag */
 .pc-ami-row { margin: -0.25rem 0 0; }
 .pc-ami-tag {
