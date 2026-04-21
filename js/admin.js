@@ -1866,7 +1866,7 @@ async function startReview(listingId, email) {
 }
 
 async function approveCandidate(candId, listingId, listingName, email, fullName) {
-  if (!confirm(`Approve ${fullName || email} for ${listingName}? This will:\n- Mark them as Matched on the Interest List\n- Decrement units available\n- Log to Successes`)) return
+  if (!confirm(`Approve ${fullName || email} for ${listingName}? This will:\n- Mark them as Matched on the Interest List\n- Decrement available units on the listing\n- Log to Successes\n- If this is the last unit, the listing and its program will automatically go Inactive`)) return
 
   try {
     // 1. Mark candidate approved
