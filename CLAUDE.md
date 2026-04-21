@@ -4,10 +4,11 @@
 ---
 
 ## Project Status
+- **Phase 12 complete** — Mobile admin card views, program auto-sync from listings, auto-inactivate, program status pill on listings, public program card redesign
 - **Phase 11 complete** — AMI table, org inquiries, program card redesign, weekly digest, matching engine update
 - **Phase 10 complete** — Supabase migration: database, Edge Functions, new admin.html. Apps Script retired.
 - **Not yet live** — currently hosted on GitHub Pages (test environment)
-- **Next up** — deploy updated Edge Functions, go-live prep
+- **Next up** — Edge Function redeploys (daily-match + submit-inquiry), go-live prep
 
 ## ⚠️ Legal Context — Why Homes Page Was Removed
 California MLS Clear Cooperation Policy (adopted by NAR and all major CA MLSs): any property publicly marketed must be submitted to the MLS within 1 business day. A public-facing Available Homes page with addresses/prices/photos constitutes public marketing. The compliant model is: Kacee maintains listings and requirements internally, the matching engine runs privately, and she reaches out manually when a match is identified. **Users must never see a specific address, price, or listing detail without Kacee initiating that contact.**
@@ -253,23 +254,23 @@ CLOSE_THRESHOLD = 2  // max failed fields to score "Close" (vs "Fail")
 
 ## Known Pending Items
 
-### Phase 11 deploy steps (run these)
-1. **Run 008_phase11.sql** — already run by TJ. Schema is live.
-2. **Deploy daily-match** — source changed (ami_table + programs JOIN + income-8). Run:
+### Edge Function redeploys (Phase 11 schema changes require these)
+1. **Deploy daily-match** — source updated for ami_table + programs JOIN + income-8 members. Run:
    `supabase functions deploy daily-match --project-ref monybdfujogcyseyjgfx --no-verify-jwt`
-3. **Deploy submit-inquiry** — new Edge Function for org inquiries. Run:
+2. **Deploy submit-inquiry** — org inquiries Edge Function. Run:
    `supabase functions deploy submit-inquiry --project-ref monybdfujogcyseyjgfx --no-verify-jwt`
-   (already done in prior session; redeploy if needed)
 
-### Phase 10 cutover (completed)
-- Schema SQL run, Edge Functions deployed with --no-verify-jwt, GitHub Actions secret added.
+### SQL Migrations run (all confirmed complete)
+- 001_schema.sql, 004–007 patches, 008_phase11.sql — all run
+- 009_program_auto_sync.sql — adds zip_code/min_household_size/max_household_size to listings, household_size to programs, sync function + trigger
+- 010_program_auto_inactive.sql — extends sync function with auto-inactivation when all linked listings sell out
+- 011_fix_ami_percent_manual.sql — removes ami_percent from auto-sync (Kacee sets it manually as a single number)
 
 ### Ongoing / go-live
-4. **Repeating block header renumbering bug** — income/employment block numbers go wrong when removing and re-adding. Needs `renumberIncomeBlocks()` / `renumberEmpBlocks()` in `contact.html`.
-5. **NOTIFY_EMAIL switch** — change `tj@nostos.tech` → Kacee's email in Supabase Edge Function secrets at go-live.
-6. **Social links** — footer Facebook/Instagram hrefs are `#` on all pages.
-7. **Available homes counter on programs page** — requires a public DB view or partial anon SELECT on listings (units_available only). Listings table is currently authenticated-only.
-8. **Verify Resend domain** — switch FROM_EMAIL from `onboarding@resend.dev` to `noreply@caaffordablehomes.com` after domain verified.
+3. **Repeating block header renumbering bug** — income/employment block numbers go wrong when removing and re-adding. Needs `renumberIncomeBlocks()` / `renumberEmpBlocks()` in `contact.html`.
+4. **NOTIFY_EMAIL switch** — change `tj@nostos.tech` → Kacee's email in Supabase Edge Function secrets at go-live. Do NOT do this proactively.
+5. **Social links** — footer Facebook/Instagram hrefs are `#` on all pages.
+6. **Verify Resend domain** — switch FROM_EMAIL from `onboarding@resend.dev` to `noreply@caaffordablehomes.com` after domain verified.
 
 ---
 
@@ -288,3 +289,4 @@ CLOSE_THRESHOLD = 2  // max failed fields to score "Close" (vs "Fail")
 | 9 | Legal/compliance redesign — Available Homes page redirected to index, removed from nav/footer sitewide; listing interest checkboxes replaced with San Diego area preference; `sendApplicantMatchEmail` and `handleMLSContact` removed from Apps Script; `?action=getListings` endpoint removed; `listing_interest_summary` column renamed `area_preference`; all applicant-facing emails now listing-agnostic |
 | 10 | Supabase migration — full DB schema, RLS policies, Edge Functions (submit-interest, daily-match, check-expiry), admin.html portal with Google auth, GitHub Actions cron. Apps Script retired. |
 | 11 | AMI table + org inquiries + program redesign — listings: replace 9 per-person income columns with JSONB ami_table (8x4 HH size x AMI%); programs: new fields zip_code/property_type/ami_percent, remove program_type/first_time_buyer/household_size_limit; org_inquiries table + admin tab + Edge Function; interest list extended to 8 income members; programs.js redesign (area as card title); weekly digest cron (Monday); matching engine updated for ami_table with legacy fallback |
+| 12 | Mobile admin card views + program automation — PS/Successes/Testimonials render as sleek cards on <=768px (table on desktop); resize listener re-renders active tab on breakpoint crossing; program auto-sync trigger (zip, bedrooms, household size, price range derived from linked active listings); AMI% stays manual (single value: 50/80/100/120); auto-inactivate program when all linked listings sell out; program status pill on Listings tab (Live on Site/Coming Soon/Inactive); listing form gains zip_code + household size fields; success modal made async with Supabase fallback (no longer breaks when IL tab not visited first); public program card redesign (soft colored backgrounds, Cormorant heading, AMI in detail list, units under title, colored left border accent) |
