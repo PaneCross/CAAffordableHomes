@@ -265,7 +265,7 @@
                 </button>
                 <p class="il-note" id="il-income-max-note" style="display:none;">
                   <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
-                  Maximum of 6 household members reached. Please list any additional members and their income in the <strong>Additional Information</strong> box at the end of the form.
+                  Maximum of 8 household members reached. Please list any additional members and their income in the <strong>Additional Information</strong> box at the end of the form.
                 </p>
 
                 <!-- Tax year income — rendered by JS, auto-updates each year -->
@@ -818,12 +818,10 @@
                 <i class="fa-solid fa-chevron-left" aria-hidden="true"></i> Back to options
               </button>
               <form
-                action="https://formspree.io/f/xgonogny"
-                method="POST"
+                id="inquiry-form"
                 aria-label="Builder and housing partner inquiry form"
                 novalidate
               >
-                <input type="hidden" name="_subject" value="New Builder / Partner Inquiry">
                 <div class="form-group">
                   <label class="form-label" for="partner-name">Your Name</label>
                   <input type="text" id="partner-name" name="name" class="form-control" placeholder="John Doe" required autocomplete="name">
@@ -1230,34 +1228,72 @@
       });
     }
 
-    initForm(
-      'partner-form',
-      'caah_partner_submitted',
-      null,
-      function () {
-        /* Show success inside inquiry-wrapper and offer property submission */
-        var inquiryEl  = document.getElementById('inquiry-wrapper');
-        var propertyEl = document.getElementById('property-wrapper');
-        var choiceEl   = document.getElementById('partner-choice');
-        inquiryEl.hidden = false;
-        choiceEl.hidden  = true;
-        inquiryEl.innerHTML =
-          '<div style="text-align:center;padding:2rem 0 1.5rem;">'
-          + '<i class="fa-solid fa-circle-check" style="font-size:2.5rem;color:var(--color-sage);display:block;margin-bottom:1rem;" aria-hidden="true"></i>'
-          + '<h3 style="margin-bottom:0.5rem;">Inquiry Received</h3>'
-          + '<p style="color:var(--color-text-muted);max-width:340px;margin:0 auto 1.5rem;">We\u2019ll be in touch to discuss your needs.</p>'
-          + '<p style="font-size:0.9rem;color:var(--color-text-muted);margin-bottom:1rem;">Have a specific property ready to submit?</p>'
-          + '<button type="button" class="btn btn-primary" id="inquiry-also-prop-btn">'
-          + '<i class="fa-solid fa-building" aria-hidden="true"></i> Submit a Property</button>'
-          + '</div>';
-        document.getElementById('inquiry-also-prop-btn').addEventListener('click', function () {
-          inquiryEl.hidden  = true;
-          propertyEl.hidden = false;
-          document.getElementById('partner-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    /* ── Inquiry form: submit JSON to Edge Function ── */
+    (function () {
+      var INQUIRY_URL  = 'https://monybdfujogcyseyjgfx.supabase.co/functions/v1/submit-inquiry';
+      var SUPABASE_KEY = 'sb_publishable_Y36wJc0oJ_0f9JOf3co6BA_Re749E7U';
+      var form = document.getElementById('inquiry-form');
+      if (!form) return;
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        if (!form.checkValidity()) { form.reportValidity(); return; }
+
+        var btn = form.querySelector('button[type="submit"]');
+        var originalHTML = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Sending\u2026';
+
+        var payload = {
+          contact_name:  document.getElementById('partner-name').value.trim(),
+          organization:  document.getElementById('partner-org').value.trim(),
+          contact_email: document.getElementById('partner-email').value.trim(),
+          contact_phone: document.getElementById('partner-phone').value.trim(),
+          message:       document.getElementById('partner-message').value.trim(),
+        };
+
+        fetch(INQUIRY_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_KEY,
+          },
+          body: JSON.stringify(payload),
+        })
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          if (data.ok) {
+            var inquiryEl  = document.getElementById('inquiry-wrapper');
+            var propertyEl = document.getElementById('property-wrapper');
+            inquiryEl.innerHTML =
+              '<div style="text-align:center;padding:2rem 0 1.5rem;">'
+              + '<i class="fa-solid fa-circle-check" style="font-size:2.5rem;color:var(--color-sage);display:block;margin-bottom:1rem;" aria-hidden="true"></i>'
+              + '<h3 style="margin-bottom:0.5rem;">Inquiry Received</h3>'
+              + '<p style="color:var(--color-text-muted);max-width:340px;margin:0 auto 1.5rem;">We\u2019ll be in touch to discuss your needs.</p>'
+              + '<p style="font-size:0.9rem;color:var(--color-text-muted);margin-bottom:1rem;">Have a specific property ready to submit?</p>'
+              + '<button type="button" class="btn btn-primary" id="inquiry-also-prop-btn">'
+              + '<i class="fa-solid fa-building" aria-hidden="true"></i> Submit a Property</button>'
+              + '</div>';
+            document.getElementById('inquiry-also-prop-btn').addEventListener('click', function () {
+              inquiryEl.hidden  = true;
+              propertyEl.hidden = false;
+              document.getElementById('partner-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+            document.getElementById('partner-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+          } else {
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+            showError(form, data.error || 'Something went wrong. Please try again.');
+          }
+        })
+        .catch(function () {
+          btn.disabled = false;
+          btn.innerHTML = originalHTML;
+          showError(form, 'Unable to send - please check your connection and try again.');
         });
-        document.getElementById('partner-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    );
+      });
+    }());
 
   })();
 
@@ -1479,7 +1515,7 @@
     var incMaxNote = document.getElementById('il-income-max-note');
     function updateIncomeCapUI() {
       var count = document.getElementById('il-income-members').querySelectorAll('.il-repeating-block').length;
-      var atMax = count >= 6;
+      var atMax = count >= 8;
       incAddBtn.style.display  = atMax ? 'none' : '';
       incMaxNote.style.display = atMax ? '' : 'none';
     }
