@@ -685,10 +685,24 @@ function renderListings() {
   const html = `<div class="prog-grid">
     ${rows.map(r => {
       const idx = lstData.indexOf(r)
+      const linkedProg = r.linked_program_id
+        ? progData.find(p => p.community_name === r.linked_program_id) || null
+        : null
+      const progStatusMap = {
+        'Available':   { cls: 'pill-active',    label: 'Live on Site' },
+        'Coming Soon': { cls: 'pill-reviewing',  label: 'Coming Soon' },
+        'Inactive':    { cls: 'pill-expired',    label: 'Inactive' },
+      }
+      const progStatusInfo = linkedProg
+        ? (progStatusMap[linkedProg.status] || { cls: 'pill-expired', label: linkedProg.status || 'Unknown' })
+        : null
       const progBadge = r.linked_program_id
         ? `<div class="lst-prog-link">
             <div class="lst-prog-link-label"><i class="fa-solid fa-link" style="font-size:.6rem;"></i> Linked Program</div>
-            <div class="lst-prog-link-name"><i class="fa-solid fa-globe" style="font-size:.72rem;"></i> ${esc(r.linked_program_id)}</div>
+            <div class="lst-prog-link-name" style="display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;">
+              <span><i class="fa-solid fa-globe" style="font-size:.72rem;"></i> ${esc(r.linked_program_id)}</span>
+              ${progStatusInfo ? `<span class="status-pill ${progStatusInfo.cls}" style="font-size:.65rem;padding:.1rem .4rem;">${progStatusInfo.label}</span>` : ''}
+            </div>
           </div>`
         : ''
       return `<div class="prog-card ${r.active === 'YES' ? 'prog-card--available' : 'prog-card--inactive'}">
