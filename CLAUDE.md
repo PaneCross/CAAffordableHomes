@@ -4,14 +4,21 @@
 ---
 
 ## Project Status
+- **Phase 13 complete** — Programs expanded display fields (MLS badge, full address, bathrooms, parking, sqft, program type, selection process); content overhaul (index, about, programs pages); SQL migration 012; admin.html + admin.js updated; new CSS classes
 - **Phase 12 complete** — Mobile admin card views, program auto-sync from listings, auto-inactivate, program status pill on listings, public program card redesign
 - **Phase 11 complete** — AMI table, org inquiries, program card redesign, weekly digest, matching engine update
 - **Phase 10 complete** — Supabase migration: database, Edge Functions, new admin.html. Apps Script retired.
 - **Not yet live** — currently hosted on GitHub Pages (test environment)
 - **Next up** — Edge Function redeploys (daily-match + submit-inquiry), go-live prep
 
-## ⚠️ Legal Context — Why Homes Page Was Removed
-California MLS Clear Cooperation Policy (adopted by NAR and all major CA MLSs): any property publicly marketed must be submitted to the MLS within 1 business day. A public-facing Available Homes page with addresses/prices/photos constitutes public marketing. The compliant model is: Kacee maintains listings and requirements internally, the matching engine runs privately, and she reaches out manually when a match is identified. **Users must never see a specific address, price, or listing detail without Kacee initiating that contact.**
+## ⚠️ Legal Context — MLS and Program Display Rules
+California MLS Clear Cooperation Policy (adopted by NAR and all major CA MLSs): any property publicly marketed must be submitted to the MLS within 1 business day. This is why there is no standalone Available Homes page with full property listings. However, **Programs** (community/developer partnerships) may now display specific property details including addresses, pricing, bathrooms, parking, sqft, program type, and selection process - Kacee controls exactly what is shown by what she enters in the admin portal.
+
+**MLS Listed flag:** The `mls_listed` boolean on programs controls only a badge label ("Listed on MLS" / "Not Listed on MLS"). It does NOT gate display of other fields. All fields show whenever Kacee enters data, regardless of MLS status.
+
+**SDAR Attribution:** When any program has `mls_listed = true`, programs.js automatically injects a San Diego Association of Realtors (SDAR) attribution note below the programs grid: "Where applicable, property information is sourced from the San Diego Association of Realtors (SDAR). Information deemed reliable but not guaranteed."
+
+**Listings tab (admin-only):** Internal listings used by the matching engine are still never exposed to the public. Only Programs are visible on the site.
 
 ---
 
@@ -290,3 +297,4 @@ CLOSE_THRESHOLD = 2  // max failed fields to score "Close" (vs "Fail")
 | 10 | Supabase migration — full DB schema, RLS policies, Edge Functions (submit-interest, daily-match, check-expiry), admin.html portal with Google auth, GitHub Actions cron. Apps Script retired. |
 | 11 | AMI table + org inquiries + program redesign — listings: replace 9 per-person income columns with JSONB ami_table (8x4 HH size x AMI%); programs: new fields zip_code/property_type/ami_percent, remove program_type/first_time_buyer/household_size_limit; org_inquiries table + admin tab + Edge Function; interest list extended to 8 income members; programs.js redesign (area as card title); weekly digest cron (Monday); matching engine updated for ami_table with legacy fallback |
 | 12 | Mobile admin card views + program automation — PS/Successes/Testimonials render as sleek cards on <=768px (table on desktop); resize listener re-renders active tab on breakpoint crossing; program auto-sync trigger (zip, bedrooms, household size, price range derived from linked active listings); AMI% stays manual (single value: 50/80/100/120); auto-inactivate program when all linked listings sell out; program status pill on Listings tab (Live on Site/Coming Soon/Inactive); listing form gains zip_code + household size fields; success modal made async with Supabase fallback (no longer breaks when IL tab not visited first); public program card redesign (soft colored backgrounds, Cormorant heading, AMI in detail list, units under title, colored left border accent) |
+| 13 | Programs expanded display + content overhaul — 7 new program fields (mls_listed, full_address, bathrooms, parking, sqft, program_type, selection_process); parking added to listings; SQL migration 012; programs.js rewritten (MLS badge row, specs pill row, address/zip display, SDAR attribution injection); admin.html programs modal + listings modal updated; admin.js HELP_CONTENT updated + 3 new FAQs; new CSS classes (pc-mls-row, pc-mls-badge, pc-address-line, pc-specs-row, pc-spec-tag, pc-mls-attribution, pc-eligibility-note); index.html intro + hero copy updates; about.html story/mission/who-we-serve rewrite + local image swap; programs.html header/disclaimer overhaul + eligibility note |

@@ -766,6 +766,7 @@ function openLSTModal(idx, prefill) {
   document.getElementById('lf-beds').value        = p.bedrooms || ''
   document.getElementById('lf-baths').value       = p.bathrooms || ''
   document.getElementById('lf-sqft').value        = p.sqft || ''
+  document.getElementById('lf-parking').value     = p.parking || ''
   document.getElementById('lf-program-type').value = p.program_type || ''
   document.getElementById('lf-credit').value      = p.min_credit_score || ''
   document.getElementById('lf-ftb').value         = p.first_time_buyer_required || ''
@@ -865,6 +866,7 @@ document.getElementById('lst-save-btn').addEventListener('click', async () => {
     bedrooms:     document.getElementById('lf-beds').value.trim(),
     bathrooms:    document.getElementById('lf-baths').value.trim(),
     sqft:         document.getElementById('lf-sqft').value.trim(),
+    parking:      document.getElementById('lf-parking').value.trim() || null,
     program_type: document.getElementById('lf-program-type').value.trim(),
     min_credit_score:    document.getElementById('lf-credit').value.trim(),
     max_dti_percent:     document.getElementById('lf-dti').value.trim(),
@@ -1008,6 +1010,13 @@ function renderPrograms() {
           ${p.household_size ? `<div class="prog-detail"><span class="prog-detail-label"><i class="fa-solid fa-people-group" style="width:14px;color:#888;margin-right:.3rem;"></i>HH Size</span><span class="prog-detail-value">${esc(p.household_size)}</span></div>` : ''}
           ${p.price_range    ? `<div class="prog-detail"><span class="prog-detail-label"><i class="fa-solid fa-tag" style="width:14px;color:#888;margin-right:.3rem;"></i>Price Range</span><span class="prog-detail-value">${esc(p.price_range)}</span></div>` : ''}
           ${p.notes ? `<div style="font-size:.78rem;color:#888;background:rgba(0,0,0,.04);border-radius:6px;padding:.45rem .6rem;margin-top:.2rem;">${esc(p.notes)}</div>` : ''}
+          ${p.mls_listed ? `<div class="prog-detail"><span class="prog-detail-label"><i class="fa-solid fa-list-check" style="width:14px;color:#888;margin-right:.3rem;"></i>MLS</span><span class="prog-detail-value" style="color:var(--green);">Listed</span></div>` : ''}
+          ${p.full_address ? `<div class="prog-detail"><span class="prog-detail-label"><i class="fa-solid fa-map-pin" style="width:14px;color:#888;margin-right:.3rem;"></i>Address</span><span class="prog-detail-value">${esc(p.full_address)}</span></div>` : ''}
+          ${p.bathrooms   ? `<div class="prog-detail"><span class="prog-detail-label"><i class="fa-solid fa-bath" style="width:14px;color:#888;margin-right:.3rem;"></i>Baths</span><span class="prog-detail-value">${esc(p.bathrooms)}</span></div>` : ''}
+          ${p.parking     ? `<div class="prog-detail"><span class="prog-detail-label"><i class="fa-solid fa-square-parking" style="width:14px;color:#888;margin-right:.3rem;"></i>Parking</span><span class="prog-detail-value">${esc(p.parking)}</span></div>` : ''}
+          ${p.sqft        ? `<div class="prog-detail"><span class="prog-detail-label"><i class="fa-solid fa-ruler-combined" style="width:14px;color:#888;margin-right:.3rem;"></i>Sqft</span><span class="prog-detail-value">${esc(p.sqft)}</span></div>` : ''}
+          ${p.program_type ? `<div class="prog-detail"><span class="prog-detail-label"><i class="fa-solid fa-building" style="width:14px;color:#888;margin-right:.3rem;"></i>Prog Type</span><span class="prog-detail-value">${esc(p.program_type)}</span></div>` : ''}
+          ${p.selection_process ? `<div class="prog-detail"><span class="prog-detail-label"><i class="fa-solid fa-list-ol" style="width:14px;color:#888;margin-right:.3rem;"></i>Selection</span><span class="prog-detail-value">${esc(p.selection_process)}</span></div>` : ''}
           <div class="prog-listings-block">
             <div class="prog-listings-header"><i class="fa-solid fa-link" style="font-size:.6rem;"></i> Linked Listings${lnkLst.length ? ` (${lnkLst.length})` : ''}</div>
             ${lnkLst.length
@@ -1044,6 +1053,13 @@ function openProgModal(idx, prefill) {
   document.getElementById('pf-price').value       = p.price_range    || ''
   document.getElementById('pf-status').value      = p.status         || 'Available'
   document.getElementById('pf-notes').value       = p.notes          || ''
+  document.getElementById('pf-mls-listed').checked        = p.mls_listed === true
+  document.getElementById('pf-full-address').value        = p.full_address || ''
+  document.getElementById('pf-baths').value               = p.bathrooms || ''
+  document.getElementById('pf-parking').value             = p.parking || ''
+  document.getElementById('pf-sqft').value                = p.sqft || ''
+  document.getElementById('pf-program-type').value        = p.program_type || ''
+  document.getElementById('pf-selection-process').value   = p.selection_process || ''
   document.getElementById('pf-src-listing').value = p.source_listing_id || ''
   // Property type: handle "Other" case
   const knownTypes = ['Single Family Home','Detached','Townhome','Condo','Duplex','Manufactured Home']
@@ -1136,6 +1152,13 @@ document.getElementById('prog-save-btn').addEventListener('click', async () => {
     price_range:      document.getElementById('pf-price').value.trim()    || null,
     status:           document.getElementById('pf-status').value,
     notes:            document.getElementById('pf-notes').value.trim()    || null,
+    mls_listed:       document.getElementById('pf-mls-listed').checked,
+    full_address:     document.getElementById('pf-full-address').value.trim()    || null,
+    bathrooms:        document.getElementById('pf-baths').value.trim()           || null,
+    parking:          document.getElementById('pf-parking').value.trim()         || null,
+    sqft:             document.getElementById('pf-sqft').value.trim()            || null,
+    program_type:     document.getElementById('pf-program-type').value.trim()    || null,
+    selection_process: document.getElementById('pf-selection-process').value.trim() || null,
     source_listing_id: document.getElementById('pf-src-listing').value.trim() || null,
     updated_at:       new Date().toISOString(),
   }
@@ -2377,11 +2400,11 @@ const HELP_CONTENT = {
 
   programs: {
     title: 'Programs',
-    intro: 'Programs represent community developments, builder partnerships, or other housing initiatives. They appear on the public-facing website as program cards - they are the only real estate content here that is shown to visitors on the site.',
+    intro: 'Programs represent community developments, builder partnerships, or other housing initiatives. They appear on the public-facing website as program cards. Each field you fill in on a program is shown directly on the site - the more detail you enter, the more informative the card.',
     faq: [
       {
         q: 'What is the difference between a Program and a Listing?',
-        a: '<strong>Listings</strong> are individual properties used internally by the matching engine. They are never shown to applicants or visitors. <strong>Programs</strong> are community developments or developer partnerships that appear on the public website. Programs are safe, general-purpose marketing content - they do not expose any specific property address, price, or listing detail.'
+        a: '<strong>Listings</strong> are individual properties used internally by the matching engine. They are never shown to applicants or visitors. <strong>Programs</strong> are community developments or developer partnerships that appear on the public website. Every field you fill in on a program - including address, bathrooms, parking, sqft, and program type - is shown on the program card for visitors to see.'
       },
       {
         q: 'Do I need to link a Listing to a Program for matching to work?',
@@ -2397,7 +2420,19 @@ const HELP_CONTENT = {
       },
       {
         q: 'Can I edit a program after creating it?',
-        a: 'Yes. Click the <strong>Edit</strong> button (pencil icon) on any program card to open the edit modal. Changes are saved immediately to the database and update the public website on the next page load. Note that some fields are filled in automatically from linked listings - see the question about auto-sync below for details on which ones.'
+        a: 'Yes. Click the <strong>Edit</strong> button (pencil icon) on any program card to open the edit modal. Changes are saved immediately to the database and update the public website on the next page load. Note that some fields (Zip, Bedrooms, Household Size, Price Range) are filled in automatically from linked listings - see the question about auto-sync below for details on which ones.'
+      },
+      {
+        q: 'What is the MLS Listed toggle?',
+        a: 'The <strong>MLS Listed</strong> toggle controls the badge shown on the public program card. When turned on, the card displays a green "Listed on MLS" badge. When off, it shows "Not Listed on MLS". The toggle does not affect any other field - it is purely a label for visitors so they know where the property is advertised. When a program is MLS-listed, an SDAR (San Diego Association of Realtors) attribution note is automatically added below the program cards on the website.'
+      },
+      {
+        q: 'When should I enter a Full Address?',
+        a: 'Enter the <strong>Full Address</strong> whenever you have permission to display the property address publicly. It appears on the program card alongside a location icon. If you leave it blank but there is a Zip Code (auto-synced from listings), the card will show the zip instead. If you enter a Full Address, it takes priority over the zip display.'
+      },
+      {
+        q: 'What are Program Type and Selection Process?',
+        a: '<strong>Program Type</strong> describes the housing program or initiative - for example "City of San Diego Below Market Rate" or "San Diego Affordable Homeownership." <strong>Selection Process</strong> explains how buyers are selected - for example "Lottery" or "First Come First Served." Both fields are optional and appear as detail rows on the public program card when filled in.'
       },
       {
         q: 'How does the auto-sync from listings work?',
@@ -2408,7 +2443,7 @@ const HELP_CONTENT = {
             <li><strong>Household Size</strong>: the range from the smallest minimum to the largest maximum household size across active linked listings.</li>
             <li><strong>Price Range</strong>: the lowest and highest price across active linked listings (e.g. $400,000 - $465,000).</li>
           </ul>
-          The fields you always set manually on the program are: <strong>Community Name</strong>, <strong>Area</strong>, <strong>AMI %</strong>, <strong>Property Type</strong>, <strong>Status</strong>, and <strong>Notes</strong>. The <strong>Sync Now</strong> button in the edit modal forces an immediate recalculation if you need it. When all linked listings sell out and are deactivated, the program is automatically set to <strong>Inactive</strong> and removed from the public website. You can re-activate it manually at any time.`
+          The fields you always set manually on the program are: <strong>Community Name</strong>, <strong>Area</strong>, <strong>AMI %</strong>, <strong>Property Type</strong>, <strong>Status</strong>, <strong>Notes</strong>, <strong>MLS Listed</strong>, <strong>Full Address</strong>, <strong>Bathrooms</strong>, <strong>Parking</strong>, <strong>Square Feet</strong>, <strong>Program Type</strong>, and <strong>Selection Process</strong>. The <strong>Sync Now</strong> button in the edit modal forces an immediate recalculation if you need it. When all linked listings sell out and are deactivated, the program is automatically set to <strong>Inactive</strong> and removed from the public website. You can re-activate it manually at any time.`
       },
       {
         q: 'What do the filter buttons do?',

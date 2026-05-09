@@ -54,40 +54,50 @@ function loadPrograms() {
    --------------------------------------------------------- */
 function renderPrograms(rows, unitMap) {
   programsGrid.innerHTML = ''
+  var hasMls = false
+
   rows.forEach(function (row) {
     programsGrid.appendChild(buildProgramCard(row, unitMap || {}))
+    if (row['mls_listed'] === true) hasMls = true
   })
+
+  /* MLS attribution — injected below grid only when at least one program is MLS-listed */
+  var attrContainer = document.getElementById('mls-attribution-container')
+  if (attrContainer) {
+    attrContainer.innerHTML = hasMls
+      ? '<p class="pc-mls-attribution" role="note">' +
+          '<i class="fa-solid fa-circle-info" aria-hidden="true"></i> ' +
+          'Where applicable, property information is sourced from the San Diego Association of Realtors (SDAR). ' +
+          'Information deemed reliable but not guaranteed.' +
+        '</p>'
+      : ''
+  }
 }
 
 function buildProgramCard(row, unitMap) {
-  var area          = (row['area']           || '').trim()
-  var communityName = (row['community_name'] || '').trim()
-  var propertyType  = (row['property_type']  || '').trim()
-  var amiPercent    = row['ami_percent'] != null ? String(row['ami_percent']).trim() : ''
-  var zipCode       = (row['zip_code']       || '').trim()
-  var bedrooms      = (row['bedrooms']       || '').trim()
-  var priceRange    = (row['price_range']    || '').trim()
-  var householdSize = (row['household_size'] || '').trim()
-  var status        = (row['status']        || 'Available').trim()
-  var notes         = (row['notes']         || '').trim()
-  var availUnits    = (unitMap && communityName) ? (unitMap[communityName] || 0) : 0
+  var area            = (row['area']              || '').trim()
+  var communityName   = (row['community_name']    || '').trim()
+  var propertyType    = (row['property_type']     || '').trim()
+  var amiPercent      = row['ami_percent'] != null ? String(row['ami_percent']).trim() : ''
+  var zipCode         = (row['zip_code']          || '').trim()
+  var bedrooms        = (row['bedrooms']          || '').trim()
+  var bathrooms       = (row['bathrooms']         || '').trim()
+  var priceRange      = (row['price_range']       || '').trim()
+  var householdSize   = (row['household_size']    || '').trim()
+  var status          = (row['status']            || 'Available').trim()
+  var notes           = (row['notes']             || '').trim()
+  var mlsListed       = row['mls_listed'] === true
+  var fullAddress     = (row['full_address']      || '').trim()
+  var parking         = (row['parking']           || '').trim()
+  var sqft            = (row['sqft']              || '').trim()
+  var programType     = (row['program_type']      || '').trim()
+  var selectionProc   = (row['selection_process'] || '').trim()
+  var availUnits      = (unitMap && communityName) ? (unitMap[communityName] || 0) : 0
 
   var statusLower = status.toLowerCase()
-  var isAvail = statusLower === 'available'
+  var isAvail     = statusLower === 'available'
   var badgeClass  = isAvail ? 'pc-badge--available' : 'pc-badge--soon'
   var cardAccent  = isAvail ? 'program-card--available' : 'program-card--soon'
-
-  /* Detail rows — AMI is first in the list, not a separate tag */
-  var detailsHTML = ''
-  if (amiPercent)    detailsHTML += detailRow('fa-percent',      'AMI Limit',      'Up to ' + amiPercent + '%')
-  if (propertyType)  detailsHTML += detailRow('fa-house',        'Property Type',  propertyType)
-  if (zipCode)       detailsHTML += detailRow('fa-location-dot', 'Zip Code',       zipCode)
-  if (bedrooms)      detailsHTML += detailRow('fa-bed',          'Bedrooms',       bedrooms)
-  if (householdSize) detailsHTML += detailRow('fa-people-group', 'Household Size', householdSize)
-  if (priceRange)    detailsHTML += detailRow('fa-tag',          'Price Range',    priceRange)
-
-  var card = document.createElement('article')
-  card.className = 'program-card ' + cardAccent
 
   /* Units line sits under the title inside the title block */
   var unitsLineHTML = (isAvail && availUnits > 0)
@@ -97,6 +107,42 @@ function buildProgramCard(row, unitMap) {
       '</p>'
     : ''
 
+  /* MLS badge + address/zip row — always shown */
+  var mlsBadgeClass = mlsListed ? 'pc-mls-badge--listed' : 'pc-mls-badge--not-listed'
+  var mlsBadgeLabel = mlsListed
+    ? '<i class="fa-solid fa-list-check" aria-hidden="true"></i> Listed on MLS'
+    : 'Not Listed on MLS'
+  var locationText = fullAddress || (zipCode ? 'Zip: ' + zipCode : '')
+  var mlsRowHTML =
+    '<div class="pc-mls-row">' +
+      '<span class="pc-mls-badge ' + mlsBadgeClass + '">' + mlsBadgeLabel + '</span>' +
+      (locationText
+        ? '<span class="pc-address-line"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> ' + escHTML(locationText) + '</span>'
+        : '') +
+    '</div>'
+
+  /* Property specs row — beds, baths, sqft, parking as compact pill tags */
+  var specParts = []
+  if (bedrooms)  specParts.push('<span class="pc-spec-tag"><i class="fa-solid fa-bed" aria-hidden="true"></i> ' + escHTML(bedrooms) + ' bd</span>')
+  if (bathrooms) specParts.push('<span class="pc-spec-tag"><i class="fa-solid fa-bath" aria-hidden="true"></i> ' + escHTML(bathrooms) + ' ba</span>')
+  if (sqft)      specParts.push('<span class="pc-spec-tag"><i class="fa-solid fa-ruler-combined" aria-hidden="true"></i> ' + escHTML(sqft) + ' sqft</span>')
+  if (parking)   specParts.push('<span class="pc-spec-tag"><i class="fa-solid fa-square-parking" aria-hidden="true"></i> ' + escHTML(parking) + '</span>')
+  var specsRowHTML = specParts.length > 0
+    ? '<div class="pc-specs-row">' + specParts.join('') + '</div>'
+    : ''
+
+  /* Detail rows — compliance and program info */
+  var detailsHTML = ''
+  if (amiPercent)    detailsHTML += detailRow('fa-percent',    'AMI Limit',         'Up to ' + amiPercent + '%')
+  if (propertyType)  detailsHTML += detailRow('fa-house',      'Property Type',     propertyType)
+  if (householdSize) detailsHTML += detailRow('fa-people-group','Household Size',   householdSize)
+  if (priceRange)    detailsHTML += detailRow('fa-tag',        'Price Range',       priceRange)
+  if (programType)   detailsHTML += detailRow('fa-building',   'Program Type',      programType)
+  if (selectionProc) detailsHTML += detailRow('fa-list-ol',    'Selection Process', selectionProc)
+
+  var card = document.createElement('article')
+  card.className = 'program-card ' + cardAccent
+
   card.innerHTML =
     '<div class="pc-header">' +
       '<div class="pc-title-block">' +
@@ -105,6 +151,8 @@ function buildProgramCard(row, unitMap) {
       '</div>' +
       '<span class="pc-badge ' + badgeClass + '">' + escHTML(status) + '</span>' +
     '</div>' +
+    mlsRowHTML +
+    specsRowHTML +
     (detailsHTML ? '<ul class="pc-details" role="list">' + detailsHTML + '</ul>' : '') +
     (notes
       ? '<div class="pc-notes"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> ' + escHTML(notes) + '</div>'
