@@ -3009,6 +3009,53 @@ body.modal-open { overflow: hidden; }
   border-left: 3px solid var(--color-sage);
 }
 
+/* Programs intro info cards (above grid) */
+.programs-intro-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 1.75rem 0 2.5rem;
+}
+
+.programs-intro-card {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  background: var(--color-light-bg);
+  border-left: 3px solid var(--color-sage);
+  border-radius: 0 var(--radius-card) var(--radius-card) 0;
+  padding: 1.25rem 1.5rem;
+  text-align: left;
+}
+
+.programs-intro-card > .fa-solid {
+  color: var(--color-sage);
+  font-size: 1rem;
+  flex-shrink: 0;
+  margin-top: 0.2rem;
+}
+
+.programs-intro-card strong {
+  display: block;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-text-dark);
+  margin-bottom: 0.35rem;
+}
+
+.programs-intro-card p {
+  font-size: 0.84rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.55;
+}
+
+@media (max-width: 640px) {
+  .programs-intro-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Eligibility note below programs grid */
 .pc-eligibility-note {
   font-size: 0.82rem;
