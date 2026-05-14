@@ -9,8 +9,8 @@
 - **Phase 11 complete** — AMI table, org inquiries, program card redesign, weekly digest, matching engine update
 - **Phase 10 complete** — Supabase migration: database, Edge Functions, new admin.html. Apps Script retired.
 - **Not yet live** — currently hosted on GitHub Pages (test environment)
-- **Phase 14 complete** — Content refinements (redundancy reduction, footer updates, about page image, listings page header); Edge Functions redeployed; SQL migration 012 pending Supabase SQL Editor run
-- **Next up** — Run migration 012 in Supabase SQL Editor, go-live prep
+- **Phase 14 complete** — Content refinements (redundancy reduction, footer updates, about page image, listings page header); Edge Functions redeployed; SQL migration 012 run
+- **Next up** — Go-live prep
 
 ## ⚠️ Legal Context — MLS and Program Display Rules
 California MLS Clear Cooperation Policy (adopted by NAR and all major CA MLSs): any property publicly marketed must be submitted to the MLS within 1 business day. This is why there is no standalone Available Homes page with full property listings. However, **Programs** (community/developer partnerships) may now display specific property details including addresses, pricing, bathrooms, parking, sqft, program type, and selection process - Kacee controls exactly what is shown by what she enters in the admin portal.
@@ -267,7 +267,7 @@ CLOSE_THRESHOLD = 2  // max failed fields to score "Close" (vs "Fail")
 - 009_program_auto_sync.sql — adds zip_code/min_household_size/max_household_size to listings, household_size to programs, sync function + trigger
 - 010_program_auto_inactive.sql — extends sync function with auto-inactivation when all linked listings sell out
 - 011_fix_ami_percent_manual.sql — removes ami_percent from auto-sync (Kacee sets it manually as a single number)
-- 012_phase13_programs_expanded.sql — **PENDING: run in Supabase SQL Editor** (adds mls_listed, full_address, bathrooms, parking, sqft, program_type, selection_process to programs; parking to listings)
+- 012_phase13_programs_expanded.sql — adds mls_listed, full_address, bathrooms, parking, sqft, program_type, selection_process to programs; parking to listings
 
 ### Ongoing / go-live
 3. **Repeating block header renumbering bug** — income/employment block numbers go wrong when removing and re-adding. Needs `renumberIncomeBlocks()` / `renumberEmpBlocks()` in `contact.html`.
