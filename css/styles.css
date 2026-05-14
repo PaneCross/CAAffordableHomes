@@ -1862,31 +1862,29 @@ textarea.form-control {
    SECTION: About — Mission Image
    --------------------------------------------------------- */
 
-/* Grid wrapper: stretch both columns to the same height */
+/* Grid wrapper: text column drives the row height; image column stretches to match */
 .about-mission-grid {
   align-items: stretch;
   gap: 4rem;
 }
 
-/* Image column: fills the full column height */
+/* Image column: relative container so the image can fill it absolutely */
 .about-mission-img-wrap {
-  display: flex;
+  position: relative;
+  min-height: 300px;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
+/* Image fills the wrapper exactly — does not affect row height calculation */
 .about-mission-img {
+  position: absolute;
+  inset: 0;
   width: 100%;
-  min-height: 300px;
+  height: 100%;
   object-fit: cover;
   object-position: center;
-  border-radius: 8px;
   display: block;
-}
-
-@media (min-width: 900px) {
-  .about-mission-img {
-    min-height: 0;
-    height: 100%;
-  }
 }
 
 /* ---------------------------------------------------------
