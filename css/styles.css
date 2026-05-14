@@ -1861,18 +1861,31 @@ textarea.form-control {
 /* ---------------------------------------------------------
    SECTION: About — Mission Image
    --------------------------------------------------------- */
+
+/* Grid wrapper: stretch both columns to the same height */
+.about-mission-grid {
+  align-items: stretch;
+  gap: 4rem;
+}
+
+/* Image column: fills the full column height */
+.about-mission-img-wrap {
+  display: flex;
+}
+
 .about-mission-img {
   width: 100%;
-  height: 320px;
+  min-height: 300px;
   object-fit: cover;
+  object-position: center;
   border-radius: 8px;
-  margin-bottom: 1.25rem;
   display: block;
 }
 
 @media (min-width: 900px) {
   .about-mission-img {
-    height: 500px;
+    min-height: 0;
+    height: 100%;
   }
 }
 
