@@ -1210,6 +1210,8 @@ document.getElementById('il-search').addEventListener('input', e => {
 })
 document.getElementById('il-modal-close').addEventListener('click',  closeILModal)
 document.getElementById('il-modal-close2').addEventListener('click', closeILModal)
+document.getElementById('il-export-csv-btn').addEventListener('click', exportCSV)
+document.getElementById('il-print-btn').addEventListener('click', printProfile)
 
 async function loadInterestList() {
   setArea('il-area', loading())
@@ -1219,12 +1221,167 @@ async function loadInterestList() {
   renderIL()
 }
 
+// ─────────────────────────────────────────────────────────────
+// FLAG ENGINE — automated review checks for Interest List
+// Computes flags from submitted form data. Returns ALL flags;
+// caller filters against row.flags_dismissed as needed.
+// ─────────────────────────────────────────────────────────────
+function computeFlags(ap) {
+  const flags = []
+  const parseAmt = v => parseFloat(String(v || '0').replace(/[$,]/g, '')) || 0
+
+  // 1. Missing critical fields
+  if (!ap.household_size)    flags.push({ id: 'no_hh_size', sev: 'warning', msg: 'No household size provided. This is required for AMI eligibility matching.' })
+  if (!ap.credit_score_self) flags.push({ id: 'no_credit',  sev: 'warning', msg: 'No credit score provided. Credit score is required for most loan programs.' })
+  if (!ap.phone)             flags.push({ id: 'no_phone',   sev: 'info',    msg: 'No phone number provided. Contact may need to be made by email only.' })
+
+  // 2. Credit score thresholds
+  const credit = parseInt(ap.credit_score_self || '0') || 0
+  if (credit > 0 && credit < 580) {
+    flags.push({ id: 'credit_low', sev: 'error',
+      msg: `Credit score ${credit} is below 580. FHA financing typically requires a minimum of 580. Applicant likely needs credit improvement before qualifying.` })
+  } else if (credit >= 580 && credit < 640) {
+    flags.push({ id: 'credit_border', sev: 'warning',
+      msg: `Credit score ${credit} is borderline (580-639). Some programs require 640 or higher. Confirm program-specific requirements before proceeding.` })
+  }
+
+  // 3. Total household income (Income Members section, up to 8 members)
+  const annualIncome = [1,2,3,4,5,6,7,8].reduce((s, n) => s + parseAmt(ap['income_' + n + '_annual']), 0)
+
+  // 4. Debt-to-income ratio
+  const monthlyDebt = parseAmt(ap.monthly_debt_payments)
+  if (annualIncome > 0 && monthlyDebt > 0) {
+    const monthlyInc = annualIncome / 12
+    const dti = monthlyDebt / monthlyInc
+    if (dti > 0.45) {
+      flags.push({ id: 'dti_high', sev: 'error',
+        msg: `Debt-to-income ratio is ${Math.round(dti * 100)}% (monthly debt $${monthlyDebt.toLocaleString('en-US', { maximumFractionDigits: 0 })} vs ~$${Math.round(monthlyInc).toLocaleString('en-US')} monthly income). Most programs cap at 43-45%.` })
+    } else if (dti > 0.36) {
+      flags.push({ id: 'dti_elevated', sev: 'warning',
+        msg: `Debt-to-income ratio is ${Math.round(dti * 100)}%. Elevated range (36-45%) - may still qualify but verify with the approved lender.` })
+    }
+  }
+
+  // 5. Employment vs stated household income cross-check
+  let empIncome = 0, hasEmp = false
+  for (let n = 1; n <= 4; n++) {
+    const sal = ap['emp_' + n + '_salaried']
+    if (sal === 'Yes') {
+      const v = parseAmt(ap['emp_' + n + '_annual_salary'])
+      if (v > 0) { empIncome += v; hasEmp = true }
+    } else if (sal === 'No') {
+      const hr  = parseAmt(ap['emp_' + n + '_hourly_rate'])
+      const hrs = parseFloat(ap['emp_' + n + '_hours_per_week'] || '0') || 0
+      if (hr > 0 && hrs > 0) { empIncome += hr * hrs * 52; hasEmp = true }
+    }
+  }
+  if (hasEmp && annualIncome > 0 && empIncome > annualIncome * 1.3) {
+    flags.push({ id: 'income_mismatch', sev: 'warning',
+      msg: `Employment income ($${Math.round(empIncome).toLocaleString('en-US')}/yr estimated) exceeds stated household income ($${Math.round(annualIncome).toLocaleString('en-US')}/yr) by more than 30%. Verify both figures with the applicant.` })
+  }
+
+  // 6. Income member count vs household size
+  const hhSize = parseInt(ap.household_size || '0') || 0
+  let memberCount = 0
+  for (let n = 8; n >= 1; n--) {
+    if (ap['income_' + n + '_name'] || ap['income_' + n + '_annual']) { memberCount = n; break }
+  }
+  if (hhSize > 0 && memberCount > hhSize) {
+    flags.push({ id: 'members_over_hh', sev: 'warning',
+      msg: `${memberCount} income members listed but household size is only ${hhSize}. Income member count cannot exceed the total household size.` })
+  }
+
+  // 7. Disclosure flags
+  if (ap.foreclosure === 'Yes') {
+    flags.push({ id: 'foreclosure', sev: 'warning',
+      msg: 'Applicant disclosed a past foreclosure or short sale. Verify the date and confirm it meets the program waiting period requirements.' })
+  }
+  if (ap.bankruptcy === 'Yes') {
+    flags.push({ id: 'bankruptcy', sev: 'warning',
+      msg: 'Applicant disclosed a past bankruptcy. Verify the discharge date against the program waiting period (typically 2-4 years).' })
+  }
+  if (ap.judgments === 'Yes') {
+    flags.push({ id: 'judgment', sev: 'warning',
+      msg: 'Applicant disclosed outstanding judgments or liens. These typically must be resolved or paid off before close of escrow.' })
+  }
+
+  // 8. First-time buyer
+  if (ap.first_time_buyer === 'No') {
+    flags.push({ id: 'not_ftb', sev: 'info',
+      msg: 'Applicant is not a first-time buyer. Confirm whether the target program requires first-time buyer status before referring.' })
+  }
+
+  // 9. Citizenship / residency
+  if (ap.us_citizen === 'No') {
+    flags.push({ id: 'citizenship', sev: 'info',
+      msg: 'Applicant indicated they are not a US citizen or permanent resident. Some programs restrict eligibility. Verify with program requirements.' })
+  }
+
+  return flags  // ALL flags — caller filters dismissed IDs
+}
+
+function buildFlagsPanelHtml(row) {
+  const allFlags  = computeFlags(row)
+  const dismissed = Array.isArray(row.flags_dismissed) ? row.flags_dismissed : []
+  const active    = allFlags.filter(f => !dismissed.includes(f.id))
+  const dimissedF = allFlags.filter(f =>  dismissed.includes(f.id))
+  const iconMap   = { error: 'fa-circle-xmark', warning: 'fa-triangle-exclamation', info: 'fa-circle-info' }
+
+  if (allFlags.length === 0) {
+    return `<div id="il-flags-panel" class="flag-panel">
+      <div class="flag-panel-header all-clear"><i class="fa-solid fa-circle-check"></i> No review flags for this applicant</div>
+    </div>`
+  }
+
+  const hasErrors  = active.some(f => f.sev === 'error')
+  const panelClass = active.length === 0 ? 'all-clear' : hasErrors ? 'has-errors' : ''
+  const panelIcon  = active.length === 0 ? 'fa-circle-check' : hasErrors ? 'fa-circle-exclamation' : 'fa-triangle-exclamation'
+  const countText  = active.length === 0
+    ? 'All flags reviewed'
+    : `${active.length} review flag${active.length !== 1 ? 's' : ''}`
+
+  const activeHtml = active.map(f => `
+    <div class="flag-item">
+      <i class="fa-solid ${iconMap[f.sev] || 'fa-circle-info'} flag-icon flag-icon--${f.sev}"></i>
+      <span class="flag-text">${f.msg}</span>
+      <button class="flag-dismiss-btn" onclick="dismissFlag(${JSON.stringify(row.email)},${JSON.stringify(f.id)})">Dismiss</button>
+    </div>`).join('')
+
+  const dismissedHtml = dimissedF.length
+    ? `<div style="border-top:1px dashed #ebe9e1;padding:.4rem .75rem;">
+        <button style="background:none;border:none;color:#bbb;font-size:.72rem;cursor:pointer;padding:0;" onclick="toggleDismissedFlags(this)">
+          <i class="fa-solid fa-eye"></i> Show ${dimissedF.length} dismissed flag${dimissedF.length !== 1 ? 's' : ''}
+        </button>
+        <div class="dismissed-flags-list" style="display:none;margin-top:.4rem;">
+          ${dimissedF.map(f => `
+            <div class="flag-item" style="opacity:.5;">
+              <i class="fa-solid ${iconMap[f.sev] || 'fa-circle-info'} flag-icon flag-icon--${f.sev}"></i>
+              <span class="flag-text" style="text-decoration:line-through;">${f.msg}</span>
+              <button class="flag-dismiss-btn" onclick="restoreFlag(${JSON.stringify(row.email)},${JSON.stringify(f.id)})">Restore</button>
+            </div>`).join('')}
+        </div>
+      </div>`
+    : ''
+
+  return `<div id="il-flags-panel" class="flag-panel">
+    <div class="flag-panel-header ${panelClass}"><i class="fa-solid ${panelIcon}"></i> Review Flags: ${countText}</div>
+    ${activeHtml}${dismissedHtml}
+  </div>`
+}
+
 function renderIL() {
   document.querySelectorAll('#il-filter-bar .filter-btn').forEach(b =>
     b.classList.toggle('active', b.dataset.ilf === ilFilter))
 
   let rows = ilData
-  if (ilFilter !== 'all') rows = ilData.filter(r => r.status === ilFilter)
+  if (ilFilter === 'flags') {
+    rows = ilData.filter(r => {
+      const dis = Array.isArray(r.flags_dismissed) ? r.flags_dismissed : []
+      return computeFlags(r).some(f => !dis.includes(f.id))
+    })
+  } else if (ilFilter !== 'all') {
+    rows = ilData.filter(r => r.status === ilFilter)
+  }
   if (ilSearch) rows = rows.filter(r =>
     (r.full_name || '').toLowerCase().includes(ilSearch) ||
     (r.email     || '').toLowerCase().includes(ilSearch))
@@ -1238,9 +1395,15 @@ function renderIL() {
     const cards = rows.map(r => {
       const idx  = ilData.indexOf(r)
       const area = (r.area_preference || '').substring(0, 50)
+      const _dis = Array.isArray(r.flags_dismissed) ? r.flags_dismissed : []
+      const _af  = computeFlags(r).filter(f => !_dis.includes(f.id))
+      const _fe  = _af.some(f => f.sev === 'error'), _fw = _af.some(f => f.sev === 'warning')
+      const _fb  = _af.length > 0
+        ? ` <span class="flag-count-badge flag-count--${_fe ? 'error' : _fw ? 'warning' : 'info'}">${_af.length}</span>`
+        : ''
       return `<div class="il-mobile-card" onclick="openILModal(${idx})">
         <div class="il-mc-top">
-          <span class="il-mc-name">${esc(r.full_name || 'Unknown')}</span>
+          <span class="il-mc-name">${esc(r.full_name || 'Unknown')}${_fb}</span>
           <span class="status-pill ${ilPillCls(r.status)}">${esc(r.status || '')}</span>
         </div>
         <div class="il-mc-email">${esc(r.email || '')}</div>
@@ -1267,16 +1430,26 @@ function renderIL() {
         ${ilCols.map(c =>
           `<th class="sortable${ilSort.col === c.col ? ' sort-active' : ''}" data-sort-il="${c.col}">${c.label} ${sortArrow(ilSort, c.col)}</th>`
         ).join('')}
+        <th style="width:56px;text-align:center;">Flags</th>
       </tr></thead>
       <tbody>
-        ${rows.map(r => `<tr class="clickable-row" onclick="openILModal(${ilData.indexOf(r)})">
-          <td><strong>${esc(r.full_name || '')}</strong></td>
-          <td>${esc(r.email || '')}</td>
-          <td>${esc(r.phone || '')}</td>
-          <td>${fmtDate(r.submitted_at)}</td>
-          <td><span class="status-pill ${ilPillCls(r.status)}">${esc(r.status || '')}</span></td>
-          <td style="font-size:.78rem;color:#666;max-width:200px;white-space:normal;">${esc((r.area_preference || '').substring(0, 80))}</td>
-        </tr>`).join('')}
+        ${rows.map(r => {
+          const _d = Array.isArray(r.flags_dismissed) ? r.flags_dismissed : []
+          const _a = computeFlags(r).filter(f => !_d.includes(f.id))
+          const _e = _a.some(f => f.sev === 'error'), _w = _a.some(f => f.sev === 'warning')
+          const _fc = _a.length === 0
+            ? `<span class="flag-count-badge flag-count--ok" title="No active flags"><i class="fa-solid fa-check" style="font-size:.6rem;"></i></span>`
+            : `<span class="flag-count-badge flag-count--${_e ? 'error' : _w ? 'warning' : 'info'}" title="${_a.length} flag${_a.length !== 1 ? 's' : ''}">${_a.length}</span>`
+          return `<tr class="clickable-row" onclick="openILModal(${ilData.indexOf(r)})">
+            <td><strong>${esc(r.full_name || '')}</strong></td>
+            <td>${esc(r.email || '')}</td>
+            <td>${esc(r.phone || '')}</td>
+            <td>${fmtDate(r.submitted_at)}</td>
+            <td><span class="status-pill ${ilPillCls(r.status)}">${esc(r.status || '')}</span></td>
+            <td style="font-size:.78rem;color:#666;max-width:200px;white-space:normal;">${esc((r.area_preference || '').substring(0, 80))}</td>
+            <td style="text-align:center;">${_fc}</td>
+          </tr>`
+        }).join('')}
       </tbody>
     </table>`
     setArea('il-area', html)
@@ -1485,7 +1658,21 @@ function openILModal(idx) {
       </div>
     </div>`
 
+  const flagsPanelHtml = buildFlagsPanelHtml(r)
+  const adminNotesHtml = `
+    <div class="field-group il-section" style="margin-bottom:.75rem;">
+      <div class="field-group-title">Admin Notes</div>
+      <div style="padding:.5rem .75rem;">
+        <textarea id="il-admin-notes" class="form-input" rows="3"
+          placeholder="Private notes - visible only in the admin portal. Not shared with the applicant.">${esc(r.admin_notes || '')}</textarea>
+        <button class="btn-primary btn-sm admin-notes-save-btn" onclick="saveAdminNotes()">
+          <i class="fa-solid fa-check"></i> Save Notes
+        </button>
+      </div>
+    </div>`
+
   document.getElementById('il-modal-body').innerHTML =
+    flagsPanelHtml + adminNotesHtml +
     statusSection + contactSection + householdSection + householdDetails +
     financialSection + assetsSection + disclosuresSection + agentSection +
     incomeSection + taxSection + nontaxSection +
@@ -1529,6 +1716,105 @@ function openILModal(idx) {
 function closeILModal() {
   document.getElementById('il-modal-overlay').classList.remove('open')
   viewingIlRow = null
+}
+
+function toggleDismissedFlags(btn) {
+  const list = btn.parentElement.querySelector('.dismissed-flags-list')
+  if (!list) return
+  const open = list.style.display !== 'none'
+  list.style.display = open ? 'none' : 'block'
+  btn.innerHTML = open
+    ? '<i class="fa-solid fa-eye"></i> Show dismissed flags'
+    : '<i class="fa-solid fa-eye-slash"></i> Hide dismissed flags'
+}
+
+async function dismissFlag(email, flagId) {
+  const row = ilData.find(r => r.email === email)
+  if (!row) return
+  const dismissed = [...(Array.isArray(row.flags_dismissed) ? row.flags_dismissed : []), flagId]
+  const { error } = await sb.from('interest_list').update({ flags_dismissed: dismissed }).eq('email', email)
+  if (error) { toast(error.message, true); return }
+  row.flags_dismissed = dismissed
+  const panel = document.getElementById('il-flags-panel')
+  if (panel) panel.outerHTML = buildFlagsPanelHtml(row)
+  toast('Flag dismissed.')
+}
+
+async function restoreFlag(email, flagId) {
+  const row = ilData.find(r => r.email === email)
+  if (!row) return
+  const dismissed = (Array.isArray(row.flags_dismissed) ? row.flags_dismissed : []).filter(id => id !== flagId)
+  const { error } = await sb.from('interest_list').update({ flags_dismissed: dismissed }).eq('email', email)
+  if (error) { toast(error.message, true); return }
+  row.flags_dismissed = dismissed
+  const panel = document.getElementById('il-flags-panel')
+  if (panel) panel.outerHTML = buildFlagsPanelHtml(row)
+  toast('Flag restored.')
+}
+
+async function saveAdminNotes() {
+  if (!viewingIlRow) return
+  const notes = (document.getElementById('il-admin-notes') || {}).value || ''
+  const { error } = await sb.from('interest_list').update({ admin_notes: notes }).eq('id', viewingIlRow.id)
+  if (error) { toast(error.message, true); return }
+  viewingIlRow.admin_notes = notes
+  toast('Admin notes saved.')
+}
+
+function exportCSV() {
+  // Respect the current filter + search state
+  let rows = ilData
+  if (ilFilter === 'flags') {
+    rows = ilData.filter(r => {
+      const dis = Array.isArray(r.flags_dismissed) ? r.flags_dismissed : []
+      return computeFlags(r).some(f => !dis.includes(f.id))
+    })
+  } else if (ilFilter !== 'all') {
+    rows = ilData.filter(r => r.status === ilFilter)
+  }
+  if (ilSearch) {
+    rows = rows.filter(r =>
+      (r.full_name || '').toLowerCase().includes(ilSearch) ||
+      (r.email     || '').toLowerCase().includes(ilSearch))
+  }
+
+  const headers = ['Name','Email','Phone','Submitted','Status','Household Size','Credit Score','Monthly Debt','Area Preference','Active Flags','Admin Notes']
+  const csvRows = [headers, ...rows.map(r => {
+    const dis = Array.isArray(r.flags_dismissed) ? r.flags_dismissed : []
+    const af  = computeFlags(r).filter(f => !dis.includes(f.id))
+    return [
+      r.full_name || '',
+      r.email || '',
+      r.phone || '',
+      r.submitted_at ? new Date(r.submitted_at).toLocaleDateString('en-US') : '',
+      r.status || '',
+      r.household_size || '',
+      r.credit_score_self || '',
+      r.monthly_debt_payments || '',
+      r.area_preference || '',
+      af.length ? af.map(f => f.msg).join(' | ') : '',
+      r.admin_notes || '',
+    ]
+  })]
+
+  const csv = csvRows.map(row =>
+    row.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(',')
+  ).join('\r\n')
+
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+  const url  = URL.createObjectURL(blob)
+  const a    = document.createElement('a')
+  a.href = url
+  a.download = 'interest-list-' + new Date().toISOString().slice(0, 10) + '.csv'
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+  toast('Exporting ' + rows.length + ' record' + (rows.length !== 1 ? 's' : '') + ' to CSV.')
+}
+
+function printProfile() {
+  window.print()
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -2458,7 +2744,7 @@ const HELP_CONTENT = {
 
   'interest-list': {
     title: 'Interest List',
-    intro: 'The Interest List contains every applicant who has submitted the contact form on the website. This is the pool of people the matching engine runs against each day. Click any row to open the applicant detail, update their status, or delete their record.',
+    intro: 'The Interest List contains every applicant who has submitted the contact form on the website. This is the pool of people the matching engine runs against each day. Click any row to open the applicant detail where you can review automated flags, add private notes, update their status, export a CSV, or print a full profile PDF.',
     faq: [
       {
         q: 'What are all the status options and what do they mean?',
@@ -2476,7 +2762,11 @@ const HELP_CONTENT = {
       },
       {
         q: 'What do the filter buttons do?',
-        a: 'You can filter by status (All, New, Reviewing, Active, Matched, Expired) to focus on a specific group. The search box lets you find a specific applicant by name or email.'
+        a: `<ul>
+          <li><strong>Status filters</strong> (All, New, Reviewing, Active, Matched, Expired): narrow the list to applicants in that specific status.</li>
+          <li><strong>Has Flags</strong>: shows only applicants with at least one active (non-dismissed) automated review flag. Use this after new submissions arrive to quickly find records that need your attention.</li>
+        </ul>
+        The search box at the top right lets you find a specific applicant by name or email at any time.`
       },
       {
         q: 'How do I delete an applicant?',
@@ -2485,6 +2775,32 @@ const HELP_CONTENT = {
       {
         q: 'What happens when someone re-submits the form?',
         a: 'If their email already exists in the system and their status is <strong>Expired</strong>, they are automatically re-enrolled: their status is reset, the 12-month clock restarts, and their data is updated. If their status is anything other than Expired, their data is updated in place but their status and submission date are preserved.'
+      },
+      {
+        q: 'What are Review Flags and what do the colors mean?',
+        a: `Review Flags are automated checks that run on each applicant's submitted data every time you open their detail. They highlight common issues that may need follow-up before you refer someone to a lender. Flags are color-coded by severity:
+          <ul>
+            <li><strong>Red (Error)</strong>: something that would likely disqualify the applicant - for example a credit score below 580 or a debt-to-income ratio above 45%. Reach out before referring to a lender.</li>
+            <li><strong>Amber (Warning)</strong>: something that needs verification - for example a borderline credit score, a past foreclosure or bankruptcy disclosure, or an income inconsistency between sections.</li>
+            <li><strong>Blue (Info)</strong>: a note to be aware of - for example the applicant is not a first-time buyer or no phone number was provided.</li>
+          </ul>
+          Flags are calculated live each time you open a record. They are not stored permanently - only your dismissed flag list is saved.`
+      },
+      {
+        q: 'How do I dismiss a flag?',
+        a: 'Click the <strong>Dismiss</strong> button on any active flag. The flag is immediately hidden and your dismissal is saved to the database. Dismissed flags are still accessible under a "Show dismissed flags" link at the bottom of the flags panel in case you need to reference or restore them. Dismissal is per-applicant and does not affect any other record.'
+      },
+      {
+        q: 'How do I add private notes about an applicant?',
+        a: 'Open the applicant detail by clicking any row. At the top of the detail modal, below the flags panel, is an <strong>Admin Notes</strong> text area. Type any notes you want to record - follow-up reminders, context from a phone call, eligibility observations - then click <strong>Save Notes</strong>. Notes are private and are never shared with the applicant. They are also included when you export the Interest List to CSV.'
+      },
+      {
+        q: 'How do I export the Interest List to CSV?',
+        a: 'Click the <strong>Export CSV</strong> button in the toolbar at the top of the Interest List tab. The export respects whatever filter and search are currently active - so you can export only flagged applicants, only a specific status group, or a search result. The file includes name, contact info, household size, credit score, monthly debt, area preference, active flag descriptions, and your admin notes. Open it in Excel or Google Sheets.'
+      },
+      {
+        q: 'How do I print or save a PDF of an applicant profile?',
+        a: 'Open the applicant detail by clicking any row. In the footer of the detail modal, click <strong>Print Profile</strong>. Your browser print dialog will open showing only the applicant profile. To save a PDF instead of printing, select "Save as PDF" (Chrome/Edge) or "Microsoft Print to PDF" in the printer dropdown. The printed view hides all buttons and controls so only the data is visible on the page.'
       }
     ]
   },
