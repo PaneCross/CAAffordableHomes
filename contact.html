@@ -248,7 +248,7 @@
                     <div class="form-group">
                       <label class="form-label" for="il-inc1-amount">Annual Income</label>
                       <div class="il-dollar-wrap">
-                        <input type="number" id="il-inc1-amount" name="income_1_annual" class="form-control" placeholder="0" min="0" required>
+                        <input type="text" inputmode="decimal" id="il-inc1-amount" name="income_1_annual" class="form-control" placeholder="0.00" required>
                       </div>
                     </div>
                   </div>
@@ -934,7 +934,7 @@
                   <div class="form-group">
                     <label class="form-label" for="prop-price">Affordable Price</label>
                     <div class="il-dollar-wrap">
-                      <input type="number" id="prop-price" name="affordable_price" class="form-control" placeholder="0" min="0" required>
+                      <input type="text" inputmode="decimal" id="prop-price" name="affordable_price" class="form-control" placeholder="0.00" required>
                     </div>
                   </div>
                   <div class="form-group">
@@ -947,7 +947,7 @@
                   <div class="form-group">
                     <label class="form-label" for="prop-hoa-fee">HOA Fee at Build-out <span class="optional">(if any)</span></label>
                     <div class="il-dollar-wrap">
-                      <input type="number" id="prop-hoa-fee" name="hoa_fee" class="form-control" placeholder="0" min="0">
+                      <input type="text" inputmode="decimal" id="prop-hoa-fee" name="hoa_fee" class="form-control" placeholder="0.00">
                     </div>
                   </div>
                   <div class="form-group">
@@ -982,7 +982,7 @@
                       <div class="il-conditional" id="prop-solar-lease-cond">
                         <label class="form-label" for="prop-solar-lease-amount" style="margin-top:0.5rem;">Average monthly lease amount</label>
                         <div class="il-dollar-wrap">
-                          <input type="number" id="prop-solar-lease-amount" name="solar_lease_amount" class="form-control" placeholder="0" min="0" data-req>
+                          <input type="text" inputmode="decimal" id="prop-solar-lease-amount" name="solar_lease_amount" class="form-control" placeholder="0.00" data-req>
                         </div>
                       </div>
                     </div>
@@ -1545,7 +1545,7 @@
         + '<option>Self</option><option>Spouse or Partner</option><option>Child</option><option>Parent</option><option>Other</option>'
         + '</select></div></div>'
         + '<div class="form-group"><label class="form-label" for="il-inc-' + n + '-annual">Annual Income</label>'
-        + '<div class="il-dollar-wrap"><input type="number" id="il-inc-' + n + '-annual" name="income_' + n + '_annual" class="form-control" placeholder="0" min="0"></div></div>';
+        + '<div class="il-dollar-wrap"><input type="text" inputmode="decimal" id="il-inc-' + n + '-annual" name="income_' + n + '_annual" class="form-control" placeholder="0.00"></div></div>';
       container.appendChild(div);
       div.querySelector('.il-remove-btn').addEventListener('click', function () {
         div.remove();
