@@ -308,7 +308,7 @@
                             </div>
                             <div class="il-conditional" id="il-nontax1-enddate">
                               <label class="form-label" for="il-nontax-1-end-date" style="margin-top:0.5rem">End date</label>
-                              <input type="date" id="il-nontax-1-end-date" name="nontax_1_end_date" class="form-control" data-req>
+                              <input type="text" inputmode="numeric" id="il-nontax-1-end-date" name="nontax_1_end_date" class="form-control" placeholder="MM/DD/YYYY" data-date-fmt="date" data-req>
                             </div>
                           </div>
                         </div>
@@ -378,7 +378,7 @@
                         <div class="form-row">
                           <div class="form-group">
                             <label class="form-label" for="il-emp1-end">End date</label>
-                            <input type="month" id="il-emp1-end" name="emp_1_end_date" class="form-control" data-req>
+                            <input type="text" inputmode="numeric" id="il-emp1-end" name="emp_1_end_date" class="form-control" placeholder="MM/YYYY" data-date-fmt="month" data-req>
                           </div>
                           <div class="form-group">
                             <p class="form-label">Same line of work as current employment?</p>
@@ -392,7 +392,7 @@
                     </div>
                     <div class="form-group">
                       <label class="form-label" for="il-emp1-start">Start date</label>
-                      <input type="month" id="il-emp1-start" name="emp_1_start_date" class="form-control" required>
+                      <input type="text" inputmode="numeric" id="il-emp1-start" name="emp_1_start_date" class="form-control" placeholder="MM/YYYY" data-date-fmt="month" required>
                     </div>
                     <div class="form-group">
                       <p class="form-label">Any breaks in this employment?</p>
@@ -464,7 +464,7 @@
                       </div>
                       <div class="form-group">
                         <label class="form-label" for="il-emp1-pay-date">Current paycheck pay period end date</label>
-                        <input type="date" id="il-emp1-pay-date" name="emp_1_pay_period_end" class="form-control" required>
+                        <input type="text" inputmode="numeric" id="il-emp1-pay-date" name="emp_1_pay_period_end" class="form-control" placeholder="MM/DD/YYYY" data-date-fmt="date" required>
                       </div>
                     </div>
                     <div class="form-group">
@@ -516,7 +516,7 @@
                         <div class="form-row">
                           <div class="form-group">
                             <label class="form-label" for="il-emp2-end">End date</label>
-                            <input type="month" id="il-emp2-end" name="emp_2_end_date" class="form-control" data-req>
+                            <input type="text" inputmode="numeric" id="il-emp2-end" name="emp_2_end_date" class="form-control" placeholder="MM/YYYY" data-date-fmt="month" data-req>
                           </div>
                           <div class="form-group">
                             <p class="form-label">Same line of work as current?</p>
@@ -530,7 +530,7 @@
                     </div>
                     <div class="form-group">
                       <label class="form-label" for="il-emp2-start">Start date</label>
-                      <input type="month" id="il-emp2-start" name="emp_2_start_date" class="form-control">
+                      <input type="text" inputmode="numeric" id="il-emp2-start" name="emp_2_start_date" class="form-control" placeholder="MM/YYYY" data-date-fmt="month">
                     </div>
                     <div class="form-group">
                       <p class="form-label">Any breaks in this employment?</p>
@@ -602,7 +602,7 @@
                       </div>
                       <div class="form-group">
                         <label class="form-label" for="il-emp2-pay-date">Pay period end date</label>
-                        <input type="date" id="il-emp2-pay-date" name="emp_2_pay_period_end" class="form-control">
+                        <input type="text" inputmode="numeric" id="il-emp2-pay-date" name="emp_2_pay_period_end" class="form-control" placeholder="MM/DD/YYYY" data-date-fmt="date">
                       </div>
                     </div>
                     <div class="form-group">
@@ -648,7 +648,7 @@
                   </div>
                   <div class="il-conditional" id="il-cond-foreclosure">
                     <label class="form-label" for="il-foreclosure-date">Sale date</label>
-                    <input type="date" id="il-foreclosure-date" name="foreclosure_date" class="form-control" data-req>
+                    <input type="text" inputmode="numeric" id="il-foreclosure-date" name="foreclosure_date" class="form-control" placeholder="MM/DD/YYYY" data-date-fmt="date" data-req>
                   </div>
                 </div>
 
@@ -666,7 +666,7 @@
                   </div>
                   <div class="il-conditional" id="il-cond-bankruptcy">
                     <label class="form-label" for="il-bankruptcy-date">Discharge date</label>
-                    <input type="date" id="il-bankruptcy-date" name="bankruptcy_discharge_date" class="form-control" data-req>
+                    <input type="text" inputmode="numeric" id="il-bankruptcy-date" name="bankruptcy_discharge_date" class="form-control" placeholder="MM/DD/YYYY" data-date-fmt="date" data-req>
                   </div>
                 </div>
 
@@ -1499,7 +1499,7 @@
         + ' data-shows="il-nontax' + n + '-enddate" data-show-when="Yes"> No</label></div>'
         + '<div class="il-conditional" id="il-nontax' + n + '-enddate">'
         + '<label class="form-label" for="il-nontax-' + n + '-end-date" style="margin-top:0.5rem">End date</label>'
-        + '<input type="date" id="il-nontax-' + n + '-end-date" name="nontax_' + n + '_end_date" class="form-control" data-req></div></div></div>';
+        + '<input type="text" inputmode="numeric" id="il-nontax-' + n + '-end-date" name="nontax_' + n + '_end_date" class="form-control" placeholder="MM/DD/YYYY" data-date-fmt="date" data-req></div></div></div>';
       container.appendChild(div);
       initConditionals(div);
       renumberNontaxBlocks();
@@ -1597,14 +1597,14 @@
         + '<div class="il-conditional" id="il-emp' + n + '-cond-previous">'
         + '<div class="form-row">'
         + '<div class="form-group"><label class="form-label" for="il-emp-' + n + '-end-date">End date</label>'
-        + '<input type="month" id="il-emp-' + n + '-end-date" name="emp_' + n + '_end_date" class="form-control" data-req></div>'
+        + '<input type="text" inputmode="numeric" id="il-emp-' + n + '-end-date" name="emp_' + n + '_end_date" class="form-control" placeholder="MM/YYYY" data-date-fmt="month" data-req></div>'
         + '<div class="form-group"><p class="form-label">Same line of work as current?</p>'
         + '<div class="il-radio-group" style="margin-top:0.4rem">'
         + '<label class="il-radio-label"><input type="radio" name="emp_' + n + '_same_line" value="Yes"> Yes</label>'
         + '<label class="il-radio-label"><input type="radio" name="emp_' + n + '_same_line" value="No"> No</label>'
         + '</div></div></div></div></div>'
         + '<div class="form-group"><label class="form-label" for="il-emp-' + n + '-start-date">Start date</label>'
-        + '<input type="month" id="il-emp-' + n + '-start-date" name="emp_' + n + '_start_date" class="form-control"></div>'
+        + '<input type="text" inputmode="numeric" id="il-emp-' + n + '-start-date" name="emp_' + n + '_start_date" class="form-control" placeholder="MM/YYYY" data-date-fmt="month"></div>'
         + '<div class="form-group"><p class="form-label">Any breaks in this employment?</p>'
         + '<div class="il-radio-group">'
         + '<label class="il-radio-label"><input type="radio" name="emp_' + n + '_breaks" value="Yes"'
@@ -1641,7 +1641,7 @@
         + '<div class="form-group"><label class="form-label" for="il-emp-' + n + '-ytd-gross">Year-to-date gross income</label>'
         + '<div class="il-dollar-wrap"><input type="text" inputmode="decimal" id="il-emp-' + n + '-ytd-gross" name="emp_' + n + '_ytd_gross" class="form-control" placeholder="0"></div></div>'
         + '<div class="form-group"><label class="form-label" for="il-emp-' + n + '-pay-period-end">Pay period end date</label>'
-        + '<input type="date" id="il-emp-' + n + '-pay-period-end" name="emp_' + n + '_pay_period_end" class="form-control"></div></div>'
+        + '<input type="text" inputmode="numeric" id="il-emp-' + n + '-pay-period-end" name="emp_' + n + '_pay_period_end" class="form-control" placeholder="MM/DD/YYYY" data-date-fmt="date"></div></div>'
         + '<div class="form-group"><label class="form-label" for="il-emp-' + n + '-w2-recent">Largest income on <span class="il-w2-year">' + (new Date().getFullYear() - 1) + '</span> W-2 <span class="optional">(optional)</span></label>'
         + '<div class="il-dollar-wrap"><input type="text" inputmode="decimal" id="il-emp-' + n + '-w2-recent" name="emp_' + n + '_w2_recent" class="form-control" placeholder="0"></div></div>';
       container.appendChild(div);
@@ -1888,6 +1888,15 @@
           delete payload['emp_' + ei + '_annual_salary'];
         }
       }
+      /* Convert date/month display values to ISO format for Supabase */
+      Object.keys(payload).forEach(function (k) {
+        var v = payload[k];
+        if (!v) return;
+        var mdy = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/); /* MM/DD/YYYY */
+        if (mdy) { payload[k] = mdy[3] + '-' + mdy[1] + '-' + mdy[2]; return; }
+        var my = v.match(/^(\d{2})\/(\d{4})$/);           /* MM/YYYY */
+        if (my)  { payload[k] = my[2] + '-' + my[1]; }
+      });
       /* Strip formatting from dollar amount fields before submission */
       var dollarFieldRe = /^(monthly_rent|rent_subsidy_amount|monthly_debt_payments|asset_checking|asset_savings|asset_401k|asset_other|tax_\d+_total|tax_\d+_sched_c|nontax_\d+_amount|emp_\d+_annual_salary|emp_\d+_hourly_rate|emp_\d+_ytd_gross|emp_\d+_w2_recent)$/;
       Object.keys(payload).forEach(function(k) {
@@ -2013,6 +2022,41 @@
       });
       observer.observe(document.getElementById('il-panel') || document.body, {
         childList: true, subtree: true
+      });
+    }());
+
+    /* ── Date / Month auto-formatting ─────────────────────────────────
+       Inputs with data-date-fmt="date"  accept MM/DD/YYYY
+       Inputs with data-date-fmt="month" accept MM/YYYY
+       Slashes are inserted automatically as digits are typed.
+       buildPayload converts the display value to ISO before submission.
+    ──────────────────────────────────────────────────────────────── */
+    (function () {
+      function applyDateFmt(el) {
+        var fmt = el.dataset.dateFmt;
+        if (!fmt) return;
+        var digits = el.value.replace(/\D/g, '');
+        var result;
+        if (fmt === 'month') {
+          digits = digits.substring(0, 6);
+          result = digits.length >= 3
+            ? digits.substring(0, 2) + '/' + digits.substring(2)
+            : digits;
+        } else {
+          digits = digits.substring(0, 8);
+          if (digits.length >= 5) {
+            result = digits.substring(0, 2) + '/' + digits.substring(2, 4) + '/' + digits.substring(4);
+          } else if (digits.length >= 3) {
+            result = digits.substring(0, 2) + '/' + digits.substring(2);
+          } else {
+            result = digits;
+          }
+        }
+        el.value = result;
+      }
+
+      document.addEventListener('input', function (e) {
+        applyDateFmt(e.target);
       });
     }());
 
