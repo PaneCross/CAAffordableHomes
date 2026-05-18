@@ -271,8 +271,8 @@ CLOSE_THRESHOLD = 2  // max failed fields to score "Close" (vs "Fail")
 - 010_program_auto_inactive.sql — extends sync function with auto-inactivation when all linked listings sell out
 - 011_fix_ami_percent_manual.sql — removes ami_percent from auto-sync (Kacee sets it manually as a single number)
 - 012_phase13_programs_expanded.sql — adds mls_listed, full_address, bathrooms, parking, sqft, program_type, selection_process to programs; parking to listings
-- 013_emp_salaried_field.sql — adds emp_1-4_salaried TEXT columns to interest_list (Phase 16)
-- 014_admin_review.sql — adds admin_notes TEXT + flags_dismissed JSONB DEFAULT '[]' to interest_list (Phase 17) *** RUN THIS IN SUPABASE SQL EDITOR ***
+- 013_emp_salaried_field.sql — adds emp_1-4_salaried TEXT columns to interest_list (Phase 16) — confirmed applied
+- 014_admin_review.sql — adds admin_notes TEXT + flags_dismissed JSONB DEFAULT '[]' to interest_list (Phase 17) — confirmed applied
 
 ### Ongoing / go-live
 3. **Repeating block header renumbering bug** — income/employment block numbers go wrong when removing and re-adding. Needs `renumberIncomeBlocks()` / `renumberEmpBlocks()` in `contact.html`.
