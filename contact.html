@@ -437,7 +437,7 @@
                       <div class="il-conditional" id="il-emp1-cond-salaried">
                         <label class="form-label" for="il-emp1-salary">Annual salary</label>
                         <div class="il-dollar-wrap">
-                          <input type="text" inputmode="decimal" id="il-emp1-salary" name="emp_1_annual_salary" class="form-control" placeholder="e.g. $60,000.00" data-req>
+                          <input type="text" inputmode="decimal" id="il-emp1-salary" name="emp_1_annual_salary" class="form-control" placeholder="0.00" data-req>
                         </div>
                       </div>
                       <div class="il-conditional" id="il-emp1-cond-hourly">
@@ -445,7 +445,7 @@
                           <div class="form-group">
                             <label class="form-label" for="il-emp1-hourly-rate">Current hourly wage</label>
                             <div class="il-dollar-wrap">
-                              <input type="text" inputmode="decimal" id="il-emp1-hourly-rate" name="emp_1_hourly_rate" class="form-control" placeholder="e.g. $20.00" data-req>
+                              <input type="text" inputmode="decimal" id="il-emp1-hourly-rate" name="emp_1_hourly_rate" class="form-control" placeholder="0.00" data-req>
                             </div>
                           </div>
                           <div class="form-group">
@@ -575,7 +575,7 @@
                       <div class="il-conditional" id="il-emp2-cond-salaried">
                         <label class="form-label" for="il-emp2-salary">Annual salary</label>
                         <div class="il-dollar-wrap">
-                          <input type="text" inputmode="decimal" id="il-emp2-salary" name="emp_2_annual_salary" class="form-control" placeholder="e.g. $60,000.00" data-req>
+                          <input type="text" inputmode="decimal" id="il-emp2-salary" name="emp_2_annual_salary" class="form-control" placeholder="0.00" data-req>
                         </div>
                       </div>
                       <div class="il-conditional" id="il-emp2-cond-hourly">
@@ -583,7 +583,7 @@
                           <div class="form-group">
                             <label class="form-label" for="il-emp2-hourly-rate">Current hourly wage</label>
                             <div class="il-dollar-wrap">
-                              <input type="text" inputmode="decimal" id="il-emp2-hourly-rate" name="emp_2_hourly_rate" class="form-control" placeholder="e.g. $20.00" data-req>
+                              <input type="text" inputmode="decimal" id="il-emp2-hourly-rate" name="emp_2_hourly_rate" class="form-control" placeholder="0.00" data-req>
                             </div>
                           </div>
                           <div class="form-group">
@@ -1629,11 +1629,11 @@
         + '</div>'
         + '<div class="il-conditional" id="il-emp' + n + '-cond-salaried">'
         + '<label class="form-label" for="il-emp-' + n + '-annual-salary">Annual salary</label>'
-        + '<div class="il-dollar-wrap"><input type="text" inputmode="decimal" id="il-emp-' + n + '-annual-salary" name="emp_' + n + '_annual_salary" class="form-control" placeholder="e.g. $60,000.00" data-req></div></div>'
+        + '<div class="il-dollar-wrap"><input type="text" inputmode="decimal" id="il-emp-' + n + '-annual-salary" name="emp_' + n + '_annual_salary" class="form-control" placeholder="0.00" data-req></div></div>'
         + '<div class="il-conditional" id="il-emp' + n + '-cond-hourly">'
         + '<div class="form-row">'
         + '<div class="form-group"><label class="form-label" for="il-emp-' + n + '-hourly-rate">Current hourly wage</label>'
-        + '<div class="il-dollar-wrap"><input type="text" inputmode="decimal" id="il-emp-' + n + '-hourly-rate" name="emp_' + n + '_hourly_rate" class="form-control" placeholder="e.g. $20.00" data-req></div></div>'
+        + '<div class="il-dollar-wrap"><input type="text" inputmode="decimal" id="il-emp-' + n + '-hourly-rate" name="emp_' + n + '_hourly_rate" class="form-control" placeholder="0.00" data-req></div></div>'
         + '<div class="form-group"><label class="form-label" for="il-emp-' + n + '-hours-per-week">Hours worked per week</label>'
         + '<input type="number" id="il-emp-' + n + '-hours-per-week" name="emp_' + n + '_hours_per_week" class="form-control" placeholder="40" min="0" max="168" data-req></div>'
         + '</div></div></div>'
@@ -1962,47 +1962,29 @@
     }
 
     /* ── Dollar-input real-time formatting ────────────────────────────
-       All inputs inside .il-dollar-wrap auto-format with $ and commas
-       as the user types. On blur the value is rounded to 2 decimal places.
-       buildPayload strips $ and commas before submission.
+       Cents-first input: digits shift left from the hundredths place.
+       Typing "60000" shows "600.00"; typing "6000000" shows "60,000.00".
+       CSS .il-dollar-wrap::before already renders the $ sign — the JS
+       value must NOT include a $ prefix.
+       buildPayload strips commas before submission.
     ──────────────────────────────────────────────────────────────── */
     (function () {
-      /* Placeholder map: substring of field name → placeholder string */
-      var phMap = {
-        annual_salary:        'e.g. $60,000.00',
-        hourly_rate:          'e.g. $20.00',
-        ytd_gross:            'e.g. $30,000.00',
-        w2_recent:            'e.g. $60,000.00',
-        monthly_rent:         'e.g. $1,500.00',
-        rent_subsidy_amount:  'e.g. $500.00',
-        monthly_debt:         'e.g. $1,500.00',
-        asset_checking:       'e.g. $5,000.00',
-        asset_savings:        'e.g. $10,000.00',
-        asset_401k:           'e.g. $25,000.00',
-        asset_other:          'e.g. $5,000.00',
-        nontax:               'e.g. $1,000.00',
-        _total:               'e.g. $60,000.00',
-        _sched_c:             'e.g. $10,000.00'
-      };
+      /* Placeholder — same for all dollar fields: shows the format, no $ (CSS adds it) */
+      var DEFAULT_PH = '0.00';
 
       function setPlaceholder(input) {
-        var name = input.name || '';
-        for (var key in phMap) {
-          if (name.indexOf(key) !== -1) { input.placeholder = phMap[key]; return; }
-        }
-        input.placeholder = 'e.g. $1,000.00';
+        input.placeholder = DEFAULT_PH;
       }
 
+      /* Cents-first formatter: treats all digits as cents, shifts left as typed */
       function formatValue(raw) {
-        var s = raw.replace(/[^0-9.]/g, '');
-        if (!s) return '';
-        var parts = s.split('.');
-        var intStr = parts[0].replace(/^0+(?=\d)/, '') || '0';
-        intStr = intStr.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-        if (parts.length > 1) {
-          return '$' + intStr + '.' + parts[1].substring(0, 2);
-        }
-        return '$' + intStr;
+        var digits = raw.replace(/\D/g, '');
+        if (!digits) return '';
+        var cents = parseInt(digits, 10);
+        return (cents / 100).toLocaleString('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        });
       }
 
       /* Set placeholders on all dollar inputs present at load time */
@@ -2014,17 +1996,10 @@
         e.target.value = formatValue(e.target.value);
       });
 
-      /* On blur: ensure two decimal places */
+      /* On blur: clean up any edge cases (already formatted, just normalize) */
       document.addEventListener('focusout', function (e) {
         if (!e.target.closest('.il-dollar-wrap')) return;
-        var raw = e.target.value.replace(/[^0-9.]/g, '');
-        if (!raw) return;
-        var num = parseFloat(raw);
-        if (isNaN(num)) return;
-        e.target.value = '$' + num.toLocaleString('en-US', {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2
-        });
+        e.target.value = formatValue(e.target.value);
       });
 
       /* Re-apply placeholders to dynamic dollar inputs when they appear */
