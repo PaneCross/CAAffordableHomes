@@ -187,7 +187,7 @@
                 <div class="form-group">
                   <label class="form-label" for="il-monthly-rent">Current monthly rent amount</label>
                   <div class="il-dollar-wrap">
-                    <input type="number" id="il-monthly-rent" name="monthly_rent" class="form-control" placeholder="0" min="0" required>
+                    <input type="text" inputmode="decimal" id="il-monthly-rent" name="monthly_rent" class="form-control" placeholder="0" required>
                   </div>
                 </div>
 
@@ -206,7 +206,7 @@
                   <div class="il-conditional" id="il-cond-rent-subsidy">
                     <label class="form-label" for="il-rent-subsidy-amount">Amount you pay per month</label>
                     <div class="il-dollar-wrap">
-                      <input type="number" id="il-rent-subsidy-amount" name="rent_subsidy_amount" class="form-control" placeholder="0" min="0" data-req>
+                      <input type="text" inputmode="decimal" id="il-rent-subsidy-amount" name="rent_subsidy_amount" class="form-control" placeholder="0" data-req>
                     </div>
                   </div>
                 </div>
@@ -219,13 +219,6 @@
                   </div>
                 </div>
 
-                <div class="form-group">
-                  <p class="form-label">Have you or a co-borrower ever purchased through the San Diego Housing Commission Affordable Home Purchase Program?</p>
-                  <div class="il-radio-group">
-                    <label class="il-radio-label"><input type="radio" name="sdhc_prior_purchase" value="Yes" required> Yes</label>
-                    <label class="il-radio-label"><input type="radio" name="sdhc_prior_purchase" value="No"> No</label>
-                  </div>
-                </div>
               </div><!-- /section-1 -->
 
               <!-- ==================== SECTION II: Income ==================== -->
@@ -304,7 +297,7 @@
                           <div class="form-group">
                             <label class="form-label" for="il-nontax-1-amount">Amount per month</label>
                             <div class="il-dollar-wrap">
-                              <input type="number" id="il-nontax-1-amount" name="nontax_1_amount" class="form-control" placeholder="0" min="0" data-req>
+                              <input type="text" inputmode="decimal" id="il-nontax-1-amount" name="nontax_1_amount" class="form-control" placeholder="0" data-req>
                             </div>
                           </div>
                           <div class="form-group">
@@ -419,33 +412,33 @@
                       </div>
                     </div>
                     <div class="form-group">
-                      <p class="form-label">Income type</p>
+                      <p class="form-label">W2 Annual Salary?</p>
                       <div class="il-radio-group">
                         <label class="il-radio-label">
-                          <input type="radio" name="emp_1_income_type" value="W-2" required
-                            data-shows="il-emp1-cond-salaried" data-show-when="W-2"> W-2
+                          <input type="radio" name="emp_1_income_type" value="Yes" required
+                            data-shows="il-emp1-cond-salaried" data-show-when="Yes"> Yes
                         </label>
                         <label class="il-radio-label">
-                          <input type="radio" name="emp_1_income_type" value="1099"
-                            data-shows="il-emp1-cond-hourly" data-show-when="1099"> 1099
+                          <input type="radio" name="emp_1_income_type" value="No"
+                            data-shows="il-emp1-cond-hourly" data-show-when="No"> No
                         </label>
                       </div>
                       <div class="il-conditional" id="il-emp1-cond-salaried">
                         <label class="form-label" for="il-emp1-salary">Annual salary</label>
                         <div class="il-dollar-wrap">
-                          <input type="number" id="il-emp1-salary" name="emp_1_annual_salary" class="form-control" placeholder="0" min="0" data-req>
+                          <input type="text" inputmode="decimal" id="il-emp1-salary" name="emp_1_annual_salary" class="form-control" placeholder="0" data-req>
                         </div>
                       </div>
                       <div class="il-conditional" id="il-emp1-cond-hourly">
                         <div class="form-row">
                           <div class="form-group">
-                            <label class="form-label" for="il-emp1-hourly-rate">Hourly rate</label>
+                            <label class="form-label" for="il-emp1-hourly-rate">Current hourly wage</label>
                             <div class="il-dollar-wrap">
-                              <input type="number" id="il-emp1-hourly-rate" name="emp_1_hourly_rate" class="form-control" placeholder="0.00" min="0" step="0.01" data-req>
+                              <input type="text" inputmode="decimal" id="il-emp1-hourly-rate" name="emp_1_hourly_rate" class="form-control" placeholder="0.00" data-req>
                             </div>
                           </div>
                           <div class="form-group">
-                            <label class="form-label" for="il-emp1-hours-week">Hours per week</label>
+                            <label class="form-label" for="il-emp1-hours-week">Hours worked per week</label>
                             <input type="number" id="il-emp1-hours-week" name="emp_1_hours_per_week" class="form-control" placeholder="40" min="0" max="168" data-req>
                           </div>
                         </div>
@@ -455,7 +448,7 @@
                       <div class="form-group">
                         <label class="form-label" for="il-emp1-ytd">Year-to-date gross income on current paycheck</label>
                         <div class="il-dollar-wrap">
-                          <input type="number" id="il-emp1-ytd" name="emp_1_ytd_gross" class="form-control" placeholder="0" min="0" required>
+                          <input type="text" inputmode="decimal" id="il-emp1-ytd" name="emp_1_ytd_gross" class="form-control" placeholder="0" required>
                         </div>
                       </div>
                       <div class="form-group">
@@ -466,7 +459,7 @@
                     <div class="form-group">
                       <label class="form-label" for="il-emp1-w2-recent">Largest income shown on <span class="il-w2-year">2025</span> W-2 <span class="optional">(optional)</span></label>
                       <div class="il-dollar-wrap">
-                        <input type="number" id="il-emp1-w2-recent" name="emp_1_w2_recent" class="form-control" placeholder="0" min="0">
+                        <input type="text" inputmode="decimal" id="il-emp1-w2-recent" name="emp_1_w2_recent" class="form-control" placeholder="0">
                       </div>
                     </div>
                   </div><!-- /emp-block-1 -->
@@ -546,33 +539,33 @@
                       </div>
                     </div>
                     <div class="form-group">
-                      <p class="form-label">Income type</p>
+                      <p class="form-label">W2 Annual Salary?</p>
                       <div class="il-radio-group">
                         <label class="il-radio-label">
-                          <input type="radio" name="emp_2_income_type" value="W-2"
-                            data-shows="il-emp2-cond-salaried" data-show-when="W-2"> W-2
+                          <input type="radio" name="emp_2_income_type" value="Yes"
+                            data-shows="il-emp2-cond-salaried" data-show-when="Yes"> Yes
                         </label>
                         <label class="il-radio-label">
-                          <input type="radio" name="emp_2_income_type" value="1099"
-                            data-shows="il-emp2-cond-hourly" data-show-when="1099"> 1099
+                          <input type="radio" name="emp_2_income_type" value="No"
+                            data-shows="il-emp2-cond-hourly" data-show-when="No"> No
                         </label>
                       </div>
                       <div class="il-conditional" id="il-emp2-cond-salaried">
                         <label class="form-label" for="il-emp2-salary">Annual salary</label>
                         <div class="il-dollar-wrap">
-                          <input type="number" id="il-emp2-salary" name="emp_2_annual_salary" class="form-control" placeholder="0" min="0" data-req>
+                          <input type="text" inputmode="decimal" id="il-emp2-salary" name="emp_2_annual_salary" class="form-control" placeholder="0" data-req>
                         </div>
                       </div>
                       <div class="il-conditional" id="il-emp2-cond-hourly">
                         <div class="form-row">
                           <div class="form-group">
-                            <label class="form-label" for="il-emp2-hourly-rate">Hourly rate</label>
+                            <label class="form-label" for="il-emp2-hourly-rate">Current hourly wage</label>
                             <div class="il-dollar-wrap">
-                              <input type="number" id="il-emp2-hourly-rate" name="emp_2_hourly_rate" class="form-control" placeholder="0.00" min="0" step="0.01" data-req>
+                              <input type="text" inputmode="decimal" id="il-emp2-hourly-rate" name="emp_2_hourly_rate" class="form-control" placeholder="0.00" data-req>
                             </div>
                           </div>
                           <div class="form-group">
-                            <label class="form-label" for="il-emp2-hours-week">Hours per week</label>
+                            <label class="form-label" for="il-emp2-hours-week">Hours worked per week</label>
                             <input type="number" id="il-emp2-hours-week" name="emp_2_hours_per_week" class="form-control" placeholder="40" min="0" max="168" data-req>
                           </div>
                         </div>
@@ -582,7 +575,7 @@
                       <div class="form-group">
                         <label class="form-label" for="il-emp2-ytd">Year-to-date gross income</label>
                         <div class="il-dollar-wrap">
-                          <input type="number" id="il-emp2-ytd" name="emp_2_ytd_gross" class="form-control" placeholder="0" min="0">
+                          <input type="text" inputmode="decimal" id="il-emp2-ytd" name="emp_2_ytd_gross" class="form-control" placeholder="0">
                         </div>
                       </div>
                       <div class="form-group">
@@ -593,7 +586,7 @@
                     <div class="form-group">
                       <label class="form-label" for="il-emp2-w2-recent">Largest income on <span class="il-w2-year">2025</span> W-2 <span class="optional">(optional)</span></label>
                       <div class="il-dollar-wrap">
-                        <input type="number" id="il-emp2-w2-recent" name="emp_2_w2_recent" class="form-control" placeholder="0" min="0">
+                        <input type="text" inputmode="decimal" id="il-emp2-w2-recent" name="emp_2_w2_recent" class="form-control" placeholder="0">
                       </div>
                     </div>
                   </div><!-- /emp-block-2 -->
@@ -615,7 +608,7 @@
                 <div class="form-group">
                   <label class="form-label" for="il-monthly-debt">Total minimum monthly debt payments <span class="optional">(credit cards, auto loans, personal loans, student loans only, not rent, utilities, or phone)</span></label>
                   <div class="il-dollar-wrap">
-                    <input type="number" id="il-monthly-debt" name="monthly_debt_payments" class="form-control" placeholder="0" min="0" required>
+                    <input type="text" inputmode="decimal" id="il-monthly-debt" name="monthly_debt_payments" class="form-control" placeholder="0" required>
                   </div>
                 </div>
 
@@ -673,20 +666,11 @@
                   </div>
                 </div>
 
-                <div class="form-row">
-                  <div class="form-group">
-                    <p class="form-label">Are you and co-borrower a US Citizen?</p>
-                    <div class="il-radio-group" style="margin-top:0.4rem">
-                      <label class="il-radio-label"><input type="radio" name="us_citizen" value="Yes" required> Yes</label>
-                      <label class="il-radio-label"><input type="radio" name="us_citizen" value="No"> No</label>
-                    </div>
-                  </div>
-                  <div class="form-group">
-                    <p class="form-label">Are you and co-borrower a Permanent Resident (green card)?</p>
-                    <div class="il-radio-group" style="margin-top:0.4rem">
-                      <label class="il-radio-label"><input type="radio" name="permanent_resident" value="Yes" required> Yes</label>
-                      <label class="il-radio-label"><input type="radio" name="permanent_resident" value="No"> No</label>
-                    </div>
+                <div class="form-group">
+                  <p class="form-label">Are all household members either a US Citizen or a Permanent Resident with a green card?</p>
+                  <div class="il-radio-group" style="margin-top:0.4rem">
+                    <label class="il-radio-label"><input type="radio" name="us_citizen" value="Yes" required> Yes</label>
+                    <label class="il-radio-label"><input type="radio" name="us_citizen" value="No"> No</label>
                   </div>
                 </div>
 
@@ -694,27 +678,27 @@
                   <div class="form-group">
                     <label class="form-label" for="il-asset-checking">Checking account total</label>
                     <div class="il-dollar-wrap">
-                      <input type="number" id="il-asset-checking" name="asset_checking" class="form-control" placeholder="0" min="0" required>
+                      <input type="text" inputmode="decimal" id="il-asset-checking" name="asset_checking" class="form-control" placeholder="0" required>
                     </div>
                   </div>
                   <div class="form-group">
                     <label class="form-label" for="il-asset-savings">Savings account total</label>
                     <div class="il-dollar-wrap">
-                      <input type="number" id="il-asset-savings" name="asset_savings" class="form-control" placeholder="0" min="0" required>
+                      <input type="text" inputmode="decimal" id="il-asset-savings" name="asset_savings" class="form-control" placeholder="0" required>
                     </div>
                   </div>
                 </div>
                 <div class="form-row">
                   <div class="form-group">
-                    <label class="form-label" for="il-asset-401k">401k / employer retirement <span class="optional">(optional)</span></label>
+                    <label class="form-label" for="il-asset-401k">401k / employer retirement</label>
                     <div class="il-dollar-wrap">
-                      <input type="number" id="il-asset-401k" name="asset_401k" class="form-control" placeholder="0" min="0">
+                      <input type="text" inputmode="decimal" id="il-asset-401k" name="asset_401k" class="form-control" placeholder="0" required>
                     </div>
                   </div>
                   <div class="form-group">
                     <label class="form-label" for="il-asset-other">Other assets <span class="optional">(optional)</span></label>
                     <div class="il-dollar-wrap">
-                      <input type="number" id="il-asset-other" name="asset_other" class="form-control" placeholder="0" min="0">
+                      <input type="text" inputmode="decimal" id="il-asset-other" name="asset_other" class="form-control" placeholder="0">
                     </div>
                   </div>
                 </div>
@@ -742,12 +726,10 @@
                     Select all areas that apply. This helps us match you with relevant opportunities when they become available.
                   </p>
                   <div class="il-area-checks">
-                    <label class="il-listing-label"><input type="checkbox" name="area_pref" value="North County Coastal"> North County Coastal <span style="color:var(--color-text-muted);font-size:0.875rem;">(Carlsbad, Encinitas, Oceanside, Del Mar)</span></label>
-                    <label class="il-listing-label"><input type="checkbox" name="area_pref" value="North County Inland"> North County Inland <span style="color:var(--color-text-muted);font-size:0.875rem;">(Escondido, San Marcos, Vista, Fallbrook)</span></label>
-                    <label class="il-listing-label"><input type="checkbox" name="area_pref" value="Central San Diego"> Central San Diego <span style="color:var(--color-text-muted);font-size:0.875rem;">(Kearny Mesa, Mission Valley, North Park, Hillcrest)</span></label>
-                    <label class="il-listing-label"><input type="checkbox" name="area_pref" value="East County"> East County <span style="color:var(--color-text-muted);font-size:0.875rem;">(El Cajon, Santee, La Mesa, Spring Valley)</span></label>
-                    <label class="il-listing-label"><input type="checkbox" name="area_pref" value="South Bay"> South Bay <span style="color:var(--color-text-muted);font-size:0.875rem;">(Chula Vista, National City, Imperial Beach)</span></label>
-                    <label class="il-listing-label"><input type="checkbox" name="area_pref" value="City of San Diego - Urban Core"> City of San Diego - Urban Core <span style="color:var(--color-text-muted);font-size:0.875rem;">(Downtown, OB, Pacific Beach, Midway)</span></label>
+                    <label class="il-listing-label"><input type="checkbox" name="area_pref" value="North County"> North County</label>
+                    <label class="il-listing-label"><input type="checkbox" name="area_pref" value="Central San Diego"> Central San Diego</label>
+                    <label class="il-listing-label"><input type="checkbox" name="area_pref" value="East County"> East County</label>
+                    <label class="il-listing-label"><input type="checkbox" name="area_pref" value="South Bay"> South Bay</label>
                     <label class="il-listing-label"><input type="checkbox" name="area_pref" id="area-other-checkbox" value="Other"> Other</label>
                     <div id="area-other-detail" style="display:none;margin-top:0.5rem;">
                       <input type="text" name="area_preference_other" id="area-other-text" class="form-control" placeholder="Please specify the area(s) you are interested in..." maxlength="200">
@@ -1380,15 +1362,15 @@
           + '<label class="form-label" for="il-income-' + r.year + '">' + totalLabel
           + ' <span class="optional">(' + totalSuffix + ')</span></label>'
           + '<div class="il-dollar-wrap">'
-          + '<input type="number" id="il-income-' + r.year + '" name="tax_' + r.num + '_total"'
-          + ' class="form-control" placeholder="0" min="0"' + reqAttr + '>'
+          + '<input type="text" inputmode="decimal" id="il-income-' + r.year + '" name="tax_' + r.num + '_total"'
+          + ' class="form-control" placeholder="0"' + reqAttr + '>'
           + '</div></div>'
           + '<div class="form-group">'
           + '<label class="form-label" for="il-sch-c-' + r.year + '">' + schedLabel
           + ' <span class="optional">(1099, if any)</span></label>'
           + '<div class="il-dollar-wrap">'
-          + '<input type="number" id="il-sch-c-' + r.year + '" name="tax_' + r.num + '_sched_c"'
-          + ' class="form-control" placeholder="0" min="0">'
+          + '<input type="text" inputmode="decimal" id="il-sch-c-' + r.year + '" name="tax_' + r.num + '_sched_c"'
+          + ' class="form-control" placeholder="0">'
           + '</div></div>'
           + '</div>';
       }).join('');
@@ -1486,7 +1468,7 @@
         + '<input type="text" id="il-nontax-' + n + '-source" name="nontax_' + n + '_source" class="form-control" placeholder="e.g. Social Security"></div></div>'
         + '<div class="form-row">'
         + '<div class="form-group"><label class="form-label" for="il-nontax-' + n + '-amount">Amount per month</label>'
-        + '<div class="il-dollar-wrap"><input type="number" id="il-nontax-' + n + '-amount" name="nontax_' + n + '_amount" class="form-control" placeholder="0" min="0"></div></div>'
+        + '<div class="il-dollar-wrap"><input type="text" inputmode="decimal" id="il-nontax-' + n + '-amount" name="nontax_' + n + '_amount" class="form-control" placeholder="0"></div></div>'
         + '<div class="form-group"><p class="form-label">Is there an end date?</p>'
         + '<div class="il-radio-group" style="margin-top:0.4rem">'
         + '<label class="il-radio-label"><input type="radio" name="nontax_' + n + '_end_date_yn" value="Yes"'
@@ -1611,30 +1593,30 @@
         + '<div class="il-conditional" id="il-emp' + n + '-cond-breaks">'
         + '<label class="form-label" for="il-emp-' + n + '-breaks-desc">Describe dates of breaks</label>'
         + '<input type="text" id="il-emp-' + n + '-breaks-desc" name="emp_' + n + '_breaks_desc" class="form-control" placeholder="e.g. Mar 2022 - Jun 2022" data-req></div></div>'
-        + '<div class="form-group"><p class="form-label">Income type</p>'
+        + '<div class="form-group"><p class="form-label">W2 Annual Salary?</p>'
         + '<div class="il-radio-group">'
-        + '<label class="il-radio-label"><input type="radio" name="emp_' + n + '_income_type" value="W-2"'
-        + ' data-shows="il-emp' + n + '-cond-salaried" data-show-when="W-2"> W-2</label>'
-        + '<label class="il-radio-label"><input type="radio" name="emp_' + n + '_income_type" value="1099"'
-        + ' data-shows="il-emp' + n + '-cond-hourly" data-show-when="1099"> 1099</label>'
+        + '<label class="il-radio-label"><input type="radio" name="emp_' + n + '_income_type" value="Yes"'
+        + ' data-shows="il-emp' + n + '-cond-salaried" data-show-when="Yes"> Yes</label>'
+        + '<label class="il-radio-label"><input type="radio" name="emp_' + n + '_income_type" value="No"'
+        + ' data-shows="il-emp' + n + '-cond-hourly" data-show-when="No"> No</label>'
         + '</div>'
         + '<div class="il-conditional" id="il-emp' + n + '-cond-salaried">'
         + '<label class="form-label" for="il-emp-' + n + '-annual-salary">Annual salary</label>'
-        + '<div class="il-dollar-wrap"><input type="number" id="il-emp-' + n + '-annual-salary" name="emp_' + n + '_annual_salary" class="form-control" placeholder="0" min="0" data-req></div></div>'
+        + '<div class="il-dollar-wrap"><input type="text" inputmode="decimal" id="il-emp-' + n + '-annual-salary" name="emp_' + n + '_annual_salary" class="form-control" placeholder="0" data-req></div></div>'
         + '<div class="il-conditional" id="il-emp' + n + '-cond-hourly">'
         + '<div class="form-row">'
-        + '<div class="form-group"><label class="form-label" for="il-emp-' + n + '-hourly-rate">Hourly rate</label>'
-        + '<div class="il-dollar-wrap"><input type="number" id="il-emp-' + n + '-hourly-rate" name="emp_' + n + '_hourly_rate" class="form-control" placeholder="0.00" min="0" step="0.01" data-req></div></div>'
-        + '<div class="form-group"><label class="form-label" for="il-emp-' + n + '-hours-per-week">Hours per week</label>'
+        + '<div class="form-group"><label class="form-label" for="il-emp-' + n + '-hourly-rate">Current hourly wage</label>'
+        + '<div class="il-dollar-wrap"><input type="text" inputmode="decimal" id="il-emp-' + n + '-hourly-rate" name="emp_' + n + '_hourly_rate" class="form-control" placeholder="0.00" data-req></div></div>'
+        + '<div class="form-group"><label class="form-label" for="il-emp-' + n + '-hours-per-week">Hours worked per week</label>'
         + '<input type="number" id="il-emp-' + n + '-hours-per-week" name="emp_' + n + '_hours_per_week" class="form-control" placeholder="40" min="0" max="168" data-req></div>'
         + '</div></div></div>'
         + '<div class="form-row">'
         + '<div class="form-group"><label class="form-label" for="il-emp-' + n + '-ytd-gross">Year-to-date gross income</label>'
-        + '<div class="il-dollar-wrap"><input type="number" id="il-emp-' + n + '-ytd-gross" name="emp_' + n + '_ytd_gross" class="form-control" placeholder="0" min="0"></div></div>'
+        + '<div class="il-dollar-wrap"><input type="text" inputmode="decimal" id="il-emp-' + n + '-ytd-gross" name="emp_' + n + '_ytd_gross" class="form-control" placeholder="0"></div></div>'
         + '<div class="form-group"><label class="form-label" for="il-emp-' + n + '-pay-period-end">Pay period end date</label>'
         + '<input type="date" id="il-emp-' + n + '-pay-period-end" name="emp_' + n + '_pay_period_end" class="form-control"></div></div>'
         + '<div class="form-group"><label class="form-label" for="il-emp-' + n + '-w2-recent">Largest income on <span class="il-w2-year">' + (new Date().getFullYear() - 1) + '</span> W-2 <span class="optional">(optional)</span></label>'
-        + '<div class="il-dollar-wrap"><input type="number" id="il-emp-' + n + '-w2-recent" name="emp_' + n + '_w2_recent" class="form-control" placeholder="0" min="0"></div></div>';
+        + '<div class="il-dollar-wrap"><input type="text" inputmode="decimal" id="il-emp-' + n + '-w2-recent" name="emp_' + n + '_w2_recent" class="form-control" placeholder="0"></div></div>';
       container.appendChild(div);
       div.querySelector('.il-remove-btn').addEventListener('click', function () {
         div.remove();
@@ -1872,12 +1854,23 @@
       /* Clear income fields that do not match the selected income type */
       for (var ei = 1; ei <= 4; ei++) {
         var itype = payload['emp_' + ei + '_income_type'];
-        if (itype === 'W-2') {
+        if (itype === 'Yes') {
           delete payload['emp_' + ei + '_hourly_rate'];
           delete payload['emp_' + ei + '_hours_per_week'];
-        } else if (itype === '1099') {
+        } else if (itype === 'No') {
           delete payload['emp_' + ei + '_annual_salary'];
         }
+      }
+      /* Strip formatting from dollar amount fields before submission */
+      var dollarFieldRe = /^(monthly_rent|rent_subsidy_amount|monthly_debt_payments|asset_checking|asset_savings|asset_401k|asset_other|tax_\d+_total|tax_\d+_sched_c|nontax_\d+_amount|emp_\d+_annual_salary|emp_\d+_hourly_rate|emp_\d+_ytd_gross|emp_\d+_w2_recent)$/;
+      Object.keys(payload).forEach(function(k) {
+        if (dollarFieldRe.test(k) && payload[k]) {
+          payload[k] = String(payload[k]).replace(/[$,]/g, '');
+        }
+      });
+      /* Sync citizenship - single question covers both fields */
+      if (payload['us_citizen']) {
+        payload['permanent_resident'] = payload['us_citizen'];
       }
       return payload;
     }
