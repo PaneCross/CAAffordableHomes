@@ -1169,14 +1169,17 @@ textarea.form-input { resize: vertical; }
 
 /* ── Print / PDF profile export ── */
 @media print {
-  body * { visibility: hidden; }
-  #il-modal-overlay,
-  #il-modal-overlay * { visibility: visible; }
+  /* Remove all body children from layout except the IL modal.
+     visibility:hidden keeps space; display:none collapses it —
+     the latter prevents the blank page-1 caused by hidden app content. */
+  body > *:not(#il-modal-overlay) { display: none !important; }
+
+  /* Let the modal flow as a normal block at the top of the page */
   #il-modal-overlay {
     position: static !important;
+    display: block !important;
     background: transparent !important;
     padding: 0 !important;
-    display: block !important;
   }
   .modal-box {
     max-width: 100% !important;
