@@ -12,17 +12,18 @@
 - **Phase 14 complete** — Content refinements (redundancy reduction, footer updates, about page image, listings page header); Edge Functions redeployed; SQL migration 012 run
 - **Phase 15 complete** — Kacee content round: index "income-qualified buyers" addition; about h3 "Buyers"; FAQ 7 + 10 wording; questionnaire overhaul (SDHC removed, W2 Yes/No, citizenship merged, 401k required, areas simplified to 5, all dollar fields text+inputmode, buildPayload updated)
 - **Phase 16 complete** — Employment income type split (W-2/1099 + Annual Salary Yes/No); cents-first dollar formatting (MutationObserver); auto-slash date inputs (MM/DD/YYYY + MM/YYYY); buildPayload ISO conversion + salaried field clearing; migration 013 (emp_N_salaried columns)
+- **Phase 18 complete** — Programs tab retired; listings table now feeds public site directly. Questionnaire cleanup (co-borrower label, rent subsidized removed, annual income label, 2 tax years, employment block restructure, debt label, US citizen, other assets). Public listings page rewrite (filter bar, card grid, expanded popup with AMI tables). SQL migrations 015/016/017. Admin: Site Display section on listing modal (show_on_site, mls_listed, community_name, home_type, ami_percent, public_status, features, comments + sync warning), Programs btn removed, IL manual entry button + modal + Manual filter. Help FAQ rewritten.
 - **Phase 17 complete** — Admin review capabilities: computeFlags engine (9 automated checks, 3 severity levels), buildFlagsPanelHtml with dismiss/restore, Admin Notes field with save, Has Flags filter, Flags column in IL table, Export CSV, Print Profile, print CSS; migration 014 (admin_notes + flags_dismissed); Help FAQ updated with 5 new entries
-- **Next up** — Go-live prep
+- **Next up** — Run SQL migrations 015/016/017 in Supabase SQL Editor; go-live prep
 
-## ⚠️ Legal Context — MLS and Program Display Rules
-California MLS Clear Cooperation Policy (adopted by NAR and all major CA MLSs): any property publicly marketed must be submitted to the MLS within 1 business day. This is why there is no standalone Available Homes page with full property listings. However, **Programs** (community/developer partnerships) may now display specific property details including addresses, pricing, bathrooms, parking, sqft, program type, and selection process - Kacee controls exactly what is shown by what she enters in the admin portal.
+## ⚠️ Legal Context — MLS Display Rules
+California MLS Clear Cooperation Policy (adopted by NAR and all major CA MLSs): any property publicly marketed must be submitted to the MLS within 1 business day.
 
-**MLS Listed flag:** The `mls_listed` boolean on programs controls only a badge label ("Listed on MLS" / "Not Listed on MLS"). It does NOT gate display of other fields. All fields show whenever Kacee enters data, regardless of MLS status.
+**MLS Listed flag (`mls_listed` on listings):** Controls whether the full address is shown on the public listing popup. When `mls_listed = true`, the full street address is displayed. When false, only city + zip is shown. Also controls the MLS badge and SDAR attribution line inside the popup.
 
-**SDAR Attribution:** When any program has `mls_listed = true`, programs.js automatically injects a San Diego Association of Realtors (SDAR) attribution note below the programs grid: "Where applicable, property information is sourced from the San Diego Association of Realtors (SDAR). Information deemed reliable but not guaranteed."
+**Public listings page:** `programs.js` now fetches `listings` rows where `show_on_site = true` (anon SELECT RLS policy added in migration 015). Each listing becomes a public card with an expanded popup including AMI income limits tables. The programs table is no longer used for any public display.
 
-**Listings tab (admin-only):** Internal listings used by the matching engine are still never exposed to the public. Only Programs are visible on the site.
+**Programs tab retired:** All public site content is managed through the Listings tab using the Site Display section of the listing modal. The Programs tab and sidebar button have been removed from the admin portal.
 
 ---
 
@@ -274,6 +275,11 @@ CLOSE_THRESHOLD = 2  // max failed fields to score "Close" (vs "Fail")
 - 013_emp_salaried_field.sql — adds emp_1-4_salaried TEXT columns to interest_list (Phase 16) — confirmed applied
 - 014_admin_review.sql — adds admin_notes TEXT + flags_dismissed JSONB DEFAULT '[]' to interest_list (Phase 17) — confirmed applied
 
+### SQL Migrations PENDING — run these in Supabase SQL Editor
+- 015_listings_public.sql — adds show_on_site, mls_listed, community_name, home_type, features, comments, ami_percent, public_status to listings; adds anon SELECT RLS policy for show_on_site=true rows
+- 016_site_settings.sql — creates site_settings key/value table; seeds ami_pdf_url key; anon read + authenticated write RLS
+- 017_il_entry_type.sql — adds entry_type TEXT DEFAULT 'form' to interest_list ('form' = questionnaire, 'manual' = admin-added)
+
 ### Ongoing / go-live
 3. **Repeating block header renumbering bug** — income/employment block numbers go wrong when removing and re-adding. Needs `renumberIncomeBlocks()` / `renumberEmpBlocks()` in `contact.html`.
 4. **NOTIFY_EMAIL switch** — change `tj@nostos.tech` → Kacee's email in Supabase Edge Function secrets at go-live. Do NOT do this proactively.
@@ -303,3 +309,4 @@ CLOSE_THRESHOLD = 2  // max failed fields to score "Close" (vs "Fail")
 | 15 | Kacee content round + questionnaire overhaul — index "and income-qualified buyers"; about h3 "Buyers"; FAQ 7 last sentence removed + em dash eliminated; FAQ 10 "market your property" removed; SDHC question removed; employment W2 Yes/No radios (was W-2/1099); citizenship merged to single Yes/No question; 401k made required; area checkboxes simplified to 5 clean options; all dollar inputs changed to text+inputmode=decimal; buildPayload updated (Yes/No logic, dollar stripping, permanent_resident sync) |
 | 16 | Employment income type split + form UX — "Income type" W-2/1099 radio + "Annual Salary?" Yes/No radio (was single W2 Yes/No); cents-first dollar formatter (MutationObserver picks up dynamic emp blocks); auto-slash date inputs replacing type=date/month; buildPayload converts MM/DD/YYYY and MM/YYYY to ISO before submit; migration 013 adds emp_1-4_salaried TEXT columns |
 | 17 | Admin review capabilities — computeFlags engine (9 checks: credit low/borderline, DTI high/elevated, income mismatch, income members vs HH size, foreclosure, bankruptcy, judgment, first-time buyer, citizenship); buildFlagsPanelHtml with dismiss/restore/show-dismissed; Admin Notes textarea with Save; Flags column in IL table; Has Flags filter button; Export CSV (respects current filter+search, includes flag descriptions + admin notes); Print Profile (window.print + @media print CSS isolating modal); migration 014 adds admin_notes + flags_dismissed JSONB; Help FAQ updated with 5 new entries |
+| 18 | Programs tab retired; listings table drives public site. Questionnaire: co-borrower label, rent subsidized removed, annual income label, 2 tax years (removed year 3), employment restructure (start+end dates, no current/previous/breaks), debt label, US citizen, other assets. programs.js rewritten: fetches listings (show_on_site=true), filter bar (area/city/beds/AMI), card grid, popup with AMI income tables (96 HUD 2025 values, highlighted column). CSS: lst-card, lst-popup-overlay, ami-public-table classes. admin.html: listing modal Site Display section, Programs btn removed from sidebar, IL manual entry btn + modal + Manual filter, sync warning badge. admin.js: save payload updated, manual IL entry modal functions, HELP_CONTENT rewritten. SQL migrations 015/016/017 created (PENDING RUN). |

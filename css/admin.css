@@ -1195,3 +1195,33 @@ textarea.form-input { resize: vertical; }
   .modal-body { overflow: visible !important; max-height: none !important; }
   @page { margin: 1.5cm; size: A4 portrait; }
 }
+
+/* -- Phase 18: Site Display sync warning + manual IL badge -- */
+.lf-sync-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+  background: #fff8e6;
+  border: 1px solid #f0c060;
+  border-radius: 6px;
+  padding: .55rem .75rem;
+  font-size: .8rem;
+  color: #7a5a00;
+  margin-bottom: .75rem;
+  line-height: 1.4;
+}
+.lf-sync-warning .fa-triangle-exclamation { color: #c88800; margin-top: .1rem; flex-shrink: 0; }
+
+.il-manual-badge {
+  display: inline-block;
+  padding: .15rem .45rem;
+  border-radius: 999px;
+  font-size: .68rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  background: rgba(100,100,200,.12);
+  color: #4444aa;
+  margin-left: .35rem;
+  vertical-align: middle;
+}

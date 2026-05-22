@@ -803,28 +803,28 @@ function openLSTModal(idx, prefill) {
   document.getElementById('lf-citizenship').value   = p.citizenship_required || ''
   document.getElementById('lf-permresident').value  = p.permanent_resident_acceptable || ''
 
-  // Populate site program dropdown from cached progData
-  const progSel = document.getElementById('lf-linked-prog')
-  progSel.innerHTML = '<option value="">-- No program linked --</option>'
-    + progData.map(pr =>
-        `<option value="${esc(pr.community_name || '')}">${esc(pr.community_name || 'Unnamed Program')}</option>`
-      ).join('')
-  progSel.value = p.linked_program_id || ''
+  // ── Site Display fields ──────────────────────────────────
+  const showOnSiteEl = document.getElementById('lf-show-on-site')
+  const mlsListedEl  = document.getElementById('lf-mls-listed')
+  showOnSiteEl.checked = !!p.show_on_site
+  mlsListedEl.checked  = !!p.mls_listed
+  document.getElementById('lf-community-name').value = p.community_name || ''
+  document.getElementById('lf-home-type').value       = p.home_type || ''
+  document.getElementById('lf-ami-pct').value         = p.ami_percent || ''
+  document.getElementById('lf-public-status').value   = p.public_status || 'Available'
+  document.getElementById('lf-features').value        = p.features || ''
+  document.getElementById('lf-comments').value        = p.comments || ''
 
-  // Wire "New Program" button - pre-fills the program form from this listing's data
-  document.getElementById('lf-new-prog-btn').onclick = () => {
-    closeLSTModal()
-    switchTab('programs')
-    openProgModal(null, {
-      community_name: p.listing_name || p.listing_id || '',
-      area:           p.city || '',
-      bedrooms:       p.bedrooms || '',
-      price_range:    p.price || '',
-      status:         'Available',
-      notes:          p.program_notes || '',
-      source_listing_id: p.listing_id || '',
-    })
+  // Sync warning: show if show_on_site and active diverge
+  function updateSyncWarning() {
+    const siteOn    = document.getElementById('lf-show-on-site').checked
+    const matchOn   = document.getElementById('lf-active').checked
+    const warnEl    = document.getElementById('lf-sync-warning')
+    if (warnEl) warnEl.style.display = (siteOn !== matchOn) ? 'flex' : 'none'
   }
+  showOnSiteEl.addEventListener('change', updateSyncWarning)
+  document.getElementById('lf-active').addEventListener('change', updateSyncWarning)
+  updateSyncWarning()
 
   document.getElementById('lst-modal-overlay').classList.add('open')
 }
@@ -876,7 +876,14 @@ document.getElementById('lst-save-btn').addEventListener('click', async () => {
     program_notes:  document.getElementById('lf-prog-notes').value.trim(),
     internal_notes: document.getElementById('lf-int-notes').value.trim(),
     source_submission_row: document.getElementById('lf-src-row').value || null,
-    linked_program_id:     document.getElementById('lf-linked-prog').value || null,
+    show_on_site:   document.getElementById('lf-show-on-site').checked,
+    mls_listed:     document.getElementById('lf-mls-listed').checked,
+    community_name: document.getElementById('lf-community-name').value.trim() || null,
+    home_type:      document.getElementById('lf-home-type').value || null,
+    ami_percent:    document.getElementById('lf-ami-pct').value.trim() ? parseInt(document.getElementById('lf-ami-pct').value) : null,
+    public_status:  document.getElementById('lf-public-status').value || 'Available',
+    features:       document.getElementById('lf-features').value.trim() || null,
+    comments:       document.getElementById('lf-comments').value.trim() || null,
     sd_residency_months:        document.getElementById('lf-sdmonths').value.trim() || null,
     household_together_months:  document.getElementById('lf-hhtogether').value.trim() || null,
     no_ownership_years:         document.getElementById('lf-ftb-years').value.trim() || null,
@@ -1379,6 +1386,8 @@ function renderIL() {
       const dis = Array.isArray(r.flags_dismissed) ? r.flags_dismissed : []
       return computeFlags(r).some(f => !dis.includes(f.id))
     })
+  } else if (ilFilter === 'manual') {
+    rows = ilData.filter(r => r.entry_type === 'manual')
   } else if (ilFilter !== 'all') {
     rows = ilData.filter(r => r.status === ilFilter)
   }
@@ -1401,9 +1410,10 @@ function renderIL() {
       const _fb  = _af.length > 0
         ? ` <span class="flag-count-badge flag-count--${_fe ? 'error' : _fw ? 'warning' : 'info'}">${_af.length}</span>`
         : ''
+      const _mb = r.entry_type === 'manual' ? '<span class="il-manual-badge">Manual</span>' : ''
       return `<div class="il-mobile-card" onclick="openILModal(${idx})">
         <div class="il-mc-top">
-          <span class="il-mc-name">${esc(r.full_name || 'Unknown')}${_fb}</span>
+          <span class="il-mc-name">${esc(r.full_name || 'Unknown')}${_fb}${_mb}</span>
           <span class="status-pill ${ilPillCls(r.status)}">${esc(r.status || '')}</span>
         </div>
         <div class="il-mc-email">${esc(r.email || '')}</div>
@@ -1440,8 +1450,9 @@ function renderIL() {
           const _fc = _a.length === 0
             ? `<span class="flag-count-badge flag-count--ok" title="No active flags"><i class="fa-solid fa-check" style="font-size:.6rem;"></i></span>`
             : `<span class="flag-count-badge flag-count--${_e ? 'error' : _w ? 'warning' : 'info'}" title="${_a.length} flag${_a.length !== 1 ? 's' : ''}">${_a.length}</span>`
+          const _manualBadge = r.entry_type === 'manual' ? '<span class="il-manual-badge">Manual</span>' : ''
           return `<tr class="clickable-row" onclick="openILModal(${ilData.indexOf(r)})">
-            <td><strong>${esc(r.full_name || '')}</strong></td>
+            <td><strong>${esc(r.full_name || '')}</strong>${_manualBadge}</td>
             <td>${esc(r.email || '')}</td>
             <td>${esc(r.phone || '')}</td>
             <td>${fmtDate(r.submitted_at)}</td>
@@ -1769,6 +1780,8 @@ function exportCSV() {
       const dis = Array.isArray(r.flags_dismissed) ? r.flags_dismissed : []
       return computeFlags(r).some(f => !dis.includes(f.id))
     })
+  } else if (ilFilter === 'manual') {
+    rows = ilData.filter(r => r.entry_type === 'manual')
   } else if (ilFilter !== 'all') {
     rows = ilData.filter(r => r.status === ilFilter)
   }
@@ -1815,6 +1828,97 @@ function exportCSV() {
 
 function printProfile() {
   window.print()
+}
+
+// ─────────────────────────────────────────────────────────────
+// MANUAL IL ENTRY MODAL (Phase 18)
+// ─────────────────────────────────────────────────────────────
+document.getElementById('il-manual-add-btn').addEventListener('click', openManualILModal)
+document.getElementById('il-manual-cancel-btn').addEventListener('click', closeManualILModal)
+document.getElementById('il-manual-modal-close').addEventListener('click', closeManualILModal)
+document.getElementById('il-manual-save-btn').addEventListener('click', saveManualILEntry)
+
+// Toggle agent fields
+document.querySelectorAll('input[name="ilm-agent"]').forEach(r =>
+  r.addEventListener('change', () => {
+    const show = document.getElementById('ilm-agent-yes').checked
+    document.getElementById('ilm-agent-fields').style.display = show ? 'block' : 'none'
+  })
+)
+
+document.getElementById('il-manual-modal-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('il-manual-modal-overlay')) closeManualILModal()
+})
+
+function openManualILModal() {
+  // Reset form
+  ;['ilm-first-name','ilm-last-name','ilm-email','ilm-phone','ilm-hh-size','ilm-area','ilm-notes',
+    'ilm-agent-name','ilm-agent-email','ilm-agent-phone'].forEach(id => {
+    const el = document.getElementById(id)
+    if (el) el.value = ''
+  })
+  document.getElementById('ilm-inquiry-date').value = new Date().toISOString().slice(0, 10)
+  document.getElementById('ilm-agent-no').checked = true
+  document.getElementById('ilm-agent-fields').style.display = 'none'
+  document.getElementById('il-manual-modal-overlay').classList.add('open')
+}
+
+function closeManualILModal() {
+  document.getElementById('il-manual-modal-overlay').classList.remove('open')
+}
+
+async function saveManualILEntry() {
+  const firstName = document.getElementById('ilm-first-name').value.trim()
+  const lastName  = document.getElementById('ilm-last-name').value.trim()
+  const email     = document.getElementById('ilm-email').value.trim()
+  if (!firstName || !lastName) { toast('First and last name are required.', true); return }
+  if (!email) { toast('Email is required.', true); return }
+
+  const btn = document.getElementById('il-manual-save-btn')
+  btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Saving...'
+
+  const hasAgent    = document.getElementById('ilm-agent-yes').checked
+  const inquiryDate = document.getElementById('ilm-inquiry-date').value
+  const hhSize      = document.getElementById('ilm-hh-size').value.trim()
+
+  // Build notes combining agent info and manual comment
+  let agentNote = ''
+  if (hasAgent) {
+    const an = document.getElementById('ilm-agent-name').value.trim()
+    const ae = document.getElementById('ilm-agent-email').value.trim()
+    const ap = document.getElementById('ilm-agent-phone').value.trim()
+    agentNote = 'Working with agent' + (an ? ': ' + an : '') + (ae ? ' (' + ae + ')' : '') + (ap ? ' - ' + ap : '') + '.'
+  }
+  const userNotes = document.getElementById('ilm-notes').value.trim()
+  const combinedNotes = [agentNote, userNotes].filter(Boolean).join(' ')
+
+  const payload = {
+    full_name:        firstName + ' ' + lastName,
+    email:            email,
+    phone:            document.getElementById('ilm-phone').value.trim() || null,
+    household_size:   hhSize ? parseInt(hhSize) : null,
+    area_preference:  document.getElementById('ilm-area').value.trim() || null,
+    admin_notes:      combinedNotes || null,
+    status:           'reviewing',
+    entry_type:       'manual',
+    submitted_at:     inquiryDate ? new Date(inquiryDate).toISOString() : new Date().toISOString(),
+  }
+
+  // Check for existing email first
+  const { data: existing } = await sb.from('interest_list').select('id').eq('email', email).maybeSingle()
+  let error
+  if (existing) {
+    ;({ error } = await sb.from('interest_list').update(payload).eq('email', email))
+  } else {
+    ;({ error } = await sb.from('interest_list').insert(payload))
+  }
+
+  btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Add to Interest List'
+  if (error) { toast(error.message, true); return }
+  toast(existing ? 'Entry updated (email already existed).' : 'Manual entry added to Interest List.')
+  closeManualILModal()
+  ilData = []
+  loadInterestList()
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -2532,8 +2636,7 @@ const HELP_CONTENT = {
         a: `<ul>
           <li><strong>Applicants in matching</strong>: people on the Interest List with status New, Reviewing, or Active. These are the applicants the matching engine runs against each day.</li>
           <li><strong>In Matching listings</strong>: listings set to "In Matching." These are the properties the engine compares applicants against.</li>
-          <li><strong>Program-linked</strong>: listings that have a site program attached.</li>
-          <li><strong>Programs</strong>: total community or developer programs you have set up.</li>
+          <li><strong>On Site listings</strong>: listings currently shown on the public Listings page.</li>
           <li><strong>Property submissions</strong>: seller inquiries submitted through the public contact form.</li>
         </ul>`
       },
@@ -2645,98 +2748,52 @@ const HELP_CONTENT = {
 
   listings: {
     title: 'Listings',
-    intro: 'Listings are the internal property records that the matching engine runs against. They are never shown to applicants on the website - all listing data stays inside this admin portal. This tab is where you create, edit, and manage all properties in the system.',
+    intro: 'Listings are the source of truth for all property data. Each listing drives both the internal matching engine and the public-facing listings page on the website. This tab is where you create, edit, and manage all properties in the system.',
     faq: [
       {
         q: 'What do "In Matching" and "Not Matching" mean?',
-        a: '<strong>In Matching</strong> means the listing is active and the daily matching engine will compare all eligible applicants against it. <strong>Not Matching</strong> means the listing is paused and skipped during the matching run. Use the <strong>In Matching</strong> toggle at the top of the Edit modal to switch between them.'
+        a: '<strong>In Matching</strong> means the listing is active and the daily matching engine will compare all eligible applicants against it. <strong>Not Matching</strong> means the listing is paused and skipped during the matching run. Use the <strong>In Matching</strong> toggle in the Edit modal to switch between them.'
       },
       {
-        q: 'Which eligibility fields are actually required for matching?',
-        a: 'Only fields where you have entered a value are checked during matching. If a field is left blank, the matching engine skips that check entirely - it does not fail or penalize applicants for it. This means each listing can have its own unique combination of requirements. For example, if one listing does not care about foreclosure history, leave that field empty and it will not affect scores. If another listing requires a minimum credit score of 680, enter that value and the engine will enforce it for that listing only.'
+        q: 'What does "Show on Public Site" do?',
+        a: 'When <strong>Show on Public Site</strong> is turned on, the listing appears as a public card on the website\'s Listings page. Visitors can click it to see full details including the AMI income limits table. When it is off, the listing is internal only. This toggle is independent of <strong>In Matching</strong> - a listing can be in matching without being on the site, and vice versa.'
       },
       {
-        q: 'What does "Program-Linked" mean?',
-        a: 'A listing is program-linked when it has a site program attached to it. This link is for your own tracking and organization only - it does not affect matching in any way. Matching runs on the eligibility fields you fill in, regardless of whether a program is linked.'
+        q: 'Should "In Matching" and "Show on Site" always be the same?',
+        a: 'Usually yes - you want the same listings to be both available for matching and visible on the site. If they are out of sync, the modal will show a yellow warning so you do not forget one. There are legitimate cases where they differ: for example, a coming soon listing might be on the site but not yet in matching, or an internal-only listing might be in matching but not on the site.'
+      },
+      {
+        q: 'When does the address show publicly?',
+        a: 'The <strong>full address</strong> is only shown to website visitors when <strong>Listed on MLS</strong> is turned on. This is required under the California MLS Clear Cooperation Policy - if a listing is publicly marketed with an address, it must be on the MLS. For non-MLS listings, the public card shows only the city and zip code.'
+      },
+      {
+        q: 'What is the AMI % field in Site Display for?',
+        a: 'The <strong>AMI %</strong> field tells the website which income column to highlight in the income limits table shown inside the listing popup. For example, if you enter 80, the 80% AMI column is highlighted with a star so visitors can instantly see what income they need to qualify. Leave it blank if you do not want any column highlighted.'
+      },
+      {
+        q: 'What goes in Key Features and Public Comments?',
+        a: '<strong>Key Features</strong> is shown as a bullet list inside the listing popup. Enter one feature per line - for example: Solar panels, HOA includes landscaping, Energy Star appliances. <strong>Public Comments</strong> is a short note shown at the bottom of the popup, like any important context you want visitors to know.'
+      },
+      {
+        q: 'Which eligibility fields are checked during matching?',
+        a: 'Only fields where you have entered a value are checked. If a field is blank, the engine skips that check entirely and does not penalize applicants for it. Each listing can have its own combination of requirements - just fill in what applies.'
       },
       {
         q: 'How do I add a new listing?',
-        a: 'Click the <strong>+ Add Listing</strong> button in the toolbar at the top of the tab. Fill in the property details in the modal that appears and click Save.'
-      },
-      {
-        q: 'How do I link a listing to a program?',
-        a: 'Open the Edit modal for a listing. At the very top is a <strong>Site Program</strong> dropdown. Select the program from the list. Linking is optional and is only for tracking purposes - it does not affect how the matching engine works. If the program does not exist yet, click <strong>+ New Program</strong> to create one.'
+        a: 'Click the <strong>+ Add Listing</strong> button in the toolbar. Fill in the details in the modal and click Save. Toggle <strong>In Matching</strong> on when the listing is ready to match applicants against it. Toggle <strong>Show on Public Site</strong> on when you are ready to display it on the website.'
       },
       {
         q: 'How do I delete a listing?',
-        a: 'Click the <strong>trash icon</strong> on a listing card. You will be asked to confirm before it is permanently deleted. Once deleted, the listing is removed from the matching engine immediately.'
+        a: 'Click the <strong>trash icon</strong> on a listing card and confirm. Once deleted, the listing is immediately removed from the matching engine and from the public website.'
       },
       {
         q: 'What do the filter buttons do?',
         a: `<ul>
-          <li><strong>In Matching</strong> (default): shows only active listings.</li>
+          <li><strong>In Matching</strong> (default): shows only active listings currently in the matching engine.</li>
           <li><strong>All</strong>: shows every listing regardless of status.</li>
           <li><strong>Not Matching</strong>: shows only paused listings.</li>
-          <li><strong>Program-Linked</strong>: shows only listings attached to a site program.</li>
-          <li><strong>Non Program-Linked</strong>: shows only listings not yet attached to any program.</li>
-        </ul>`
-      }
-    ]
-  },
-
-  programs: {
-    title: 'Programs',
-    intro: 'Programs represent community developments, builder partnerships, or other housing initiatives. They appear on the public-facing website as program cards. Each field you fill in on a program is shown directly on the site - the more detail you enter, the more informative the card.',
-    faq: [
-      {
-        q: 'What is the difference between a Program and a Listing?',
-        a: '<strong>Listings</strong> are individual properties used internally by the matching engine. They are never shown to applicants or visitors. <strong>Programs</strong> are community developments or developer partnerships that appear on the public website. Every field you fill in on a program - including address, bathrooms, parking, sqft, and program type - is shown on the program card for visitors to see.'
-      },
-      {
-        q: 'Do I need to link a Listing to a Program for matching to work?',
-        a: 'No. Matching runs automatically based on the eligibility fields you fill in on a listing. Linking a listing to a program is optional and only affects your internal organization and tracking - it has no effect on who gets matched.'
-      },
-      {
-        q: 'How do I add a new program?',
-        a: 'Click the <strong>+ Add Program</strong> button in the toolbar at the top of the tab. Fill in the program name, description, location, eligibility notes, and any relevant links. Set the status to <strong>Active</strong> to show it on the public site.'
-      },
-      {
-        q: 'What does Active / Inactive mean for programs?',
-        a: '<strong>Available</strong> programs are published and visible to visitors on the public website. <strong>Inactive</strong> programs are hidden from the public but remain in the database for your records. <strong>Coming Soon</strong> programs are visible on the site but indicate that homes are not yet ready. Programs can also be set to Inactive <em>automatically</em> when all linked listings sell out - see the question about auto-sync below.'
-      },
-      {
-        q: 'Can I edit a program after creating it?',
-        a: 'Yes. Click the <strong>Edit</strong> button (pencil icon) on any program card to open the edit modal. Changes are saved immediately to the database and update the public website on the next page load. Note that some fields (Zip, Bedrooms, Household Size, Price Range) are filled in automatically from linked listings - see the question about auto-sync below for details on which ones.'
-      },
-      {
-        q: 'What is the MLS Listed toggle?',
-        a: 'The <strong>MLS Listed</strong> toggle controls the badge shown on the public program card. When turned on, the card displays a green "Listed on MLS" badge. When off, it shows "Not Listed on MLS". The toggle does not affect any other field - it is purely a label for visitors so they know where the property is advertised. When a program is MLS-listed, an SDAR (San Diego Association of Realtors) attribution note is automatically added below the program cards on the website.'
-      },
-      {
-        q: 'When should I enter a Full Address?',
-        a: 'Enter the <strong>Full Address</strong> whenever you have permission to display the property address publicly. It appears on the program card alongside a location icon. If you leave it blank but there is a Zip Code (auto-synced from listings), the card will show the zip instead. If you enter a Full Address, it takes priority over the zip display.'
-      },
-      {
-        q: 'What are Program Type and Selection Process?',
-        a: '<strong>Program Type</strong> describes the housing program or initiative - for example "City of San Diego Below Market Rate" or "San Diego Affordable Homeownership." <strong>Selection Process</strong> explains how buyers are selected - for example "Lottery" or "First Come First Served." Both fields are optional and appear as detail rows on the public program card when filled in.'
-      },
-      {
-        q: 'How does the auto-sync from listings work?',
-        a: `When a program has listings linked to it, several of its display fields are calculated automatically from those listings and shown as read-only in the edit modal. You update them by editing the linked listings directly, not the program. The fields that are auto-calculated are:
-          <ul>
-            <li><strong>Zip Code</strong>: all distinct zip codes from active linked listings, comma-separated.</li>
-            <li><strong>Bedrooms</strong>: the range from the lowest to the highest bedroom count across active linked listings (e.g. 2-4).</li>
-            <li><strong>Household Size</strong>: the range from the smallest minimum to the largest maximum household size across active linked listings.</li>
-            <li><strong>Price Range</strong>: the lowest and highest price across active linked listings (e.g. $400,000 - $465,000).</li>
-          </ul>
-          The fields you always set manually on the program are: <strong>Community Name</strong>, <strong>Area</strong>, <strong>AMI %</strong>, <strong>Property Type</strong>, <strong>Status</strong>, <strong>Notes</strong>, <strong>MLS Listed</strong>, <strong>Full Address</strong>, <strong>Bathrooms</strong>, <strong>Parking</strong>, <strong>Square Feet</strong>, <strong>Program Type</strong>, and <strong>Selection Process</strong>. The <strong>Sync Now</strong> button in the edit modal forces an immediate recalculation if you need it. When all linked listings sell out and are deactivated, the program is automatically set to <strong>Inactive</strong> and removed from the public website. You can re-activate it manually at any time.`
-      },
-      {
-        q: 'What do the filter buttons do?',
-        a: `<ul>
-          <li><strong>Active</strong> (default): shows only publicly visible programs.</li>
-          <li><strong>All</strong>: shows every program.</li>
-          <li><strong>Inactive</strong>: shows only hidden programs.</li>
+          <li><strong>On Site</strong>: shows only listings currently displayed on the public website.</li>
+          <li><strong>Not On Site</strong>: shows only listings not yet shown publicly.</li>
         </ul>`
       }
     ]
@@ -2764,6 +2821,7 @@ const HELP_CONTENT = {
         q: 'What do the filter buttons do?',
         a: `<ul>
           <li><strong>Status filters</strong> (All, New, Reviewing, Active, Matched, Expired): narrow the list to applicants in that specific status.</li>
+          <li><strong>Manual</strong>: shows only entries you added manually through the Add Manual Entry button, as opposed to people who submitted the online form.</li>
           <li><strong>Has Flags</strong>: shows only applicants with at least one active (non-dismissed) automated review flag. Use this after new submissions arrive to quickly find records that need your attention.</li>
         </ul>
         The search box at the top right lets you find a specific applicant by name or email at any time.`
@@ -2801,6 +2859,14 @@ const HELP_CONTENT = {
       {
         q: 'How do I print or save a PDF of an applicant profile?',
         a: 'Open the applicant detail by clicking any row. In the footer of the detail modal, click <strong>Print Profile</strong>. Your browser print dialog will open showing only the applicant profile. To save a PDF instead of printing, select "Save as PDF" (Chrome/Edge) or "Microsoft Print to PDF" in the printer dropdown. The printed view hides all buttons and controls so only the data is visible on the page.'
+      },
+      {
+        q: 'What is a Manual Entry and how do I add one?',
+        a: 'A <strong>Manual Entry</strong> is an Interest List record you create yourself for someone who contacted you directly - by phone, email, referral, or at an event - rather than through the online questionnaire. Click <strong>Add Manual Entry</strong> in the toolbar and fill in the basic details: name, email, household size, area of interest, and any notes. Manual entries default to <strong>Reviewing</strong> status and are included in the daily matching engine just like form submissions. No automated emails are sent for manual entries. They appear with a "Manual" badge in the Interest List and can be filtered using the <strong>Manual</strong> filter button.'
+      },
+      {
+        q: 'What if the email I enter for a manual entry already exists?',
+        a: 'If the email already exists in the Interest List, the record is updated in place rather than creating a duplicate. The existing data is overwritten with what you entered in the manual form. This is useful for updating a record when someone follows up with you after submitting the form.'
       }
     ]
   },

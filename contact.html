@@ -88,7 +88,7 @@
             <div id="il-callout" class="il-callout">
               <h3>Before you begin, have these documents ready to accurately answer the questions on the form:</h3>
               <ul>
-                <li id="il-callout-tax-line">Tax returns for 2023 and 2024 (and 2025 if already filed), and W-2's, for all household members, even if they will not be on the loan documents</li>
+                <li id="il-callout-tax-line">Tax returns for 2024 and 2025, and W-2's, for all household members, even if they will not be on the loan documents</li>
                 <li>Recent pay stubs for all household members</li>
                 <li>Current bank statements</li>
                 <li>A list of all monthly debt obligations</li>
@@ -179,7 +179,7 @@
                     <input type="number" id="il-credit-score-self" name="credit_score_self" class="form-control" placeholder="e.g. 680" min="300" max="850" required>
                   </div>
                   <div class="form-group">
-                    <label class="form-label" for="il-credit-score-coborrower">Co-borrower estimated credit score <span class="optional">(if applicable)</span></label>
+                    <label class="form-label" for="il-credit-score-coborrower">Co-borrower estimated credit score</label>
                     <input type="number" id="il-credit-score-coborrower" name="credit_score_coborrower" class="form-control" placeholder="e.g. 710" min="300" max="850">
                   </div>
                 </div>
@@ -191,25 +191,6 @@
                   </div>
                 </div>
 
-                <div class="form-group">
-                  <p class="form-label">Is any rent subsidized?</p>
-                  <div class="il-radio-group">
-                    <label class="il-radio-label">
-                      <input type="radio" name="rent_subsidized" value="Yes" required
-                        data-shows="il-cond-rent-subsidy" data-show-when="Yes"> Yes
-                    </label>
-                    <label class="il-radio-label">
-                      <input type="radio" name="rent_subsidized" value="No"
-                        data-shows="il-cond-rent-subsidy" data-show-when="Yes"> No
-                    </label>
-                  </div>
-                  <div class="il-conditional" id="il-cond-rent-subsidy">
-                    <label class="form-label" for="il-rent-subsidy-amount">Amount you pay per month</label>
-                    <div class="il-dollar-wrap">
-                      <input type="text" inputmode="decimal" id="il-rent-subsidy-amount" name="rent_subsidy_amount" class="form-control" placeholder="0" data-req>
-                    </div>
-                  </div>
-                </div>
 
                 <div class="form-group">
                   <p class="form-label">Have you and co-borrower worked AND lived in San Diego County for the last 2 years?</p>
@@ -246,7 +227,7 @@
                       </div>
                     </div>
                     <div class="form-group">
-                      <label class="form-label" for="il-inc1-amount">Annual Income</label>
+                      <label class="form-label" for="il-inc1-amount">Estimated Annual Income</label>
                       <div class="il-dollar-wrap">
                         <input type="text" inputmode="decimal" id="il-inc1-amount" name="income_1_annual" class="form-control" placeholder="0.00" required>
                       </div>
@@ -362,53 +343,14 @@
                       <label class="form-label" for="il-emp1-employer">Employer name</label>
                       <input type="text" id="il-emp1-employer" name="emp_1_employer" class="form-control" placeholder="Company name" required>
                     </div>
-                    <div class="form-group">
-                      <p class="form-label">Current or Previous?</p>
-                      <div class="il-radio-group">
-                        <label class="il-radio-label">
-                          <input type="radio" name="emp_1_status" value="Current" required
-                            data-shows="il-emp1-cond-previous" data-show-when="Previous"> Current
-                        </label>
-                        <label class="il-radio-label">
-                          <input type="radio" name="emp_1_status" value="Previous"
-                            data-shows="il-emp1-cond-previous" data-show-when="Previous"> Previous
-                        </label>
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label class="form-label" for="il-emp1-start">Start date</label>
+                        <input type="text" inputmode="numeric" id="il-emp1-start" name="emp_1_start_date" class="form-control" placeholder="MM/YYYY" data-date-fmt="month" required>
                       </div>
-                      <div class="il-conditional" id="il-emp1-cond-previous">
-                        <div class="form-row">
-                          <div class="form-group">
-                            <label class="form-label" for="il-emp1-end">End date</label>
-                            <input type="text" inputmode="numeric" id="il-emp1-end" name="emp_1_end_date" class="form-control" placeholder="MM/YYYY" data-date-fmt="month" data-req>
-                          </div>
-                          <div class="form-group">
-                            <p class="form-label">Same line of work as current employment?</p>
-                            <div class="il-radio-group" style="margin-top:0.4rem">
-                              <label class="il-radio-label"><input type="radio" name="emp_1_same_line" value="Yes"> Yes</label>
-                              <label class="il-radio-label"><input type="radio" name="emp_1_same_line" value="No"> No</label>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="form-group">
-                      <label class="form-label" for="il-emp1-start">Start date</label>
-                      <input type="text" inputmode="numeric" id="il-emp1-start" name="emp_1_start_date" class="form-control" placeholder="MM/YYYY" data-date-fmt="month" required>
-                    </div>
-                    <div class="form-group">
-                      <p class="form-label">Any breaks in this employment?</p>
-                      <div class="il-radio-group">
-                        <label class="il-radio-label">
-                          <input type="radio" name="emp_1_breaks" value="Yes" required
-                            data-shows="il-emp1-cond-breaks" data-show-when="Yes"> Yes
-                        </label>
-                        <label class="il-radio-label">
-                          <input type="radio" name="emp_1_breaks" value="No"
-                            data-shows="il-emp1-cond-breaks" data-show-when="Yes"> No
-                        </label>
-                      </div>
-                      <div class="il-conditional" id="il-emp1-cond-breaks">
-                        <label class="form-label" for="il-emp1-breaks-desc">Describe dates of breaks</label>
-                        <input type="text" id="il-emp1-breaks-desc" name="emp_1_breaks_desc" class="form-control" placeholder="e.g. Mar 2022 – Jun 2022" data-req>
+                      <div class="form-group">
+                        <label class="form-label" for="il-emp1-end">End date <span class="optional">(leave blank if still employed)</span></label>
+                        <input type="text" inputmode="numeric" id="il-emp1-end" name="emp_1_end_date" class="form-control" placeholder="MM/YYYY" data-date-fmt="month">
                       </div>
                     </div>
                     <div class="form-group">
@@ -500,53 +442,14 @@
                       <label class="form-label" for="il-emp2-employer">Employer name</label>
                       <input type="text" id="il-emp2-employer" name="emp_2_employer" class="form-control" placeholder="Company name">
                     </div>
-                    <div class="form-group">
-                      <p class="form-label">Current or Previous?</p>
-                      <div class="il-radio-group">
-                        <label class="il-radio-label">
-                          <input type="radio" name="emp_2_status" value="Current"
-                            data-shows="il-emp2-cond-previous" data-show-when="Previous"> Current
-                        </label>
-                        <label class="il-radio-label">
-                          <input type="radio" name="emp_2_status" value="Previous"
-                            data-shows="il-emp2-cond-previous" data-show-when="Previous"> Previous
-                        </label>
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label class="form-label" for="il-emp2-start">Start date</label>
+                        <input type="text" inputmode="numeric" id="il-emp2-start" name="emp_2_start_date" class="form-control" placeholder="MM/YYYY" data-date-fmt="month">
                       </div>
-                      <div class="il-conditional" id="il-emp2-cond-previous">
-                        <div class="form-row">
-                          <div class="form-group">
-                            <label class="form-label" for="il-emp2-end">End date</label>
-                            <input type="text" inputmode="numeric" id="il-emp2-end" name="emp_2_end_date" class="form-control" placeholder="MM/YYYY" data-date-fmt="month" data-req>
-                          </div>
-                          <div class="form-group">
-                            <p class="form-label">Same line of work as current?</p>
-                            <div class="il-radio-group" style="margin-top:0.4rem">
-                              <label class="il-radio-label"><input type="radio" name="emp_2_same_line" value="Yes"> Yes</label>
-                              <label class="il-radio-label"><input type="radio" name="emp_2_same_line" value="No"> No</label>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="form-group">
-                      <label class="form-label" for="il-emp2-start">Start date</label>
-                      <input type="text" inputmode="numeric" id="il-emp2-start" name="emp_2_start_date" class="form-control" placeholder="MM/YYYY" data-date-fmt="month">
-                    </div>
-                    <div class="form-group">
-                      <p class="form-label">Any breaks in this employment?</p>
-                      <div class="il-radio-group">
-                        <label class="il-radio-label">
-                          <input type="radio" name="emp_2_breaks" value="Yes"
-                            data-shows="il-emp2-cond-breaks" data-show-when="Yes"> Yes
-                        </label>
-                        <label class="il-radio-label">
-                          <input type="radio" name="emp_2_breaks" value="No"
-                            data-shows="il-emp2-cond-breaks" data-show-when="Yes"> No
-                        </label>
-                      </div>
-                      <div class="il-conditional" id="il-emp2-cond-breaks">
-                        <label class="form-label" for="il-emp2-breaks-desc">Describe dates of breaks</label>
-                        <input type="text" id="il-emp2-breaks-desc" name="emp_2_breaks_desc" class="form-control" placeholder="e.g. Mar 2022 – Jun 2022" data-req>
+                      <div class="form-group">
+                        <label class="form-label" for="il-emp2-end">End date <span class="optional">(leave blank if still employed)</span></label>
+                        <input type="text" inputmode="numeric" id="il-emp2-end" name="emp_2_end_date" class="form-control" placeholder="MM/YYYY" data-date-fmt="month">
                       </div>
                     </div>
                     <div class="form-group">
@@ -628,7 +531,7 @@
                 <h3 class="il-section-title">Section IV: Financial &amp; Disclosures</h3>
 
                 <div class="form-group">
-                  <label class="form-label" for="il-monthly-debt">Total minimum monthly debt payments <span class="optional">(credit cards, auto loans, personal loans, student loans only, not rent, utilities, or phone)</span></label>
+                  <label class="form-label" for="il-monthly-debt">Total minimum monthly other debt <span class="optional">(credit cards, auto loans, personal loans, student loans)</span></label>
                   <div class="il-dollar-wrap">
                     <input type="text" inputmode="decimal" id="il-monthly-debt" name="monthly_debt_payments" class="form-control" placeholder="0" required>
                   </div>
@@ -689,7 +592,7 @@
                 </div>
 
                 <div class="form-group">
-                  <p class="form-label">Are all household members either a US Citizen or a Permanent Resident with a green card?</p>
+                  <p class="form-label">Are all household members a US Citizen or a Permanent Resident with a green card?</p>
                   <div class="il-radio-group" style="margin-top:0.4rem">
                     <label class="il-radio-label"><input type="radio" name="us_citizen" value="Yes" required> Yes</label>
                     <label class="il-radio-label"><input type="radio" name="us_citizen" value="No"> No</label>
@@ -718,7 +621,7 @@
                     </div>
                   </div>
                   <div class="form-group">
-                    <label class="form-label" for="il-asset-other">Other assets <span class="optional">(optional)</span></label>
+                    <label class="form-label" for="il-asset-other">Other</label>
                     <div class="il-dollar-wrap">
                       <input type="text" inputmode="decimal" id="il-asset-other" name="asset_other" class="form-control" placeholder="0">
                     </div>
@@ -1340,37 +1243,35 @@
     }
 
 
-    /* ── Tax year rows: auto-compute from current date ──
-       Filing season = Jan–Apr (month 0–3): newest year gets "(if already filed)" caveat.
-       Always renders exactly 3 years. Field names are positional (tax_1 = most recent). */
+    /* ── Tax year rows: 2024 and 2025 only.
+       Filing season = Jan–Apr (month 0–3): y1 (most recent) gets "(if already filed)" caveat.
+       Field names are positional (tax_1 = most recent). */
     (function () {
       var now    = new Date();
       var yr     = now.getFullYear();
       var filing = now.getMonth() <= 3;   /* Jan(0)–Apr(3) */
-      var y1 = yr - 1;                    /* most recent */
-      var y2 = yr - 2;
-      var y3 = yr - 3;                    /* oldest */
+      var y1 = yr - 1;                    /* most recent complete tax year */
+      var y2 = yr - 2;                    /* previous tax year */
 
       /* Update callout bullet */
       var cl = document.getElementById('il-callout-tax-line');
       if (cl) {
         cl.textContent = filing
-          ? 'Tax returns for ' + y3 + ' and ' + y2 + ' (and ' + y1 + ' if already filed), and W-2\'s, for all household members, even if they will not be on the loan documents'
-          : 'Tax returns for ' + y3 + ', ' + y2 + ', and ' + y1 + ', and W-2\'s, for all household members, even if they will not be on the loan documents';
+          ? 'Tax returns for ' + y2 + ' (and ' + y1 + ' if already filed), and W-2\'s, for all household members, even if they will not be on the loan documents'
+          : 'Tax returns for ' + y2 + ' and ' + y1 + ', and W-2\'s, for all household members, even if they will not be on the loan documents';
       }
 
-      /* Store year labels so the sheet knows which years are in which column */
+      /* Store year labels so the Edge Function knows which years are in which column */
       var lbl = document.getElementById('il-tax-year-labels');
-      if (lbl) lbl.value = y1 + ' / ' + y2 + ' / ' + y3;
+      if (lbl) lbl.value = y1 + ' / ' + y2;
 
       /* Stamp W-2 year (most recent complete tax year) into static block labels */
       document.querySelectorAll('.il-w2-year').forEach(function (el) { el.textContent = y1; });
 
-      /* Render three rows oldest → newest */
+      /* Render two rows oldest → newest */
       var container = document.getElementById('il-tax-year-rows');
       if (!container) return;
       var rows = [
-        { year: y3, num: 3, required: true },
         { year: y2, num: 2, required: true },
         { year: y1, num: 1, required: !filing }
       ];
@@ -1544,7 +1445,7 @@
         + '<option value="" disabled selected>Select</option>'
         + '<option>Self</option><option>Spouse or Partner</option><option>Child</option><option>Parent</option><option>Other</option>'
         + '</select></div></div>'
-        + '<div class="form-group"><label class="form-label" for="il-inc-' + n + '-annual">Annual Income</label>'
+        + '<div class="form-group"><label class="form-label" for="il-inc-' + n + '-annual">Estimated Annual Income</label>'
         + '<div class="il-dollar-wrap"><input type="text" inputmode="decimal" id="il-inc-' + n + '-annual" name="income_' + n + '_annual" class="form-control" placeholder="0.00"></div></div>';
       container.appendChild(div);
       div.querySelector('.il-remove-btn').addEventListener('click', function () {
@@ -1587,34 +1488,12 @@
         + '</select></div></div>'
         + '<div class="form-group"><label class="form-label" for="il-emp-' + n + '-employer">Employer name</label>'
         + '<input type="text" id="il-emp-' + n + '-employer" name="emp_' + n + '_employer" class="form-control" placeholder="Company name"></div>'
-        + '<div class="form-group"><p class="form-label">Current or Previous?</p>'
-        + '<div class="il-radio-group">'
-        + '<label class="il-radio-label"><input type="radio" name="emp_' + n + '_status" value="Current"'
-        + ' data-shows="il-emp' + n + '-cond-previous" data-show-when="Previous"> Current</label>'
-        + '<label class="il-radio-label"><input type="radio" name="emp_' + n + '_status" value="Previous"'
-        + ' data-shows="il-emp' + n + '-cond-previous" data-show-when="Previous"> Previous</label>'
-        + '</div>'
-        + '<div class="il-conditional" id="il-emp' + n + '-cond-previous">'
         + '<div class="form-row">'
-        + '<div class="form-group"><label class="form-label" for="il-emp-' + n + '-end-date">End date</label>'
-        + '<input type="text" inputmode="numeric" id="il-emp-' + n + '-end-date" name="emp_' + n + '_end_date" class="form-control" placeholder="MM/YYYY" data-date-fmt="month" data-req></div>'
-        + '<div class="form-group"><p class="form-label">Same line of work as current?</p>'
-        + '<div class="il-radio-group" style="margin-top:0.4rem">'
-        + '<label class="il-radio-label"><input type="radio" name="emp_' + n + '_same_line" value="Yes"> Yes</label>'
-        + '<label class="il-radio-label"><input type="radio" name="emp_' + n + '_same_line" value="No"> No</label>'
-        + '</div></div></div></div></div>'
         + '<div class="form-group"><label class="form-label" for="il-emp-' + n + '-start-date">Start date</label>'
         + '<input type="text" inputmode="numeric" id="il-emp-' + n + '-start-date" name="emp_' + n + '_start_date" class="form-control" placeholder="MM/YYYY" data-date-fmt="month"></div>'
-        + '<div class="form-group"><p class="form-label">Any breaks in this employment?</p>'
-        + '<div class="il-radio-group">'
-        + '<label class="il-radio-label"><input type="radio" name="emp_' + n + '_breaks" value="Yes"'
-        + ' data-shows="il-emp' + n + '-cond-breaks" data-show-when="Yes"> Yes</label>'
-        + '<label class="il-radio-label"><input type="radio" name="emp_' + n + '_breaks" value="No"'
-        + ' data-shows="il-emp' + n + '-cond-breaks" data-show-when="Yes"> No</label>'
+        + '<div class="form-group"><label class="form-label" for="il-emp-' + n + '-end-date">End date <span class="optional">(leave blank if still employed)</span></label>'
+        + '<input type="text" inputmode="numeric" id="il-emp-' + n + '-end-date" name="emp_' + n + '_end_date" class="form-control" placeholder="MM/YYYY" data-date-fmt="month"></div>'
         + '</div>'
-        + '<div class="il-conditional" id="il-emp' + n + '-cond-breaks">'
-        + '<label class="form-label" for="il-emp-' + n + '-breaks-desc">Describe dates of breaks</label>'
-        + '<input type="text" id="il-emp-' + n + '-breaks-desc" name="emp_' + n + '_breaks_desc" class="form-control" placeholder="e.g. Mar 2022 - Jun 2022" data-req></div></div>'
         + '<div class="form-group"><p class="form-label">Income type</p>'
         + '<div class="il-radio-group">'
         + '<label class="il-radio-label"><input type="radio" name="emp_' + n + '_income_type" value="W-2"> W-2</label>'

@@ -63,12 +63,12 @@
     <!-- SECTION: Page Header -->
     <section class="page-header" aria-labelledby="programs-heading">
       <div class="container">
-        <h1 id="programs-heading">Affordable Homeownership Opportunities</h1>
-        <p>The homes featured on this page are part of affordable housing opportunities with income and eligibility guidelines.</p>
+        <h1 id="programs-heading">Available Listings</h1>
+        <p>Affordable homeownership opportunities in San Diego County. Click any listing to view full details and income eligibility information.</p>
       </div>
     </section>
 
-    <!-- SECTION: Programs Grid -->
+    <!-- SECTION: Listings Grid -->
     <section class="section" aria-label="Available listings">
       <div class="container">
         <div class="programs-context-box">
@@ -76,7 +76,7 @@
             <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
             <div>
               <strong>About These Listings</strong>
-              <p>Some properties may be listed on the MLS, while others are offered through housing programs and may not be publicly advertised. Availability, pricing, and eligibility can vary based on program requirements and are subject to change.</p>
+              <p>Some properties are listed on the MLS, while others are offered through affordable housing programs and may not be publicly advertised. Availability, pricing, and eligibility guidelines are subject to change.</p>
             </div>
           </div>
           <div class="programs-context-divider" aria-hidden="true"></div>
@@ -88,14 +88,38 @@
             </div>
           </div>
         </div>
+
+        <!-- Filter bar -->
+        <div class="lst-filter-bar" role="search" aria-label="Filter listings">
+          <div class="lst-filter-group">
+            <label for="lst-filter-area" class="lst-filter-label">Area</label>
+            <select id="lst-filter-area" class="lst-filter-select" onchange="applyFilters()" aria-label="Filter by area">
+              <option value="">All Areas</option>
+            </select>
+          </div>
+          <div class="lst-filter-group">
+            <label for="lst-filter-beds" class="lst-filter-label">Bedrooms</label>
+            <select id="lst-filter-beds" class="lst-filter-select" onchange="applyFilters()" aria-label="Filter by bedrooms">
+              <option value="">Any Beds</option>
+            </select>
+          </div>
+          <div class="lst-filter-group">
+            <label for="lst-filter-ami" class="lst-filter-label">Income Level</label>
+            <select id="lst-filter-ami" class="lst-filter-select" onchange="applyFilters()" aria-label="Filter by AMI range">
+              <option value="">All Levels</option>
+              <option value="low">Extremely Low / Very Low (up to 50% AMI)</option>
+              <option value="mid">Low Income (51% - 80% AMI)</option>
+              <option value="mod">Moderate Income (81%+ AMI)</option>
+            </select>
+          </div>
+        </div>
+
         <div class="programs-grid" id="programs-grid" role="list" aria-label="Available listings">
           <!-- Populated by js/programs.js -->
         </div>
         <p class="pc-eligibility-note" role="note">
-          Joining the Interest List allows us to match you with potential opportunities based on general program criteria. Final eligibility and selection are determined by the housing program administrator in accordance with program guidelines.
+          Income limits shown are for reference only and are based on 2025 HUD San Diego County data. Final eligibility is determined by the housing program administrator in accordance with program guidelines.
         </p>
-        <!-- MLS attribution injected here by programs.js when any program is MLS-listed -->
-        <div id="mls-attribution-container"></div>
       </div>
     </section>
 
