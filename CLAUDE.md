@@ -14,7 +14,7 @@
 - **Phase 16 complete** — Employment income type split (W-2/1099 + Annual Salary Yes/No); cents-first dollar formatting (MutationObserver); auto-slash date inputs (MM/DD/YYYY + MM/YYYY); buildPayload ISO conversion + salaried field clearing; migration 013 (emp_N_salaried columns)
 - **Phase 18 complete** — Programs tab retired; listings table now feeds public site directly. Questionnaire cleanup (co-borrower label, rent subsidized removed, annual income label, 2 tax years, employment block restructure, debt label, US citizen, other assets). Public listings page rewrite (filter bar, card grid, expanded popup with AMI tables). SQL migrations 015/016/017. Admin: Site Display section on listing modal (show_on_site, mls_listed, community_name, home_type, ami_percent, public_status, features, comments + sync warning), Programs btn removed, IL manual entry button + modal + Manual filter. Help FAQ rewritten.
 - **Phase 17 complete** — Admin review capabilities: computeFlags engine (9 automated checks, 3 severity levels), buildFlagsPanelHtml with dismiss/restore, Admin Notes field with save, Has Flags filter, Flags column in IL table, Export CSV, Print Profile, print CSS; migration 014 (admin_notes + flags_dismissed); Help FAQ updated with 5 new entries
-- **Next up** — Run SQL migrations 015/016/017 in Supabase SQL Editor; go-live prep
+- **Next up** — Go-live prep
 
 ## ⚠️ Legal Context — MLS Display Rules
 California MLS Clear Cooperation Policy (adopted by NAR and all major CA MLSs): any property publicly marketed must be submitted to the MLS within 1 business day.
@@ -274,11 +274,9 @@ CLOSE_THRESHOLD = 2  // max failed fields to score "Close" (vs "Fail")
 - 012_phase13_programs_expanded.sql — adds mls_listed, full_address, bathrooms, parking, sqft, program_type, selection_process to programs; parking to listings
 - 013_emp_salaried_field.sql — adds emp_1-4_salaried TEXT columns to interest_list (Phase 16) — confirmed applied
 - 014_admin_review.sql — adds admin_notes TEXT + flags_dismissed JSONB DEFAULT '[]' to interest_list (Phase 17) — confirmed applied
-
-### SQL Migrations PENDING — run these in Supabase SQL Editor
-- 015_listings_public.sql — adds show_on_site, mls_listed, community_name, home_type, features, comments, ami_percent, public_status to listings; adds anon SELECT RLS policy for show_on_site=true rows
-- 016_site_settings.sql — creates site_settings key/value table; seeds ami_pdf_url key; anon read + authenticated write RLS
-- 017_il_entry_type.sql — adds entry_type TEXT DEFAULT 'form' to interest_list ('form' = questionnaire, 'manual' = admin-added)
+- 015_listings_public.sql — adds show_on_site, mls_listed, community_name, home_type, features, comments, ami_percent, public_status to listings; adds anon SELECT RLS policy for show_on_site=true rows — confirmed applied
+- 016_site_settings.sql — creates site_settings key/value table; seeds ami_pdf_url key; anon read + authenticated write RLS — confirmed applied
+- 017_il_entry_type.sql — adds entry_type TEXT DEFAULT 'form' to interest_list ('form' = questionnaire, 'manual' = admin-added) — confirmed applied
 
 ### Ongoing / go-live
 3. **Repeating block header renumbering bug** — income/employment block numbers go wrong when removing and re-adding. Needs `renumberIncomeBlocks()` / `renumberEmpBlocks()` in `contact.html`.
