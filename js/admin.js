@@ -701,20 +701,26 @@ function renderListings() {
       const location   = mls
         ? (r.address || cityZip)
         : [r.area, cityZip].filter(Boolean).join(' – ')
-      const specs      = [
-        r.bedrooms ? `<span><i class="fa-solid fa-bed" aria-hidden="true"></i> ${esc(r.bedrooms)} bd</span>` : '',
-        r.bathrooms ? `<span><i class="fa-solid fa-bath" aria-hidden="true"></i> ${esc(r.bathrooms)} ba</span>` : '',
-        r.home_type ? `<span><i class="fa-solid fa-house" aria-hidden="true"></i> ${esc(r.home_type)}</span>` : '',
-        r.price ? `<span><i class="fa-solid fa-tag" aria-hidden="true"></i> $${Number(r.price).toLocaleString('en-US')}</span>` : '',
-        r.ami_percent ? `<span><i class="fa-solid fa-percent" aria-hidden="true"></i> ${esc(r.ami_percent)}% AMI</span>` : '',
+      /* Physical specs pills: beds / baths / sqft / parking */
+      const specPills = [
+        r.bedrooms  ? `<span><i class="fa-solid fa-bed"            aria-hidden="true"></i> ${esc(r.bedrooms)} bd</span>` : '',
+        r.bathrooms ? `<span><i class="fa-solid fa-bath"           aria-hidden="true"></i> ${esc(r.bathrooms)} ba</span>` : '',
+        r.sqft      ? `<span><i class="fa-solid fa-ruler-combined" aria-hidden="true"></i> ${esc(r.sqft)} sqft</span>` : '',
+        r.parking   ? `<span><i class="fa-solid fa-square-parking" aria-hidden="true"></i> ${esc(r.parking)}</span>` : '',
       ].filter(Boolean).join('')
-      const matchPill  = r.active === 'YES'
+      /* Detail rows: Price (MLS only), Home Type, AMI Limit */
+      const detailRows = [
+        (mls && r.price) ? `<div class="prog-detail"><span class="prog-detail-label"><i class="fa-solid fa-tag" style="width:12px;color:var(--muted);margin-right:.3rem;"></i>Price</span><span class="prog-detail-value">$${Number(r.price).toLocaleString('en-US')}</span></div>` : '',
+        r.home_type      ? `<div class="prog-detail"><span class="prog-detail-label"><i class="fa-solid fa-house" style="width:12px;color:var(--muted);margin-right:.3rem;"></i>Home Type</span><span class="prog-detail-value">${esc(r.home_type)}</span></div>` : '',
+        r.ami_percent    ? `<div class="prog-detail"><span class="prog-detail-label"><i class="fa-solid fa-chart-simple" style="width:12px;color:var(--muted);margin-right:.3rem;"></i>AMI Limit</span><span class="prog-detail-value">Up to ${esc(r.ami_percent)}%</span></div>` : '',
+      ].filter(Boolean).join('')
+      const matchPill = r.active === 'YES'
         ? `<span class="status-pill pill-active">In Matching</span>`
         : `<span class="status-pill pill-expired">Not Matching</span>`
-      const sitePill   = r.show_on_site
+      const sitePill  = r.show_on_site
         ? `<span class="status-pill pill-reviewing" style="font-size:.65rem;">On Site${r.public_status && r.public_status !== 'Available' ? ' &bull; ' + esc(r.public_status) : ''}</span>`
         : `<span class="status-pill" style="font-size:.65rem;background:#eee;color:#888;">Not on Site</span>`
-      const mlsBadge   = r.mls_listed
+      const mlsBadge  = r.mls_listed
         ? `<span style="font-size:.72rem;color:#4a6ea8;"><i class="fa-solid fa-list-check"></i> MLS</span>`
         : ''
       return `<div class="prog-card ${r.active === 'YES' ? 'prog-card--available' : 'prog-card--inactive'}">
@@ -733,8 +739,9 @@ function renderListings() {
             ${sitePill}
           </div>
         </div>
-        ${specs ? `<div class="prog-card-body" style="display:flex;flex-wrap:wrap;gap:.35rem .9rem;font-size:.8rem;color:#555;padding:.5rem .9rem .25rem;">${specs}</div>` : ''}
-        ${r.internal_notes ? `<div class="lst-card-notes" style="margin-top:.35rem;">${esc(r.internal_notes.substring(0, 120))}${r.internal_notes.length > 120 ? '…' : ''}</div>` : ''}
+        ${specPills ? `<div style="display:flex;flex-wrap:wrap;gap:.35rem .9rem;font-size:.8rem;color:#555;padding:.5rem .9rem .3rem;border-top:1px solid var(--border);">${specPills}</div>` : ''}
+        ${detailRows ? `<div class="prog-card-body" style="padding:.25rem .9rem .4rem;">${detailRows}</div>` : ''}
+        ${r.internal_notes ? `<div class="lst-card-notes" style="margin:.1rem .9rem .5rem;">${esc(r.internal_notes.substring(0, 120))}${r.internal_notes.length > 120 ? '…' : ''}</div>` : ''}
         <div class="prog-card-footer">
           <button class="btn-secondary btn-sm" onclick="openLSTModal(${idx})"><i class="fa-solid fa-pen"></i> Edit</button>
           <button class="btn-danger btn-sm" onclick="deleteListing(${idx})"><i class="fa-solid fa-trash"></i></button>
