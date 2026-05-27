@@ -695,8 +695,12 @@ function renderListings() {
   const html = `<div class="prog-grid">
     ${rows.map(r => {
       const idx        = lstData.indexOf(r)
+      const mls        = r.mls_listed === true
       const cardName   = r.community_name || r.listing_name || r.listing_id
-      const location   = [r.city, r.zip_code].filter(Boolean).join(' ')
+      const cityZip    = [r.city, r.zip_code].filter(Boolean).join(' ')
+      const location   = mls
+        ? (r.address || cityZip)
+        : [r.area, cityZip].filter(Boolean).join(' – ')
       const specs      = [
         r.bedrooms ? `<span><i class="fa-solid fa-bed" aria-hidden="true"></i> ${esc(r.bedrooms)} bd</span>` : '',
         r.bathrooms ? `<span><i class="fa-solid fa-bath" aria-hidden="true"></i> ${esc(r.bathrooms)} ba</span>` : '',
@@ -729,7 +733,7 @@ function renderListings() {
             ${sitePill}
           </div>
         </div>
-        ${specs ? `<div class="prog-card-body" style="display:flex;flex-wrap:wrap;gap:.35rem .9rem;font-size:.8rem;color:#555;padding:.5rem 0 .25rem;">${specs}</div>` : ''}
+        ${specs ? `<div class="prog-card-body" style="display:flex;flex-wrap:wrap;gap:.35rem .9rem;font-size:.8rem;color:#555;padding:.5rem .9rem .25rem;">${specs}</div>` : ''}
         ${r.internal_notes ? `<div class="lst-card-notes" style="margin-top:.35rem;">${esc(r.internal_notes.substring(0, 120))}${r.internal_notes.length > 120 ? '…' : ''}</div>` : ''}
         <div class="prog-card-footer">
           <button class="btn-secondary btn-sm" onclick="openLSTModal(${idx})"><i class="fa-solid fa-pen"></i> Edit</button>
@@ -759,6 +763,7 @@ function openLSTModal(idx, prefill) {
   document.getElementById('lf-baths').value       = p.bathrooms || ''
   document.getElementById('lf-sqft').value        = p.sqft || ''
   document.getElementById('lf-parking').value     = p.parking || ''
+  document.getElementById('lf-area').value         = p.area || ''
   document.getElementById('lf-program-type').value = p.program_type || ''
   document.getElementById('lf-credit').value      = p.min_credit_score || ''
   document.getElementById('lf-ftb').value         = p.first_time_buyer_required || ''
@@ -859,6 +864,7 @@ document.getElementById('lst-save-btn').addEventListener('click', async () => {
     bathrooms:    document.getElementById('lf-baths').value.trim(),
     sqft:         document.getElementById('lf-sqft').value.trim(),
     parking:      document.getElementById('lf-parking').value.trim() || null,
+    area:         document.getElementById('lf-area').value.trim() || null,
     program_type: document.getElementById('lf-program-type').value.trim(),
     min_credit_score:    document.getElementById('lf-credit').value.trim(),
     max_dti_percent:     document.getElementById('lf-dti').value.trim(),
