@@ -197,10 +197,8 @@ async function loadDashboard() {
 function renderDashboard() {
   const ilCounts   = countBy(ilData,   'status')
   const psCounts   = countBy(psData,   'status')
-  const lstActive  = lstData.filter(r => r.active === 'YES').length
-  const lstLinked  = lstData.filter(r => r.linked_program_id).length
-  const progAvail  = progData.filter(r => r.status === 'Available').length
-  const progSoon   = progData.filter(r => r.status === 'Coming Soon').length
+  const lstActive   = lstData.filter(r => r.active === 'YES').length
+  const lstOnSite   = lstData.filter(r => r.show_on_site).length
   const psPromoted = psCounts['promoted'] || 0
 
   setArea('dashboard-area', `
@@ -216,14 +214,7 @@ function renderDashboard() {
         <div class="pipeline-icon"><i class="fa-solid fa-building"></i></div>
         <div class="pipeline-label">Listings</div>
         <div class="pipeline-nums"><span class="pipeline-highlight">${lstActive}</span> in matching</div>
-        <div class="pipeline-nums">${lstData.length} total &bull; ${lstLinked} program-linked</div>
-      </div>
-      <div class="pipeline-arrow"><i class="fa-solid fa-chevron-right"></i></div>
-      <div class="pipeline-stage" data-nav="programs">
-        <div class="pipeline-icon"><i class="fa-solid fa-globe"></i></div>
-        <div class="pipeline-label">Programs</div>
-        <div class="pipeline-nums"><span class="pipeline-highlight">${progAvail}</span> available</div>
-        <div class="pipeline-nums">${progData.length} total &bull; ${progSoon} coming soon</div>
+        <div class="pipeline-nums">${lstData.length} total &bull; ${lstOnSite} on site</div>
       </div>
     </div>
     <div class="dash-bottom">
@@ -696,8 +687,8 @@ function renderListings() {
   let rows = lstData
   if (lstFilter === 'active')   rows = lstData.filter(r => r.active === 'YES')
   if (lstFilter === 'inactive') rows = lstData.filter(r => r.active !== 'YES')
-  if (lstFilter === 'on-site')     rows = lstData.filter(r =>  r.linked_program_id)
-  if (lstFilter === 'not-on-site') rows = lstData.filter(r => !r.linked_program_id)
+  if (lstFilter === 'on-site')     rows = lstData.filter(r =>  r.show_on_site)
+  if (lstFilter === 'not-on-site') rows = lstData.filter(r => !r.show_on_site)
 
   if (!rows.length) { setArea('lst-area', emptyState('No listings match this filter.')); return }
 

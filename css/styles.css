@@ -2757,22 +2757,10 @@ body.modal-open { overflow: hidden; }
    SECTION: Program Cards (programs.html)
    ========================================================== */
 
+/* programs-grid is now a plain block container.
+   Phase 18: layout is handled by .lst-cards-grid inside it. */
 .programs-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.5rem;
-}
-
-@media (min-width: 700px) {
-  .programs-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (min-width: 1100px) {
-  .programs-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
+  display: block;
 }
 
 .program-card {
