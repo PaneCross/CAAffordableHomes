@@ -197,29 +197,44 @@ function renderListings() {
 }
 
 function buildListingCard(r, idx) {
-  var status    = (r.public_status  || 'Available').trim()
-  var name      = (r.community_name || r.listing_name || '').trim()
-  var area      = (r.city           || '').trim()
-  var beds      = (r.bedrooms       || '').trim()
-  var price     = r.price ? '$' + Number(r.price).toLocaleString('en-US') : ''
-  var amiPct    = r.ami_percent ? r.ami_percent + '% AMI' : ''
-  var isAvail   = status.toLowerCase() === 'available'
-  var badgeCls  = isAvail ? 'lst-badge--avail' : 'lst-badge--soon'
-  var cardAccent= isAvail ? 'lst-card--avail'  : 'lst-card--soon'
-  var mlsLabel  = r.mls_listed ? '<span class="lst-mls-tag lst-mls-tag--yes"><i class="fa-solid fa-list-check" aria-hidden="true"></i> MLS</span>' : '<span class="lst-mls-tag">Not on MLS</span>'
+  var status     = (r.public_status || 'Available').trim()
+  var mls        = r.mls_listed === true
+  var isAvail    = status.toLowerCase() === 'available'
+  var badgeCls   = isAvail ? 'lst-badge--avail' : 'lst-badge--soon'
+  var cardAccent = isAvail ? 'lst-card--avail'  : 'lst-card--soon'
 
-  return '<article class="lst-card ' + cardAccent + '" data-idx="' + idx + '" tabindex="0" role="button" aria-label="View details for ' + escHTMLAttr(name || area || 'listing') + '">'
+  /* Card title and location differ by MLS status */
+  var cardTitle, locationLine
+  if (mls) {
+    cardTitle    = (r.community_name || r.city || 'San Diego Area').trim()
+    locationLine = (r.address || [r.city, r.zip_code].filter(Boolean).join(', ') || '').trim()
+  } else {
+    cardTitle    = (r.area || r.city || 'San Diego Area').trim()
+    locationLine = [r.city, r.zip_code].filter(Boolean).join(' ')
+  }
+
+  var mlsLabel = mls
+    ? '<span class="lst-mls-tag lst-mls-tag--yes"><i class="fa-solid fa-list-check" aria-hidden="true"></i> MLS</span>'
+    : '<span class="lst-mls-tag">Not on MLS</span>'
+
+  /* Specs shown on the card face */
+  var beds   = (r.bedrooms   || '').toString().trim()
+  var amiPct = r.ami_percent ? r.ami_percent + '% AMI' : ''
+  /* Price only on MLS */
+  var price  = (mls && r.price) ? '$' + Number(r.price).toLocaleString('en-US') : ''
+
+  return '<article class="lst-card ' + cardAccent + '" data-idx="' + idx + '" tabindex="0" role="button" aria-label="View details for ' + escHTMLAttr(cardTitle) + '">'
     + '<div class="lst-card-header">'
     +   '<div class="lst-card-title-row">'
-    +     '<h3 class="lst-card-name">' + escHTML(name || area || 'San Diego Area') + '</h3>'
+    +     '<h3 class="lst-card-name">' + escHTML(cardTitle) + '</h3>'
     +     '<span class="lst-badge ' + badgeCls + '">' + escHTML(status) + '</span>'
     +   '</div>'
-    +   '<div class="lst-card-sub">' + (area && name ? escHTML(area) + ' &bull; ' : '') + mlsLabel + '</div>'
+    +   '<div class="lst-card-sub">' + (locationLine ? escHTML(locationLine) + ' &bull; ' : '') + mlsLabel + '</div>'
     + '</div>'
     + '<div class="lst-card-specs">'
-    +   (beds  ? '<span><i class="fa-solid fa-bed"    aria-hidden="true"></i> ' + escHTML(beds)  + ' bd</span>' : '')
-    +   (price ? '<span><i class="fa-solid fa-tag"    aria-hidden="true"></i> ' + price + '</span>' : '')
-    +   (amiPct? '<span><i class="fa-solid fa-percent" aria-hidden="true"></i> ' + amiPct + '</span>' : '')
+    +   (beds  ? '<span><i class="fa-solid fa-bed"     aria-hidden="true"></i> ' + escHTML(beds) + ' bd</span>' : '')
+    +   (price ? '<span><i class="fa-solid fa-tag"     aria-hidden="true"></i> ' + price + '</span>' : '')
+    +   (amiPct? '<span><i class="fa-solid fa-chart-simple" aria-hidden="true"></i> ' + amiPct + '</span>' : '')
     + '</div>'
     + '<div class="lst-card-cta"><span>View Details <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span></div>'
     + '</article>'
@@ -266,48 +281,71 @@ function closePopup() {
 }
 
 function buildPopupHTML(r) {
-  var name      = (r.community_name || r.listing_name || '').trim()
-  var area      = (r.city           || '').trim()
-  var status    = (r.public_status  || 'Available').trim()
-  var isAvail   = status.toLowerCase() === 'available'
-  var price     = r.price ? '$' + Number(r.price).toLocaleString('en-US') : ''
-  var beds      = (r.bedrooms   || '').trim()
-  var baths     = (r.bathrooms  || '').trim()
-  var sqft      = (r.sqft       || '').trim()
-  var parking   = (r.parking    || '').trim()
-  var homeType  = (r.home_type  || '').trim()
-  var features  = (r.features   || '').trim()
-  var comments  = (r.comments   || '').trim()
-  var amiPct    = r.ami_percent ? parseInt(r.ami_percent) : null
-  var mls       = r.mls_listed === true
-  var address   = (r.address || '').trim()
-  var zip       = (r.zip_code || '').trim()
-
-  /* Location shown publicly: address only for MLS listings; city/zip otherwise */
-  var locationLine = mls
-    ? (address || (area + (zip ? ', ' + zip : '')))
-    : (area + (zip ? ' (' + zip + ')' : ''))
-
+  var status   = (r.public_status || 'Available').trim()
+  var isAvail  = status.toLowerCase() === 'available'
+  var mls      = r.mls_listed === true
   var badgeCls = isAvail ? 'lst-badge--avail' : 'lst-badge--soon'
-  var mlsBadge = mls
-    ? '<span class="pc-mls-badge pc-mls-badge--listed"><i class="fa-solid fa-list-check" aria-hidden="true"></i> Listed on MLS</span>'
-    : '<span class="pc-mls-badge pc-mls-badge--not-listed">Not Listed on MLS</span>'
 
-  /* Specs row */
+  /* Pull all fields */
+  var communityName = (r.community_name || '').trim()
+  var area          = (r.area           || '').trim()
+  var city          = (r.city           || '').trim()
+  var zip           = (r.zip_code       || '').trim()
+  var address       = (r.address        || '').trim()
+  var homeType      = (r.home_type      || '').trim()
+  var price         = r.price ? '$' + Number(r.price).toLocaleString('en-US') : ''
+  var amiPct        = r.ami_percent ? parseInt(r.ami_percent) : null
+  var beds          = (r.bedrooms       || '').toString().trim()
+  var baths         = (r.bathrooms      || '').toString().trim()
+  var sqft          = (r.sqft           || '').toString().trim()
+  var parking       = (r.parking        || '').trim()
+  var programType   = (r.program_type   || '').trim()
+  var features      = (r.features       || '').trim()
+  var minHH         = r.min_household_size ? String(r.min_household_size) : ''
+  var comments      = (r.comments       || '').trim()
+
+  /* ── Popup title + location ─────────────────────────────── */
+  var popupTitle, locationLine, mlsBadge
+  if (mls) {
+    popupTitle   = communityName || city || 'San Diego Area'
+    locationLine = address || [city, zip].filter(Boolean).join(', ')
+    mlsBadge     = '<span class="pc-mls-badge pc-mls-badge--listed"><i class="fa-solid fa-list-check" aria-hidden="true"></i> Listed on MLS</span>'
+  } else {
+    popupTitle   = area || city || 'San Diego Area'
+    locationLine = ''   /* city and area shown in details list below */
+    mlsBadge     = '<span class="pc-mls-badge pc-mls-badge--not-listed">Not Listed on MLS</span>'
+  }
+
+  /* ── Specs pill row (beds / baths / sqft / parking) ─────── */
   var specs = []
-  if (beds)    specs.push('<span class="pc-spec-tag"><i class="fa-solid fa-bed" aria-hidden="true"></i> ' + escHTML(beds) + ' bd</span>')
-  if (baths)   specs.push('<span class="pc-spec-tag"><i class="fa-solid fa-bath" aria-hidden="true"></i> ' + escHTML(baths) + ' ba</span>')
-  if (sqft)    specs.push('<span class="pc-spec-tag"><i class="fa-solid fa-ruler-combined" aria-hidden="true"></i> ' + escHTML(sqft) + ' sqft</span>')
+  if (beds)    specs.push('<span class="pc-spec-tag"><i class="fa-solid fa-bed"           aria-hidden="true"></i> ' + escHTML(beds)    + ' bd</span>')
+  if (baths)   specs.push('<span class="pc-spec-tag"><i class="fa-solid fa-bath"          aria-hidden="true"></i> ' + escHTML(baths)   + ' ba</span>')
+  if (sqft)    specs.push('<span class="pc-spec-tag"><i class="fa-solid fa-ruler-combined" aria-hidden="true"></i> ' + escHTML(sqft)    + ' sqft</span>')
   if (parking) specs.push('<span class="pc-spec-tag"><i class="fa-solid fa-square-parking" aria-hidden="true"></i> ' + escHTML(parking) + '</span>')
   var specsHTML = specs.length ? '<div class="pc-specs-row">' + specs.join('') + '</div>' : ''
 
-  /* Details list */
+  /* ── Details list — fields differ by MLS status ─────────── */
   var details = ''
-  if (price)    details += popupDetail('fa-tag',         'Price',       price)
-  if (homeType) details += popupDetail('fa-house',       'Home Type',   homeType)
-  if (amiPct)   details += popupDetail('fa-percent',     'AMI Limit',   'Up to ' + amiPct + '%')
+  if (mls) {
+    /* MLS: Community name, Address, Home Type, Price, AMI%, Min HH size */
+    if (communityName) details += popupDetail('fa-building',   'Community',    communityName)
+    if (address)       details += popupDetail('fa-location-dot','Address',     address)
+    if (homeType)      details += popupDetail('fa-house',       'Home Type',   homeType)
+    if (price)         details += popupDetail('fa-tag',         'Price',       price)
+    if (amiPct)        details += popupDetail('fa-chart-simple', 'AMI Limit',   'Up to ' + amiPct + '%')
+    if (programType)   details += popupDetail('fa-clipboard',   'Program Type', programType)
+    if (minHH)         details += popupDetail('fa-users',       'Min. Household Size', minHH + ' person' + (parseInt(minHH) !== 1 ? 's' : ''))
+  } else {
+    /* Non-MLS: Area, City, Home Type, AMI%, Min HH size (no address, no price) */
+    if (area)          details += popupDetail('fa-map',         'Area',        area)
+    if (city)          details += popupDetail('fa-location-dot','City',        city + (zip ? ' ' + zip : ''))
+    if (homeType)      details += popupDetail('fa-house',       'Home Type',   homeType)
+    if (amiPct)        details += popupDetail('fa-chart-simple', 'AMI Limit',   'Up to ' + amiPct + '%')
+    if (programType)   details += popupDetail('fa-clipboard',   'Program Type', programType)
+    if (minHH)         details += popupDetail('fa-users',       'Min. Household Size', minHH + ' person' + (parseInt(minHH) !== 1 ? 's' : ''))
+  }
 
-  /* Features as bullet list */
+  /* ── Features bullet list ───────────────────────────────── */
   var featuresHTML = ''
   if (features) {
     var bullets = features.split('\n').map(function (f) { return f.trim() }).filter(Boolean)
@@ -319,25 +357,25 @@ function buildPopupHTML(r) {
     }
   }
 
-  /* Public comments */
+  /* ── Comments ───────────────────────────────────────────── */
   var commentsHTML = comments
     ? '<div class="lst-popup-section">'
-        + '<div class="lst-popup-section-title">Notes</div>'
+        + '<div class="lst-popup-section-title">Comments</div>'
         + '<p class="lst-popup-comments">' + escHTML(comments) + '</p>'
       + '</div>'
     : ''
 
-  /* AMI income limits tables */
+  /* ── AMI income limits tables ───────────────────────────── */
   var amiTablesHTML = buildAMITablesHTML(amiPct)
 
-  /* MLS attribution */
+  /* ── MLS attribution (only when MLS listed) ─────────────── */
   var mlsAttr = mls
     ? '<p class="pc-mls-attribution" style="margin-top:1.5rem;"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Property information is sourced from the San Diego Association of Realtors (SDAR). Information deemed reliable but not guaranteed.</p>'
     : ''
 
   return '<div class="lst-popup-header">'
     +   '<div class="lst-popup-title-row">'
-    +     '<h2 id="lst-popup-title">' + escHTML(name || area || 'San Diego Area') + '</h2>'
+    +     '<h2 id="lst-popup-title">' + escHTML(popupTitle) + '</h2>'
     +     '<span class="lst-badge ' + badgeCls + '" style="flex-shrink:0;">' + escHTML(status) + '</span>'
     +   '</div>'
     +   '<div class="lst-popup-meta">'
