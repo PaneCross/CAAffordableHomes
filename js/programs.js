@@ -203,7 +203,7 @@ function buildListingCard(r, idx) {
   var badgeCls   = isAvail ? 'lst-badge--avail' : 'lst-badge--soon'
   var cardAccent = isAvail ? 'lst-card--avail'  : 'lst-card--soon'
 
-  /* Card title and location differ by MLS status */
+  /* Card title and location line differ by MLS status */
   var cardTitle, locationLine
   if (mls) {
     cardTitle    = (r.community_name || r.city || 'San Diego Area').trim()
@@ -217,11 +217,26 @@ function buildListingCard(r, idx) {
     ? '<span class="lst-mls-tag lst-mls-tag--yes"><i class="fa-solid fa-list-check" aria-hidden="true"></i> MLS</span>'
     : '<span class="lst-mls-tag">Not on MLS</span>'
 
-  /* Specs shown on the card face */
-  var beds   = (r.bedrooms   || '').toString().trim()
-  var amiPct = r.ami_percent ? r.ami_percent + '% AMI' : ''
-  /* Price only on MLS */
-  var price  = (mls && r.price) ? '$' + Number(r.price).toLocaleString('en-US') : ''
+  /* Physical specs pills: beds / baths / sqft / parking */
+  var specPills = []
+  if (r.bedrooms)  specPills.push('<span><i class="fa-solid fa-bed"            aria-hidden="true"></i> ' + escHTML(String(r.bedrooms))  + ' bd</span>')
+  if (r.bathrooms) specPills.push('<span><i class="fa-solid fa-bath"           aria-hidden="true"></i> ' + escHTML(String(r.bathrooms)) + ' ba</span>')
+  if (r.sqft)      specPills.push('<span><i class="fa-solid fa-ruler-combined" aria-hidden="true"></i> ' + escHTML(String(r.sqft))      + ' sqft</span>')
+  if (r.parking)   specPills.push('<span><i class="fa-solid fa-square-parking" aria-hidden="true"></i> ' + escHTML(r.parking)           + '</span>')
+  var specsHTML = specPills.length ? '<div class="lst-card-specs">' + specPills.join('') + '</div>' : ''
+
+  /* Detail rows: Price (MLS only), Home Type, AMI Limit */
+  var detailRows = ''
+  if (mls && r.price)  detailRows += cardDetail('fa-tag',          'Price',     '$' + Number(r.price).toLocaleString('en-US'))
+  if (r.home_type)     detailRows += cardDetail('fa-house',        'Home Type', r.home_type)
+  if (r.ami_percent)   detailRows += cardDetail('fa-chart-simple', 'AMI Limit', 'Up to ' + r.ami_percent + '%')
+  var detailsHTML = detailRows ? '<ul class="lst-card-details">' + detailRows + '</ul>' : ''
+
+  /* Comments snippet (max 2 lines via CSS clamp) */
+  var comments = (r.comments || '').trim()
+  var commentsHTML = comments
+    ? '<div class="lst-card-comments">' + escHTML(comments) + '</div>'
+    : ''
 
   return '<article class="lst-card ' + cardAccent + '" data-idx="' + idx + '" tabindex="0" role="button" aria-label="View details for ' + escHTMLAttr(cardTitle) + '">'
     + '<div class="lst-card-header">'
@@ -231,13 +246,18 @@ function buildListingCard(r, idx) {
     +   '</div>'
     +   '<div class="lst-card-sub">' + (locationLine ? escHTML(locationLine) + ' &bull; ' : '') + mlsLabel + '</div>'
     + '</div>'
-    + '<div class="lst-card-specs">'
-    +   (beds  ? '<span><i class="fa-solid fa-bed"     aria-hidden="true"></i> ' + escHTML(beds) + ' bd</span>' : '')
-    +   (price ? '<span><i class="fa-solid fa-tag"     aria-hidden="true"></i> ' + price + '</span>' : '')
-    +   (amiPct? '<span><i class="fa-solid fa-chart-simple" aria-hidden="true"></i> ' + amiPct + '</span>' : '')
-    + '</div>'
+    + specsHTML
+    + detailsHTML
+    + commentsHTML
     + '<div class="lst-card-cta"><span>View Details <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span></div>'
     + '</article>'
+}
+
+function cardDetail(icon, label, value) {
+  return '<li class="lst-card-detail-row">'
+    + '<span class="lst-card-detail-label"><i class="fa-solid ' + icon + '" aria-hidden="true"></i> ' + label + '</span>'
+    + '<span class="lst-card-detail-value">' + escHTML(String(value)) + '</span>'
+    + '</li>'
 }
 
 /* ---------------------------------------------------------
