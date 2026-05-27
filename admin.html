@@ -211,68 +211,12 @@
     </div>
     <div class="modal-body" style="padding:0;">
 
-      <div class="lst-section lst-section-white">
-        <div class="form-section-label"><i class="fa-solid fa-globe" style="margin-right:.35rem;"></i>Site Display</div>
-        <div class="form-row2">
-          <div class="form-group">
-            <label style="display:block;font-size:.8rem;font-weight:500;margin-bottom:.5rem;">Show on Public Site</label>
-            <div class="toggle-row">
-              <span class="toggle-side-label toggle-no">No</span>
-              <label class="toggle-switch" for="lf-show-on-site">
-                <input type="checkbox" id="lf-show-on-site" class="toggle-input">
-                <span class="toggle-track"><span class="toggle-thumb"></span></span>
-              </label>
-              <span class="toggle-side-label toggle-yes">Yes</span>
-            </div>
-          </div>
-          <div class="form-group">
-            <label style="display:block;font-size:.8rem;font-weight:500;margin-bottom:.5rem;">Listed on MLS</label>
-            <div class="toggle-row">
-              <span class="toggle-side-label toggle-no">No</span>
-              <label class="toggle-switch" for="lf-mls-listed">
-                <input type="checkbox" id="lf-mls-listed" class="toggle-input">
-                <span class="toggle-track"><span class="toggle-thumb"></span></span>
-              </label>
-              <span class="toggle-side-label toggle-yes">Yes</span>
-            </div>
-          </div>
-        </div>
-        <div id="lf-sync-warning" class="lf-sync-warning" style="display:none;">
-          <i class="fa-solid fa-triangle-exclamation"></i>
-          <span>Note: "Show on Site" and "In Matching" are out of sync. Both are typically toggled together.</span>
-        </div>
-        <div class="form-row2">
-          <div class="form-group"><label for="lf-community-name">Community / Development Name</label><input id="lf-community-name" class="form-input" placeholder="e.g. Vista Del Mar"></div>
-          <div class="form-group"><label for="lf-home-type">Home Type</label>
-            <select id="lf-home-type" class="form-input">
-              <option value="">-- Select --</option>
-              <option>Single Family Home</option>
-              <option>Townhome</option>
-              <option>Condo</option>
-              <option>Duplex</option>
-              <option>Manufactured Home</option>
-              <option>Other</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-row2">
-          <div class="form-group"><label for="lf-ami-pct">AMI % (for public income table)</label><input id="lf-ami-pct" class="form-input" type="number" placeholder="e.g. 80"></div>
-          <div class="form-group"><label for="lf-public-status">Public Status Label</label>
-            <select id="lf-public-status" class="form-input">
-              <option>Available</option>
-              <option>Coming Soon</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-group"><label for="lf-features">Key Features <span style="font-size:.78rem;font-weight:400;color:#888;">(one per line)</span></label><textarea id="lf-features" class="form-input" rows="3" placeholder="Solar panels&#10;HOA includes landscaping&#10;Energy Star appliances"></textarea></div>
-        <div class="form-group"><label for="lf-comments">Public Comments / Notes</label><textarea id="lf-comments" class="form-input" rows="2" placeholder="Brief note shown on the public listing card..."></textarea></div>
-      </div>
-
+      <!-- ── 1. IDENTITY ─────────────────────────────────────── -->
       <div class="lst-section lst-section-green">
-        <div class="form-section-label">Identity</div>
+        <div class="form-section-label"><i class="fa-solid fa-fingerprint" style="margin-right:.35rem;"></i>Identity</div>
         <div class="form-row2">
           <div class="form-group"><label for="lf-id">Property ID *</label><input id="lf-id" class="form-input" placeholder="e.g. VILLA-001"></div>
-          <div class="form-group"><label for="lf-name">Display Name</label><input id="lf-name" class="form-input" placeholder="Villa Rosa"></div>
+          <div class="form-group"><label for="lf-name">Internal Name <span style="font-size:.78rem;font-weight:400;color:#888;">(admin only)</span></label><input id="lf-name" class="form-input" placeholder="Villa Rosa Unit 4B"></div>
         </div>
         <div class="form-row3">
           <div class="form-group">
@@ -293,10 +237,11 @@
         </div>
       </div>
 
+      <!-- ── 2. PROPERTY DETAILS ────────────────────────────── -->
       <div class="lst-section lst-section-white">
-        <div class="form-section-label">Property Details</div>
+        <div class="form-section-label"><i class="fa-solid fa-house-chimney" style="margin-right:.35rem;"></i>Property Details</div>
         <div class="form-row3">
-          <div class="form-group"><label for="lf-address">Address</label><input id="lf-address" class="form-input"></div>
+          <div class="form-group"><label for="lf-address">Address <span style="font-size:.78rem;font-weight:400;color:#888;">(shown publicly only if MLS Listed)</span></label><input id="lf-address" class="form-input"></div>
           <div class="form-group"><label for="lf-city">City</label><input id="lf-city" class="form-input"></div>
           <div class="form-group"><label for="lf-zip">Zip Code</label><input id="lf-zip" class="form-input" placeholder="92101"></div>
         </div>
@@ -308,8 +253,66 @@
         <div class="form-row3">
           <div class="form-group"><label for="lf-sqft">Sqft</label><input id="lf-sqft" class="form-input" type="number"></div>
           <div class="form-group"><label for="lf-parking">Parking</label><input id="lf-parking" class="form-input" placeholder="e.g. 2-car garage"></div>
-          <div class="form-group"><label for="lf-program-type">Program Type</label><input id="lf-program-type" class="form-input" placeholder="e.g. Below Market Rate"></div>
+          <div class="form-group"><label for="lf-home-type">Home Type</label>
+            <select id="lf-home-type" class="form-input">
+              <option value="">-- Select --</option>
+              <option>Single Family Home</option>
+              <option>Townhome</option>
+              <option>Condo</option>
+              <option>Duplex</option>
+              <option>Manufactured Home</option>
+              <option>Other</option>
+            </select>
+          </div>
         </div>
+        <div class="form-row2">
+          <div class="form-group"><label for="lf-program-type">Program / Initiative <span style="font-size:.78rem;font-weight:400;color:#888;">(internal label)</span></label><input id="lf-program-type" class="form-input" placeholder="e.g. City of SD Below Market Rate"></div>
+        </div>
+      </div>
+
+      <!-- ── 3. SITE DISPLAY ────────────────────────────────── -->
+      <div class="lst-section lst-section-green">
+        <div class="form-section-label"><i class="fa-solid fa-globe" style="margin-right:.35rem;"></i>Site Display</div>
+        <div class="form-row2">
+          <div class="form-group">
+            <label style="display:block;font-size:.8rem;font-weight:500;margin-bottom:.5rem;">Show on Public Site</label>
+            <div class="toggle-row">
+              <span class="toggle-side-label toggle-no">No</span>
+              <label class="toggle-switch" for="lf-show-on-site">
+                <input type="checkbox" id="lf-show-on-site" class="toggle-input">
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              </label>
+              <span class="toggle-side-label toggle-yes">Yes</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label style="display:block;font-size:.8rem;font-weight:500;margin-bottom:.5rem;">Listed on MLS <span style="font-size:.78rem;font-weight:400;color:#888;">(shows address publicly)</span></label>
+            <div class="toggle-row">
+              <span class="toggle-side-label toggle-no">No</span>
+              <label class="toggle-switch" for="lf-mls-listed">
+                <input type="checkbox" id="lf-mls-listed" class="toggle-input">
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              </label>
+              <span class="toggle-side-label toggle-yes">Yes</span>
+            </div>
+          </div>
+        </div>
+        <div id="lf-sync-warning" class="lf-sync-warning" style="display:none;">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <span>Note: "Show on Site" and "In Matching" are out of sync. Both are typically toggled together.</span>
+        </div>
+        <div class="form-row3">
+          <div class="form-group"><label for="lf-community-name">Community / Development Name <span style="font-size:.78rem;font-weight:400;color:#888;">(shown as card title)</span></label><input id="lf-community-name" class="form-input" placeholder="e.g. Vista Del Mar"></div>
+          <div class="form-group"><label for="lf-ami-pct">AMI % <span style="font-size:.78rem;font-weight:400;color:#888;">(highlights income table column)</span></label><input id="lf-ami-pct" class="form-input" type="number" placeholder="e.g. 80"></div>
+          <div class="form-group"><label for="lf-public-status">Public Status</label>
+            <select id="lf-public-status" class="form-input">
+              <option>Available</option>
+              <option>Coming Soon</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group"><label for="lf-features">Key Features <span style="font-size:.78rem;font-weight:400;color:#888;">(one per line — shown as bullets in popup)</span></label><textarea id="lf-features" class="form-input" rows="3" placeholder="Solar panels&#10;HOA includes landscaping&#10;Energy Star appliances"></textarea></div>
+        <div class="form-group"><label for="lf-comments">Public Comments / Notes <span style="font-size:.78rem;font-weight:400;color:#888;">(shown at bottom of popup)</span></label><textarea id="lf-comments" class="form-input" rows="2" placeholder="Brief note shown in the listing popup..."></textarea></div>
       </div>
 
       <div class="lst-section lst-section-green">

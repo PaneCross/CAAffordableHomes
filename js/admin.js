@@ -694,42 +694,43 @@ function renderListings() {
 
   const html = `<div class="prog-grid">
     ${rows.map(r => {
-      const idx = lstData.indexOf(r)
-      const linkedProg = r.linked_program_id
-        ? progData.find(p => p.community_name === r.linked_program_id) || null
-        : null
-      const progStatusMap = {
-        'Available':   { cls: 'pill-active',    label: 'Live on Site' },
-        'Coming Soon': { cls: 'pill-reviewing',  label: 'Coming Soon' },
-        'Inactive':    { cls: 'pill-expired',    label: 'Inactive' },
-      }
-      const progStatusInfo = linkedProg
-        ? (progStatusMap[linkedProg.status] || { cls: 'pill-expired', label: linkedProg.status || 'Unknown' })
-        : null
-      const progBadge = r.linked_program_id
-        ? `<div class="lst-prog-link">
-            <div class="lst-prog-link-label"><i class="fa-solid fa-link" style="font-size:.6rem;"></i> Linked Program</div>
-            <div class="lst-prog-link-name" style="display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;">
-              <span><i class="fa-solid fa-globe" style="font-size:.72rem;"></i> ${esc(r.linked_program_id)}</span>
-              ${progStatusInfo ? `<span class="status-pill ${progStatusInfo.cls}" style="font-size:.65rem;padding:.1rem .4rem;">${progStatusInfo.label}</span>` : ''}
-            </div>
-          </div>`
+      const idx        = lstData.indexOf(r)
+      const cardName   = r.community_name || r.listing_name || r.listing_id
+      const location   = [r.city, r.zip_code].filter(Boolean).join(' ')
+      const specs      = [
+        r.bedrooms ? `<span><i class="fa-solid fa-bed" aria-hidden="true"></i> ${esc(r.bedrooms)} bd</span>` : '',
+        r.bathrooms ? `<span><i class="fa-solid fa-bath" aria-hidden="true"></i> ${esc(r.bathrooms)} ba</span>` : '',
+        r.home_type ? `<span><i class="fa-solid fa-house" aria-hidden="true"></i> ${esc(r.home_type)}</span>` : '',
+        r.price ? `<span><i class="fa-solid fa-tag" aria-hidden="true"></i> $${Number(r.price).toLocaleString('en-US')}</span>` : '',
+        r.ami_percent ? `<span><i class="fa-solid fa-percent" aria-hidden="true"></i> ${esc(r.ami_percent)}% AMI</span>` : '',
+      ].filter(Boolean).join('')
+      const matchPill  = r.active === 'YES'
+        ? `<span class="status-pill pill-active">In Matching</span>`
+        : `<span class="status-pill pill-expired">Not Matching</span>`
+      const sitePill   = r.show_on_site
+        ? `<span class="status-pill pill-reviewing" style="font-size:.65rem;">On Site${r.public_status && r.public_status !== 'Available' ? ' &bull; ' + esc(r.public_status) : ''}</span>`
+        : `<span class="status-pill" style="font-size:.65rem;background:#eee;color:#888;">Not on Site</span>`
+      const mlsBadge   = r.mls_listed
+        ? `<span style="font-size:.72rem;color:#4a6ea8;"><i class="fa-solid fa-list-check"></i> MLS</span>`
         : ''
       return `<div class="prog-card ${r.active === 'YES' ? 'prog-card--available' : 'prog-card--inactive'}">
         <div class="prog-card-header">
           <div style="min-width:0;flex:1;">
-            <div class="prog-card-name">${esc(r.listing_name || r.listing_id)}</div>
-            <div class="prog-card-area"><i class="fa-solid fa-location-dot" style="color:#888;font-size:.75rem;margin-right:.3rem;"></i>${esc(r.city || r.address || '')}</div>
+            <div class="prog-card-name">${esc(cardName)}</div>
+            ${r.community_name && r.listing_name && r.community_name !== r.listing_name
+              ? `<div style="font-size:.73rem;color:#999;margin-top:.1rem;">${esc(r.listing_name)}</div>` : ''}
+            <div class="prog-card-area">
+              <i class="fa-solid fa-location-dot" style="color:#888;font-size:.75rem;margin-right:.3rem;"></i>${esc(location || r.address || '')}
+              ${mlsBadge ? '&ensp;' + mlsBadge : ''}
+            </div>
           </div>
-          <span class="status-pill ${r.active === 'YES' ? 'pill-active' : 'pill-expired'}" style="flex-shrink:0;">${r.active === 'YES' ? 'In Matching' : 'Not Matching'}</span>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.3rem;flex-shrink:0;">
+            ${matchPill}
+            ${sitePill}
+          </div>
         </div>
-        <div class="prog-card-body">
-          ${r.ami_percent ? `<div class="prog-detail"><span class="prog-detail-label">AMI</span><span class="prog-detail-value">${esc(r.ami_percent)}%</span></div>` : ''}
-          ${r.price ? `<div class="prog-detail"><span class="prog-detail-label"><i class="fa-solid fa-tag" style="width:14px;color:#888;margin-right:.3rem;"></i>Price</span><span class="prog-detail-value">$${esc(r.price)}</span></div>` : ''}
-          ${r.bedrooms ? `<div class="prog-detail"><span class="prog-detail-label"><i class="fa-solid fa-bed" style="width:14px;color:#888;margin-right:.3rem;"></i>Beds</span><span class="prog-detail-value">${esc(r.bedrooms)}</span></div>` : ''}
-          ${r.internal_notes ? `<div class="lst-card-notes">${esc(r.internal_notes)}</div>` : ''}
-          ${progBadge}
-        </div>
+        ${specs ? `<div class="prog-card-body" style="display:flex;flex-wrap:wrap;gap:.35rem .9rem;font-size:.8rem;color:#555;padding:.5rem 0 .25rem;">${specs}</div>` : ''}
+        ${r.internal_notes ? `<div class="lst-card-notes" style="margin-top:.35rem;">${esc(r.internal_notes.substring(0, 120))}${r.internal_notes.length > 120 ? '…' : ''}</div>` : ''}
         <div class="prog-card-footer">
           <button class="btn-secondary btn-sm" onclick="openLSTModal(${idx})"><i class="fa-solid fa-pen"></i> Edit</button>
           <button class="btn-danger btn-sm" onclick="deleteListing(${idx})"><i class="fa-solid fa-trash"></i></button>
