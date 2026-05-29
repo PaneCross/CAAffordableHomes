@@ -383,8 +383,9 @@ async function sendWeeklyDigest(payload: DigestPayload) {
   const listingMap: Record<string, string> = {}
   listings.forEach(l => { listingMap[l.listing_id] = l.listing_name || l.listing_id })
 
-  const passRows  = results.filter(r => r.status === 'Pass')
-  const closeRows = results.filter(r => r.status === 'Close')
+  const passRows   = results.filter(r => r.status === 'Pass')
+  const closeRows  = results.filter(r => r.status === 'Close')
+  const manualRows = results.filter(r => r.status === 'Manual')
 
   function tableRows(rows: typeof passRows) {
     return rows.map(r =>
@@ -393,6 +394,17 @@ async function sendWeeklyDigest(payload: DigestPayload) {
         <td style="padding:6px 10px;border-bottom:1px solid #f0f0f0;"><a href="mailto:${escHtml(r.email)}" style="color:#2c5545;">${escHtml(r.email)}</a></td>
         <td style="padding:6px 10px;border-bottom:1px solid #f0f0f0;">${escHtml(listingMap[r.listing_id] || r.listing_id)}</td>
         <td style="padding:6px 10px;border-bottom:1px solid #f0f0f0;font-size:12px;color:#888;">${escHtml(r.failed_fields || '')}</td>
+      </tr>`
+    ).join('')
+  }
+
+  function manualTableRows(rows: typeof manualRows) {
+    return rows.map(r =>
+      `<tr>
+        <td style="padding:6px 10px;border-bottom:1px solid #eef0fb;"><strong>${escHtml(r.full_name)}</strong> <span style="display:inline-block;background:#e8f0fe;color:#3c5a9a;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;vertical-align:middle;margin-left:4px;">MANUAL</span></td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eef0fb;"><a href="mailto:${escHtml(r.email)}" style="color:#3c5a9a;">${escHtml(r.email)}</a></td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eef0fb;">${escHtml(listingMap[r.listing_id] || r.listing_id)}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eef0fb;font-size:12px;color:#3c5a9a;font-style:italic;">Manual review required - no screening data collected</td>
       </tr>`
     ).join('')
   }
@@ -413,7 +425,7 @@ async function sendWeeklyDigest(payload: DigestPayload) {
     </td>`
   }
 
-  const matchSection = (passRows.length + closeRows.length) > 0 ? `
+  const matchSection = (passRows.length + closeRows.length + manualRows.length) > 0 ? `
     ${passRows.length ? `
     <h3 style="color:#2c7a4b;margin:28px 0 10px;font-size:15px;">Pass (${passRows.length})</h3>
     <table style="width:100%;border-collapse:collapse;font-size:13px;">
@@ -436,7 +448,19 @@ async function sendWeeklyDigest(payload: DigestPayload) {
       </tr></thead>
       <tbody>${tableRows(closeRows)}</tbody>
     </table>` : ''}
-  ` : `<p style="color:#888;font-size:14px;font-style:italic;">No Pass or Close matches this week.</p>`
+    ${manualRows.length ? `
+    <h3 style="color:#3c5a9a;margin:28px 0 6px;font-size:15px;">Manual Review (${manualRows.length})</h3>
+    <p style="font-size:12px;color:#888;margin:0 0 10px;">These applicants were added manually and do not have full screening data. Review each one directly before referring to a listing.</p>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead><tr style="background:#eef1fd;">
+        <th style="padding:6px 10px;text-align:left;font-weight:600;">Name</th>
+        <th style="padding:6px 10px;text-align:left;font-weight:600;">Email</th>
+        <th style="padding:6px 10px;text-align:left;font-weight:600;">Listing</th>
+        <th style="padding:6px 10px;text-align:left;font-weight:600;">Note</th>
+      </tr></thead>
+      <tbody>${manualTableRows(manualRows)}</tbody>
+    </table>` : ''}
+  ` : `<p style="color:#888;font-size:14px;font-style:italic;">No matches this week.</p>`
 
   const html = `
   <div style="font-family:Arial,sans-serif;max-width:820px;margin:0 auto;color:#333;">
@@ -495,8 +519,12 @@ async function sendWeeklyDigest(payload: DigestPayload) {
       <!-- Matching Results -->
       <h3 style="font-size:13px;text-transform:uppercase;letter-spacing:0.08em;color:#999;margin:0 0 6px;font-weight:600;">Matching Results</h3>
       <p style="font-size:14px;color:#555;margin:0 0 4px;">
-        ${passCount > 0 || closeCount > 0
-          ? `<strong style="color:#2c7a4b;">${passCount} Pass</strong> &nbsp;&bull;&nbsp; <strong style="color:#b07a00;">${closeCount} Close</strong> across all active listings`
+        ${passCount > 0 || closeCount > 0 || manualRows.length > 0
+          ? [
+              passCount   > 0 ? `<strong style="color:#2c7a4b;">${passCount} Pass</strong>` : '',
+              closeCount  > 0 ? `<strong style="color:#b07a00;">${closeCount} Close</strong>` : '',
+              manualRows.length > 0 ? `<strong style="color:#3c5a9a;">${manualRows.length} Manual Review</strong>` : '',
+            ].filter(Boolean).join(' &nbsp;&bull;&nbsp;') + ' across all active listings'
           : 'No matches this week.'}
       </p>
       ${matchSection}
