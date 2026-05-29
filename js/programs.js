@@ -203,14 +203,24 @@ function buildListingCard(r, idx) {
   var badgeCls   = isAvail ? 'lst-badge--avail' : 'lst-badge--soon'
   var cardAccent = isAvail ? 'lst-card--avail'  : 'lst-card--soon'
 
-  /* Card title and location line differ by MLS status */
-  var cardTitle, locationLine
+  /* Card title, location line, and optional Maps URL differ by MLS status */
+  var cardTitle, locationLine, cardMapsUrl
   if (mls) {
-    cardTitle    = (r.community_name || r.city || 'San Diego Area').trim()
-    locationLine = (r.address || [r.city, r.zip_code].filter(Boolean).join(', ') || '').trim()
+    cardTitle = (r.community_name || r.city || 'San Diego Area').trim()
+    /* Build full address: "123 Main St, San Diego, CA 92111" */
+    var cAddrParts = []
+    if (r.address) cAddrParts.push(r.address)
+    if (r.city || r.zip_code) {
+      var cCityLine = [r.city, 'CA'].filter(Boolean).join(', ')
+      if (r.zip_code) cCityLine += ' ' + r.zip_code
+      cAddrParts.push(cCityLine)
+    }
+    locationLine = cAddrParts.join(', ')
+    cardMapsUrl  = locationLine ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(locationLine) : ''
   } else {
     cardTitle    = (r.area || r.city || 'San Diego Area').trim()
     locationLine = [r.city, r.zip_code].filter(Boolean).join(' ')
+    cardMapsUrl  = ''
   }
 
   var mlsLabel = mls
@@ -244,7 +254,14 @@ function buildListingCard(r, idx) {
     +     '<h3 class="lst-card-name">' + escHTML(cardTitle) + '</h3>'
     +     '<span class="lst-badge ' + badgeCls + '">' + escHTML(status) + '</span>'
     +   '</div>'
-    +   '<div class="lst-card-sub">' + (locationLine ? escHTML(locationLine) + ' &bull; ' : '') + mlsLabel + '</div>'
+    +   '<div class="lst-card-sub">'
+    +     (locationLine
+            ? (cardMapsUrl
+                ? '<a href="' + cardMapsUrl + '" target="_blank" rel="noopener noreferrer" class="lst-addr-link" onclick="event.stopPropagation()">' + escHTML(locationLine) + '</a> &bull; '
+                : escHTML(locationLine) + ' &bull; ')
+            : '')
+    +     mlsLabel
+    +   '</div>'
     + '</div>'
     + specsHTML
     + detailsHTML
@@ -324,15 +341,25 @@ function buildPopupHTML(r) {
   var minHH         = r.min_household_size ? String(r.min_household_size) : ''
   var comments      = (r.comments       || '').trim()
 
-  /* ── Popup title + location ─────────────────────────────── */
-  var popupTitle, locationLine, mlsBadge
+  /* ── Popup title, location, and Maps link ───────────────── */
+  var popupTitle, locationLine, popupMapsUrl, mlsBadge
   if (mls) {
-    popupTitle   = communityName || city || 'San Diego Area'
-    locationLine = address || [city, zip].filter(Boolean).join(', ')
-    mlsBadge     = '<span class="pc-mls-badge pc-mls-badge--listed"><i class="fa-solid fa-list-check" aria-hidden="true"></i> Listed on MLS</span>'
+    popupTitle = communityName || city || 'San Diego Area'
+    /* Full address: "123 Main St, San Diego, CA 92111" */
+    var pAddrParts = []
+    if (address) pAddrParts.push(address)
+    if (city || zip) {
+      var pCityLine = [city, 'CA'].filter(Boolean).join(', ')
+      if (zip) pCityLine += ' ' + zip
+      pAddrParts.push(pCityLine)
+    }
+    locationLine  = pAddrParts.join(', ')
+    popupMapsUrl  = locationLine ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(locationLine) : ''
+    mlsBadge      = '<span class="pc-mls-badge pc-mls-badge--listed"><i class="fa-solid fa-list-check" aria-hidden="true"></i> Listed on MLS</span>'
   } else {
     popupTitle   = area || city || 'San Diego Area'
     locationLine = ''   /* city and area shown in details list below */
+    popupMapsUrl = ''
     mlsBadge     = '<span class="pc-mls-badge pc-mls-badge--not-listed">Not Listed on MLS</span>'
   }
 
@@ -348,8 +375,9 @@ function buildPopupHTML(r) {
   var details = ''
   if (mls) {
     /* MLS: Community name, Address, Home Type, Price, AMI%, Min HH size */
-    if (communityName) details += popupDetail('fa-building',   'Community',    communityName)
-    if (address)       details += popupDetail('fa-location-dot','Address',     address)
+    if (communityName) details += popupDetail('fa-building', 'Community', communityName)
+    if (locationLine && popupMapsUrl) details += popupDetailLink('fa-location-dot', 'Address', locationLine, popupMapsUrl)
+    else if (address)                 details += popupDetail('fa-location-dot', 'Address', address)
     if (homeType)      details += popupDetail('fa-house',       'Home Type',   homeType)
     if (price)         details += popupDetail('fa-tag',         'Price',       price)
     if (amiPct)        details += popupDetail('fa-chart-simple', 'AMI Limit',   'Up to ' + amiPct + '%')
@@ -400,7 +428,13 @@ function buildPopupHTML(r) {
     +   '</div>'
     +   '<div class="lst-popup-meta">'
     +     mlsBadge
-    +     (locationLine ? '<span class="lst-popup-location"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> ' + escHTML(locationLine) + '</span>' : '')
+    +     (locationLine
+            ? '<span class="lst-popup-location"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> '
+              + (popupMapsUrl
+                  ? '<a href="' + popupMapsUrl + '" target="_blank" rel="noopener noreferrer" class="lst-addr-link">' + escHTML(locationLine) + ' <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:.65rem;" aria-hidden="true"></i></a>'
+                  : escHTML(locationLine))
+              + '</span>'
+            : '')
     +   '</div>'
     + '</div>'
     + specsHTML
@@ -419,6 +453,15 @@ function popupDetail(icon, label, value) {
   return '<li class="pc-detail-row">'
     + '<span class="pc-detail-label"><i class="fa-solid ' + icon + '" aria-hidden="true"></i> ' + label + '</span>'
     + '<span class="pc-detail-value">' + escHTML(String(value)) + '</span>'
+    + '</li>'
+}
+
+function popupDetailLink(icon, label, text, url) {
+  return '<li class="pc-detail-row">'
+    + '<span class="pc-detail-label"><i class="fa-solid ' + icon + '" aria-hidden="true"></i> ' + label + '</span>'
+    + '<span class="pc-detail-value"><a href="' + url + '" target="_blank" rel="noopener noreferrer" class="lst-addr-link">'
+    + escHTML(text)
+    + ' <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:.65rem;" aria-hidden="true"></i></a></span>'
     + '</li>'
 }
 

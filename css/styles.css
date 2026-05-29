@@ -3274,6 +3274,25 @@ body.modal-open { overflow: hidden; }
   transform: translateX(3px);
 }
 
+/* Address / Maps links on cards and in popup */
+.lst-addr-link {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 2px;
+}
+.lst-addr-link:hover {
+  color: var(--color-sage-dark);
+  text-decoration-style: solid;
+}
+.pc-detail-value .lst-addr-link {
+  color: var(--color-sage);
+  font-weight: 500;
+}
+.pc-detail-value .lst-addr-link:hover {
+  color: var(--color-sage-dark);
+}
+
 /* Card detail rows (Home Type, AMI Limit, Price) */
 .lst-card-details {
   list-style: none;
