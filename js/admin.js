@@ -122,7 +122,7 @@ const TAB_TITLES = {
   'interest-list': 'Interest List',
   matches:         'Matches',
   successes:       'Successes',
-  settings:        'Settings',
+  settings:        'AMI Limits',
 }
 
 document.querySelectorAll('.sb-btn[data-tab]').forEach(btn => {
