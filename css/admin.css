@@ -577,9 +577,11 @@ textarea.form-input { resize: vertical; }
 }
 .match-badge.match-pass      { background: #e8f5e9; color: #2e7d32; }
 .match-badge.match-close     { background: #fff8e1; color: #7a5800; }
+.match-badge.match-manual    { background: #e8f0fe; color: #3c5a9a; }
 .match-badge.match-opted-out { background: #f0f0ed; color: #999; }
-.match-row-pass  td { background: #fafffe; }
-.match-row-close td { background: #fffdf5; }
+.match-row-pass   td { background: #fafffe; }
+.match-row-close  td { background: #fffdf5; }
+.match-row-manual td { background: #f5f7ff; }
 .match-row-opted-out td { background: #fafaf8; opacity: .65; }
 .match-priority td { border-left: 3px solid var(--green); }
 .match-rank { font-weight: 700; font-size: .82rem; white-space: nowrap; }
@@ -989,6 +991,7 @@ textarea.form-input { resize: vertical; }
   }
   .match-mc-pass    { border-left-color: #2e7d32; background: #fafffe; }
   .match-mc-close   { border-left-color: #7a5800; background: #fffdf5; }
+  .match-mc-manual  { border-left-color: #3c5a9a; background: #f5f7ff; }
   .match-mc-opted-out { opacity: .7; background: #fafaf8; border-left-color: #ccc; }
   .match-mc-star    { box-shadow: 0 0 0 1px rgba(44,85,69,.25); }
   .match-mc-header  {

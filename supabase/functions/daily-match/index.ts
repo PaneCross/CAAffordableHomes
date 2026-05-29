@@ -35,6 +35,7 @@ Deno.serve(async (req) => {
       .eq('active', 'YES')
     if (lstErr) throw lstErr
 
+
     // Load programs to get ami_percent per listing (keyed by community_name)
     const { data: programs } = await supabase
       .from('programs')
@@ -138,6 +139,16 @@ Deno.serve(async (req) => {
 
 function evaluateApplicant(ap: Record<string, unknown>, req: Record<string, unknown>, amiPct: number | null) {
   const failed: string[] = []
+
+  // Manual entries only capture name, email, phone, household size, and area preference.
+  // All automated eligibility checks require form data that was never collected.
+  // Skip all checks and return a single generic note for Kacee to review manually.
+  if (String(ap.entry_type ?? '').toLowerCase() === 'manual') {
+    return {
+      status: 'Manual',
+      failedFields: ['Manual entry - missing screening data, requires manual review for listing match'],
+    }
+  }
 
   // Helper: only true when a YES/NO field is explicitly set to YES.
   // Empty/null/missing fields return false so the check is skipped entirely.

@@ -1285,7 +1285,14 @@ function computeFlags(ap) {
   const flags = []
   const parseAmt = v => parseFloat(String(v || '0').replace(/[$,]/g, '')) || 0
 
-  // 1. Missing critical fields
+  // Manual entries only capture name, email, phone, household size, and area preference.
+  // All automated checks require questionnaire data that was never collected.
+  // Return a single informational note instead of a list of false-alarm flags.
+  if (ap.entry_type === 'manual') {
+    return [{ id: 'manual_entry', sev: 'info', msg: 'Manual entry - screening data was not collected via the questionnaire. Review this applicant directly before referring to any listing.' }]
+  }
+
+  // 1. Missing critical fields (form submissions only)
   if (!ap.household_size)    flags.push({ id: 'no_hh_size', sev: 'warning', msg: 'No household size provided. This is required for AMI eligibility matching.' })
   if (!ap.credit_score_self) flags.push({ id: 'no_credit',  sev: 'warning', msg: 'No credit score provided. Credit score is required for most loan programs.' })
   if (!ap.phone)             flags.push({ id: 'no_phone',   sev: 'info',    msg: 'No phone number provided. Contact may need to be made by email only.' })
@@ -2135,7 +2142,7 @@ async function loadMatches() {
       { data: il,       error: ilErr  },
     ] = await Promise.all([
       sb.from('listings').select('listing_id,listing_name,active,units_available').eq('active','YES'),
-      sb.from('match_results').select('*').in('status', ['Pass','Close']),
+      sb.from('match_results').select('*').in('status', ['Pass','Close','Manual']),
       sb.from('listing_candidates').select('*'),
       sb.from('interest_list').select('id,email,full_name,submitted_at,status,credit_score_self,household_size,area_preference,status_history,phone,live_in_sd_county,additional_info'),
     ])
@@ -2168,12 +2175,13 @@ function renderMatches(listings, results, cands, il, openBlocks = new Set()) {
   cands.forEach(c => { candMap[candKey(c.listing_id, c.email)] = c })
 
   const html = listings.map(lst => {
-    const lstResults = results.filter(r => r.listing_id === lst.listing_id)
-    const passRows  = lstResults.filter(r => r.status === 'Pass')
-    const closeRows = lstResults.filter(r => r.status === 'Close')
+    const lstResults  = results.filter(r => r.listing_id === lst.listing_id)
+    const passRows    = lstResults.filter(r => r.status === 'Pass')
+    const closeRows   = lstResults.filter(r => r.status === 'Close')
+    const manualRows  = lstResults.filter(r => r.status === 'Manual')
 
-    // Merge pass+close, filter out matched/expired applicants, sort by submitted_at
-    const allCandidates = [...passRows, ...closeRows].map(r => ({
+    // Merge pass+close+manual, filter out matched/expired applicants, sort by submitted_at
+    const allCandidates = [...passRows, ...closeRows, ...manualRows].map(r => ({
       ...r,
       ilRow: ilByEmail[r.email] || null,
       cand:  candMap[candKey(lst.listing_id, r.email)] || null,
@@ -2203,12 +2211,18 @@ function renderMatches(listings, results, cands, il, openBlocks = new Set()) {
       const r   = item
       const ilR = item.ilRow
       const cnd = item.cand
-      const isPass = r.status === 'Pass'
+      const isPass   = r.status === 'Pass'
+      const isManual = r.status === 'Manual'
       const statusBadge = isPass
         ? '<span class="match-badge match-pass">Pass</span>'
-        : '<span class="match-badge match-close">Close</span>'
+        : isManual
+          ? '<span class="match-badge match-manual">Manual Review</span>'
+          : '<span class="match-badge match-close">Close</span>'
       const failDetail = r.failed_fields
-        ? `<div style="font-size:.72rem;color:#999;margin-top:.2rem;">${esc(r.failed_fields)}</div>` : ''
+        ? isManual
+          ? `<div style="font-size:.72rem;color:#6c7fd8;margin-top:.2rem;"><i class="fa-solid fa-circle-info"></i> ${esc(r.failed_fields)}</div>`
+          : `<div style="font-size:.72rem;color:#999;margin-top:.2rem;">${esc(r.failed_fields)}</div>`
+        : ''
 
       if (isOptedOut) {
         return `<tr class="match-row-opted-out">
@@ -2244,8 +2258,9 @@ function renderMatches(listings, results, cands, il, openBlocks = new Set()) {
           <button class="btn-secondary btn-xs" onclick="startReview('${esc(lst.listing_id)}','${esc(r.email)}')"><i class="fa-solid fa-rotate-left"></i> Re-assign</button>`
       }
 
-      const isStar = rank === 1 && !cnd
-      return `<tr class="${isPass ? 'match-row-pass' : 'match-row-close'}${isStar ? ' match-priority' : ''}">
+      const isStar = rank === 1 && !cnd && !isManual
+      const rowClass = isPass ? 'match-row-pass' : isManual ? 'match-row-manual' : 'match-row-close'
+      return `<tr class="${rowClass}${isStar ? ' match-priority' : ''}">
         <td class="match-rank">#${rank}${isStar ? ' <span class="priority-star" title="Next in line">★</span>' : ''}</td>
         <td><strong>${esc(r.full_name || r.email)}</strong><br><span style="font-size:.78rem;color:#888;">${esc(r.email)}</span></td>
         <td>${ilR ? fmtDate(ilR.submitted_at) : ''}</td>
@@ -2263,10 +2278,13 @@ function renderMatches(listings, results, cands, il, openBlocks = new Set()) {
       const r   = item
       const ilR = item.ilRow
       const cnd = item.cand
-      const isPass = r.status === 'Pass'
+      const isPass   = r.status === 'Pass'
+      const isManual = r.status === 'Manual'
       const statusBadge = isPass
         ? '<span class="match-badge match-pass">Pass</span>'
-        : '<span class="match-badge match-close">Close</span>'
+        : isManual
+          ? '<span class="match-badge match-manual">Manual Review</span>'
+          : '<span class="match-badge match-close">Close</span>'
 
       if (isOptedOut) {
         return `<div class="match-mobile-card match-mc-opted-out">
@@ -2283,9 +2301,12 @@ function renderMatches(listings, results, cands, il, openBlocks = new Set()) {
         </div>`
       }
 
-      const isStar = rank === 1 && !cnd
+      const isStar = rank === 1 && !cnd && !isManual
       const failDetail = r.failed_fields
-        ? `<div class="match-mc-fails"><i class="fa-solid fa-circle-exclamation"></i> ${esc(r.failed_fields)}</div>` : ''
+        ? isManual
+          ? `<div class="match-mc-fails" style="color:#6c7fd8;"><i class="fa-solid fa-circle-info"></i> ${esc(r.failed_fields)}</div>`
+          : `<div class="match-mc-fails"><i class="fa-solid fa-circle-exclamation"></i> ${esc(r.failed_fields)}</div>`
+        : ''
 
       let actionHtml
       if (!cnd) {
@@ -2306,7 +2327,8 @@ function renderMatches(listings, results, cands, il, openBlocks = new Set()) {
           <button class="btn-secondary btn-xs" onclick="startReview('${esc(lst.listing_id)}','${esc(r.email)}')"><i class="fa-solid fa-rotate-left"></i> Re-assign</button>`
       }
 
-      return `<div class="match-mobile-card ${isPass ? 'match-mc-pass' : 'match-mc-close'}${isStar ? ' match-mc-star' : ''}">
+      const mcClass = isPass ? 'match-mc-pass' : isManual ? 'match-mc-manual' : 'match-mc-close'
+      return `<div class="match-mobile-card ${mcClass}${isStar ? ' match-mc-star' : ''}">
         <div class="match-mc-header">
           <span class="match-mc-rank">#${rank}${isStar ? ' <span class="priority-star">★</span>' : ''}</span>
           <div class="match-mc-name-block">
