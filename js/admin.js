@@ -238,43 +238,175 @@ async function loadDashboard() {
 }
 
 function renderDashboard() {
-  const ilCounts   = countBy(ilData,   'status')
-  const psCounts   = countBy(psData,   'status')
-  const lstActive   = lstData.filter(r => r.active === 'YES').length
-  const lstOnSite   = lstData.filter(r => r.show_on_site).length
+  const ilCounts   = countBy(ilData, 'status')
+  const psCounts   = countBy(psData, 'status')
+  const lstActive  = lstData.filter(r => r.active === 'YES').length
+  const lstOnSite  = lstData.filter(r => r.show_on_site).length
   const psPromoted = psCounts['promoted'] || 0
+  const psPending  = psData.length - psPromoted
+  const ilNew      = ilCounts.new       || 0
+  const ilReviewing= ilCounts.reviewing || 0
+  const ilActive   = ilCounts.active    || 0
+  const ilMatched  = ilCounts.matched   || 0
+  const ilExpired  = ilCounts.expired   || 0
+
+  const hour     = new Date().getHours()
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
+  const dateStr  = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+
+  const attention = []
+  if (psPending) attention.push(`${psPending} pending submission${psPending !== 1 ? 's' : ''}`)
+  if (ilNew)     attention.push(`${ilNew} new applicant${ilNew !== 1 ? 's' : ''}`)
+  const summaryMsg = attention.length
+    ? `You have ${attention.join(' and ')} that need attention.`
+    : 'Everything looks up to date — nice work!'
 
   setArea('dashboard-area', `
-    <div class="dash-pipeline-wrap">
-      <div class="pipeline-stage" data-nav="properties">
-        <div class="pipeline-icon"><i class="fa-solid fa-inbox"></i></div>
-        <div class="pipeline-label">Submissions</div>
-        <div class="pipeline-nums"><span class="pipeline-highlight">${psData.length - psPromoted}</span> pending</div>
-        <div class="pipeline-nums">${psData.length} total &bull; ${psPromoted} promoted</div>
+    <div class="dash-greeting">
+      <div>
+        <div class="dash-greeting-hi">${greeting}, Kacee!</div>
+        <div class="dash-greeting-date">${dateStr}</div>
       </div>
-      <div class="pipeline-arrow"><i class="fa-solid fa-chevron-right"></i></div>
-      <div class="pipeline-stage" data-nav="listings">
-        <div class="pipeline-icon"><i class="fa-solid fa-building"></i></div>
-        <div class="pipeline-label">Listings</div>
-        <div class="pipeline-nums"><span class="pipeline-highlight">${lstActive}</span> in matching</div>
-        <div class="pipeline-nums">${lstData.length} total &bull; ${lstOnSite} on site</div>
+      <div class="dash-greeting-msg">${summaryMsg}</div>
+    </div>
+
+    <div class="dash-kpi-row">
+      <div class="dash-kpi-card dash-kpi-gold" data-nav="properties">
+        <div class="dash-kpi-icon"><i class="fa-solid fa-inbox"></i></div>
+        <div class="dash-kpi-body">
+          <div class="dash-kpi-num">${psPending}</div>
+          <div class="dash-kpi-label">Pending Submissions</div>
+          <div class="dash-kpi-sub">${psData.length} total &bull; ${psPromoted} promoted</div>
+        </div>
+      </div>
+      <div class="dash-kpi-card dash-kpi-green" data-nav="listings">
+        <div class="dash-kpi-icon"><i class="fa-solid fa-building"></i></div>
+        <div class="dash-kpi-body">
+          <div class="dash-kpi-num">${lstActive}</div>
+          <div class="dash-kpi-label">Active Listings</div>
+          <div class="dash-kpi-sub">${lstData.length} total &bull; ${lstOnSite} on site</div>
+        </div>
+      </div>
+      <div class="dash-kpi-card dash-kpi-blue" data-nav="interest-list">
+        <div class="dash-kpi-icon"><i class="fa-solid fa-users"></i></div>
+        <div class="dash-kpi-body">
+          <div class="dash-kpi-num">${ilData.length}</div>
+          <div class="dash-kpi-label">Interest List</div>
+          <div class="dash-kpi-sub">${ilNew} new &bull; ${ilReviewing} reviewing &bull; ${ilActive} active</div>
+        </div>
+      </div>
+      <div class="dash-kpi-card dash-kpi-teal" data-nav="interest-list">
+        <div class="dash-kpi-icon"><i class="fa-solid fa-handshake"></i></div>
+        <div class="dash-kpi-body">
+          <div class="dash-kpi-num">${ilMatched}</div>
+          <div class="dash-kpi-label">Matched</div>
+          <div class="dash-kpi-sub">${ilExpired} expired</div>
+        </div>
       </div>
     </div>
-    <div class="dash-bottom">
-      <div class="dash-stat-card" data-nav="interest-list">
-        <div class="dash-stat-num">${ilData.length}</div>
-        <div class="dash-stat-label">Interest List</div>
-        <div class="dash-stat-sub">${ilCounts.new||0} new &bull; ${ilCounts.reviewing||0} reviewing &bull; ${ilCounts.active||0} active</div>
-      </div>
-      <div class="dash-stat-card" data-nav="interest-list">
-        <div class="dash-stat-num">${ilCounts.matched||0}</div>
-        <div class="dash-stat-label">Matched</div>
-        <div class="dash-stat-sub">${ilCounts.expired||0} expired</div>
-      </div>
-    </div>`)
 
+    <div class="dash-charts-row">
+      <div class="dash-chart-card">
+        <div class="dash-chart-title"><i class="fa-solid fa-chart-pie" style="margin-right:.4rem;opacity:.6"></i>Interest List Breakdown</div>
+        <div class="dash-chart-wrap dash-donut-wrap">
+          <canvas id="il-donut-chart"></canvas>
+        </div>
+        <div class="dash-chart-legend" id="il-donut-legend"></div>
+      </div>
+      <div class="dash-chart-card">
+        <div class="dash-chart-title"><i class="fa-solid fa-bars-progress" style="margin-right:.4rem;opacity:.6"></i>Applicant Pipeline</div>
+        <div class="dash-chart-wrap">
+          <canvas id="pipeline-bar-chart"></canvas>
+        </div>
+      </div>
+    </div>
+  `)
+
+  // ── Wire nav clicks ──
   document.querySelectorAll('[data-nav]').forEach(el => {
     el.addEventListener('click', () => switchTab(el.dataset.nav))
+  })
+
+  // ── Chart: Interest List Donut ──
+  const donutAllLabels = ['New', 'Reviewing', 'Active', 'Matched', 'Expired']
+  const donutAllValues = [ilNew, ilReviewing, ilActive, ilMatched, ilExpired]
+  const donutAllColors = ['#3b82f6', '#f59e0b', '#2c5545', '#10b981', '#94a3b8']
+  const dLabels = [], dValues = [], dColors = []
+  donutAllLabels.forEach((l, i) => {
+    if (donutAllValues[i] > 0) { dLabels.push(l); dValues.push(donutAllValues[i]); dColors.push(donutAllColors[i]) }
+  })
+
+  const donutCanvas = document.getElementById('il-donut-chart')
+  const legendEl    = document.getElementById('il-donut-legend')
+
+  if (dValues.length > 0) {
+    const total = dValues.reduce((s, v) => s + v, 0)
+    const centerPlugin = {
+      id: 'centerText',
+      afterDatasetsDraw(chart) {
+        const { ctx, chartArea: { left, top, width, height } } = chart
+        const cx = left + width / 2, cy = top + height / 2
+        ctx.save()
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+        ctx.font = 'bold 20px Inter, sans-serif'; ctx.fillStyle = '#2a2a2a'
+        ctx.fillText(total, cx, cy - 9)
+        ctx.font = '11px Inter, sans-serif'; ctx.fillStyle = '#888'
+        ctx.fillText('total', cx, cy + 9)
+        ctx.restore()
+      }
+    }
+    new Chart(donutCanvas, {
+      type: 'doughnut',
+      plugins: [centerPlugin],
+      data: {
+        labels: dLabels,
+        datasets: [{ data: dValues, backgroundColor: dColors, borderWidth: 2, borderColor: '#fff', hoverOffset: 4 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: true, cutout: '62%',
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw}` } }
+        }
+      }
+    })
+    legendEl.innerHTML = dLabels.map((l, i) =>
+      `<div class="dash-legend-item">
+        <span class="dash-legend-dot" style="background:${dColors[i]}"></span>
+        <span>${l} <strong>${dValues[i]}</strong></span>
+      </div>`
+    ).join('')
+  } else {
+    donutCanvas.closest('.dash-chart-wrap').innerHTML = '<p class="dash-no-data">No applicants yet</p>'
+  }
+
+  // ── Chart: Pipeline Horizontal Bar ──
+  new Chart(document.getElementById('pipeline-bar-chart'), {
+    type: 'bar',
+    data: {
+      labels: ['Submitted', 'Active Listings', 'Applicants', 'Matched'],
+      datasets: [{
+        data: [psData.length, lstActive, ilData.length, ilMatched],
+        backgroundColor: ['#b8860b', '#2c5545', '#3b82f6', '#10b981'],
+        borderRadius: 5, borderWidth: 0,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => `  ${ctx.raw}` } }
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          ticks: { precision: 0, stepSize: 1, font: { size: 11 } },
+          grid: { color: '#f0f0ec' }
+        },
+        y: { grid: { display: false }, ticks: { font: { size: 12 } } }
+      }
+    }
   })
 }
 
