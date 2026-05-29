@@ -2767,49 +2767,53 @@ document.getElementById('success-delete-btn').addEventListener('click', async ()
 const HELP_CONTENT = {
   dashboard: {
     title: 'Dashboard',
-    intro: 'The Dashboard gives you a snapshot of the entire pipeline at a glance. It shows live counts from every table so you can quickly see how many applicants, listings, and programs are active without navigating to each tab.',
+    intro: 'The Dashboard gives you a real-time snapshot of the entire pipeline. It shows live counts from every table so you can see at a glance how many applicants, listings, and inquiries are active without navigating to each tab.',
     faq: [
       {
         q: 'What do the pipeline numbers mean?',
         a: `<ul>
-          <li><strong>Applicants in matching</strong>: people on the Interest List with status New, Reviewing, or Active. These are the applicants the matching engine runs against each day.</li>
-          <li><strong>In Matching listings</strong>: listings set to "In Matching." These are the properties the engine compares applicants against.</li>
-          <li><strong>On Site listings</strong>: listings currently shown on the public Listings page.</li>
+          <li><strong>Applicants in matching</strong>: people on the Interest List with status New, Reviewing, or Active. These are the applicants the matching engine evaluates against every active listing.</li>
+          <li><strong>In Matching listings</strong>: listings with the In Matching toggle on. These are the properties the engine compares applicants against each week.</li>
+          <li><strong>On Site listings</strong>: listings currently shown as public cards on the website Listings page.</li>
           <li><strong>Property submissions</strong>: seller inquiries submitted through the public contact form.</li>
         </ul>`
       },
       {
+        q: 'How often does the matching engine run?',
+        a: 'The matching engine runs automatically every Monday morning. You can also trigger an immediate run anytime using the <strong>Run Matching Now</strong> button on the Matches tab.'
+      },
+      {
         q: 'Why does it sometimes say "Database is waking up"?',
-        a: 'The database is on a free-tier plan that goes to sleep after a period of inactivity. The first load after it has been idle can take 20 to 30 seconds. The page will load automatically once the database responds - no action needed.'
+        a: 'The database goes to sleep after a period of inactivity. The first load after it has been idle can take 20 to 30 seconds. The page will load automatically once the database responds - no action needed on your end.'
       }
     ]
   },
 
   testimonials: {
     title: 'Testimonials',
-    intro: 'Testimonials are quotes from clients, buyers, and partners that appear on the public homepage. Active testimonials are shown automatically - inactive ones are saved but hidden from the site.',
+    intro: 'Testimonials are quotes from clients, buyers, and partners that appear on the public homepage. Active testimonials display automatically. Inactive ones are saved but hidden from the site.',
     faq: [
       {
         q: 'How do I add a new testimonial?',
-        a: 'Click the <strong>+ Add Testimonial</strong> button in the toolbar. Enter the quote text (required), the person\'s name or attribution, their role or buyer type, and set <strong>Show on Website</strong> to Yes to make it live immediately.'
+        a: 'Click <strong>+ Add Testimonial</strong> in the toolbar. Enter the quote text (required), the person\'s name, their role or buyer type (for example: First-Time Buyer, Developer Partner), and set <strong>Show on Website</strong> to Yes to publish it immediately.'
       },
       {
         q: 'How do I edit or remove a testimonial?',
-        a: 'Click any row in the table to open the edit modal. Update the fields and save, or click <strong>Delete</strong> to permanently remove it. You can also use the trash icon on a row to delete without opening the modal.'
+        a: 'Click any testimonial card or table row to open the edit modal. Update the fields and save, or click <strong>Delete</strong> to permanently remove it.'
       },
       {
         q: 'What is the difference between Active and Inactive?',
-        a: '<strong>Active</strong> testimonials are shown on the public homepage. <strong>Inactive</strong> testimonials are saved in the system but hidden from visitors. Toggle the <strong>Show on Website</strong> switch in the edit modal to change the status.'
+        a: '<strong>Active</strong> testimonials are visible on the public homepage. <strong>Inactive</strong> ones are stored in the system but not shown to visitors. Toggle <strong>Show on Website</strong> in the edit modal to switch the status.'
       },
       {
         q: 'How do the Name and Role fields work?',
-        a: 'The <strong>Name</strong> field is the person\'s name or initials. The <strong>Role</strong> field is their buyer type or partner type (for example: First-Time Buyer, Developer Partner). On the website, both are combined as the attribution below the quote. Either or both can be left blank.'
+        a: 'On the public site the attribution appears as <em>Name, Role</em> beneath the quote. Both fields are optional - leave either blank if you only want to show one or neither.'
       },
       {
         q: 'What do the filter buttons do?',
         a: `<ul>
           <li><strong>All</strong>: shows every testimonial regardless of status.</li>
-          <li><strong>Active</strong> (default): shows only testimonials currently on the website.</li>
+          <li><strong>Active</strong> (default): shows only testimonials currently published on the website.</li>
           <li><strong>Inactive</strong>: shows only hidden testimonials.</li>
         </ul>`
       }
@@ -2818,66 +2822,66 @@ const HELP_CONTENT = {
 
   properties: {
     title: 'Property Submissions',
-    intro: 'This tab shows all seller inquiries submitted through the public "Submit a Property" form on the website. These are people who own a property and want to know if it qualifies for the affordable housing program. Click any row to open the full details.',
+    intro: 'This tab shows all seller inquiries submitted through the "Submit a Property" form on the public website. These are property owners who want to know if their home qualifies for the affordable housing program. Click any row to open the full details.',
     faq: [
       {
         q: 'What information comes in with a submission?',
-        a: 'Each submission includes the owner\'s contact info, the property address and type, bedrooms and bathrooms, asking price, and any notes they added. Click any row to see the full details and edit the record.'
+        a: 'Each submission includes the owner\'s contact info (name, organization, email, phone), the property address, bedrooms and bathrooms, number of affordable units, estimated move-in date, AMI percent, asking price, HOA fee, and any file links or notes they provided.'
       },
       {
         q: 'What do the filter buttons do?',
         a: `<ul>
-          <li><strong>Non-Promoted</strong> (default): shows submissions not yet pushed to a Listing.</li>
-          <li><strong>All</strong>: shows every submission.</li>
-          <li><strong>Promoted</strong>: shows submissions that have already been converted to a Listing.</li>
+          <li><strong>Non-Promoted</strong> (default): shows submissions not yet converted to a Listing.</li>
+          <li><strong>Promoted</strong>: shows submissions already converted to a Listing.</li>
+          <li><strong>All</strong>: shows every submission regardless of status.</li>
         </ul>`
       },
       {
-        q: 'How do I move a submission to a Listing?',
-        a: 'Click the <strong>Promote</strong> button in the Actions column of any non-promoted submission. This opens the Add Listing modal pre-filled with the property\'s details so you can review and save it as an active Listing in the matching system. Once promoted, the submission is marked accordingly.'
+        q: 'How do I convert a submission into a Listing?',
+        a: 'Click the <strong>Promote to Listing</strong> button on any non-promoted submission. The Add Listing modal opens pre-filled with the property details so you can review and save it. Once promoted, the submission is marked accordingly and the listing appears in the Listings tab.'
       },
       {
         q: 'Can I edit a submission after it comes in?',
-        a: 'Yes. Click anywhere on the submission row to open the detail modal. You can update the contact info, property details, and status from there.'
+        a: 'Yes. Click anywhere on the submission row to open the detail modal. You can update any field and save.'
       }
     ]
   },
 
   'org-inquiries': {
     title: 'Org Inquiries',
-    intro: 'Org Inquiries are partnership and organization inquiry messages submitted through the contact page. These are builders, nonprofits, housing agencies, and other partners who want to learn more about working with CA Affordable Homes. New inquiries land here unread and are ready for your review.',
+    intro: 'Org Inquiries are partnership messages submitted through the contact page by builders, nonprofits, housing agencies, and other organizations interested in working with CA Affordable Homes. New inquiries appear here unread and are ready for your review.',
     faq: [
       {
         q: 'How does a new inquiry come in?',
-        a: 'When someone fills out the organization or developer inquiry form on the contact page and submits, the record is saved immediately to the database and appears here with a <strong>New</strong> status. You will also receive an email notification at the team inbox.'
+        a: 'When someone submits the organization or developer inquiry form on the public contact page, the record is saved immediately and appears here with a <strong>New</strong> status. You will also receive an email notification at the team inbox.'
       },
       {
         q: 'What do the filter buttons do?',
         a: `<ul>
-          <li><strong>New</strong> (default): shows only unreviewed inquiries that still need your attention.</li>
+          <li><strong>New</strong> (default): shows only unreviewed inquiries that need attention.</li>
           <li><strong>Reviewed</strong>: shows inquiries you have already marked as reviewed.</li>
           <li><strong>All</strong>: shows every inquiry regardless of status.</li>
         </ul>`
       },
       {
         q: 'How do I mark an inquiry as reviewed?',
-        a: 'Click the <strong>Mark Reviewed</strong> button on any New inquiry card. The status changes to Reviewed immediately and the card moves out of the New filter. If you need to reopen it, click <strong>Mark as New</strong> to move it back.'
+        a: 'Click <strong>Mark Reviewed</strong> on any New inquiry card. The status changes immediately. To reopen it, click <strong>Mark as New</strong> to move it back.'
       },
       {
         q: 'How do I reply to an inquiry?',
-        a: 'Click the email address link on the inquiry card. Your default email application will open a new message pre-addressed to that contact. If a phone number was provided, click it to initiate a call on devices that support it.'
+        a: 'Click the email address link on the inquiry card to open a new message in your default email app. If a phone number was provided, click it to initiate a call on supported devices.'
       },
       {
         q: 'How do I delete an inquiry?',
-        a: 'Click the <strong>Delete</strong> button on the inquiry card and confirm the prompt. The record is permanently removed and cannot be recovered.'
+        a: 'Click the <strong>Delete</strong> button on the inquiry card and confirm. The record is permanently removed and cannot be recovered.'
       },
       {
         q: 'What information comes in with an inquiry?',
         a: `<ul>
           <li><strong>Organization name</strong> and <strong>contact person name</strong></li>
           <li><strong>Email address</strong> and <strong>phone number</strong> (if provided)</li>
-          <li><strong>Area of interest</strong>: the San Diego region(s) the organization is focused on</li>
-          <li><strong>Message</strong>: their inquiry description or details</li>
+          <li><strong>Area of interest</strong>: the San Diego region(s) they focus on</li>
+          <li><strong>Message</strong>: their inquiry details</li>
           <li><strong>Submitted date and time</strong></li>
         </ul>`
       }
@@ -2886,52 +2890,70 @@ const HELP_CONTENT = {
 
   listings: {
     title: 'Listings',
-    intro: 'Listings are the source of truth for all property data. Each listing drives both the internal matching engine and the public-facing listings page on the website. This tab is where you create, edit, and manage all properties in the system.',
+    intro: 'Listings are the central record for every property. Each listing controls both what appears in the internal matching engine and what visitors see on the public website. All three master controls - In Matching, Show on Public Site, and Listed on MLS - are grouped at the top of every listing edit modal for quick access.',
     faq: [
       {
-        q: 'What do "In Matching" and "Not Matching" mean?',
-        a: '<strong>In Matching</strong> means the listing is active and the daily matching engine will compare all eligible applicants against it. <strong>Not Matching</strong> means the listing is paused and skipped during the matching run. Use the <strong>In Matching</strong> toggle in the Edit modal to switch between them.'
+        q: 'What are the three controls at the top of every listing?',
+        a: `The green banner at the top of the edit modal has three independent toggles:
+          <ul>
+            <li><strong>In Matching</strong>: when on, the matching engine evaluates this listing against all eligible applicants each week. Turn this off to pause a listing without deleting it.</li>
+            <li><strong>Show on Public Site</strong>: when on, the listing appears as a card on the public Listings page. Turn this off to hide it from visitors without removing it from the matching engine.</li>
+            <li><strong>Listed on MLS</strong>: when on, the full street address is shown publicly and a clickable Google Maps link is added to the card and popup. When off, only the city and zip code are shown. This is required under the California MLS Clear Cooperation Policy.</li>
+          </ul>
+          A warning appears if In Matching and Show on Public Site are out of sync, since they are usually kept together.`
       },
       {
-        q: 'What does "Show on Public Site" do?',
-        a: 'When <strong>Show on Public Site</strong> is turned on, the listing appears as a public card on the website\'s Listings page. Visitors can click it to see full details including the AMI income limits table. When it is off, the listing is internal only. This toggle is independent of <strong>In Matching</strong> - a listing can be in matching without being on the site, and vice versa.'
+        q: 'What is the difference between Internal Name and Community Name?',
+        a: '<strong>Internal Name</strong> (in the Identity section) is your private label for this listing - it appears only in the admin portal and is never shown to the public. <strong>Community Name</strong> (in Site Display) is the development or project name shown as the card title on the public website - but only when the listing is flagged as MLS. For non-MLS listings the card title comes from the Area field instead.'
       },
       {
-        q: 'Should "In Matching" and "Show on Site" always be the same?',
-        a: 'Usually yes - you want the same listings to be both available for matching and visible on the site. If they are out of sync, the modal will show a yellow warning so you do not forget one. There are legitimate cases where they differ: for example, a coming soon listing might be on the site but not yet in matching, or an internal-only listing might be in matching but not on the site.'
+        q: 'What is the Area field and when is it used?',
+        a: 'The <strong>Area</strong> field (in Property Details) is the geographic label shown as the card title on the public website for non-MLS listings - for example "South Bay" or "North County Coastal." Because non-MLS listings cannot show a community name publicly, the Area gives visitors a general sense of location without revealing the address or property identity. For MLS listings, the Community Name is used as the card title instead.'
       },
       {
-        q: 'When does the address show publicly?',
-        a: 'The <strong>full address</strong> is only shown to website visitors when <strong>Listed on MLS</strong> is turned on. This is required under the California MLS Clear Cooperation Policy - if a listing is publicly marketed with an address, it must be on the MLS. For non-MLS listings, the public card shows only the city and zip code.'
+        q: 'What does the public listing card show?',
+        a: `Each public card displays:
+          <ul>
+            <li><strong>Card title</strong>: Community Name (MLS listings) or Area/City (non-MLS)</li>
+            <li><strong>Location</strong>: full address as a Google Maps link (MLS only) or City + Zip (non-MLS)</li>
+            <li><strong>Specs</strong>: bedrooms, bathrooms, square footage, and parking as pill tags</li>
+            <li><strong>Details</strong>: Price (MLS only), Home Type, and AMI % limit</li>
+            <li><strong>Comments</strong>: a short snippet of the Public Comments field</li>
+          </ul>
+          Clicking the card opens a full popup with the complete details, AMI income limits table, and Key Features list.`
       },
       {
         q: 'What is the AMI % field in Site Display for?',
-        a: 'The <strong>AMI %</strong> field tells the website which income column to highlight in the income limits table shown inside the listing popup. For example, if you enter 80, the 80% AMI column is highlighted with a star so visitors can instantly see what income they need to qualify. Leave it blank if you do not want any column highlighted.'
+        a: 'The <strong>AMI %</strong> field tells the website which income column to highlight in green in the income limits table shown inside the listing popup. For example, entering 80 highlights the 80% AMI column with a star so visitors can quickly see the income limit that applies to them. Leave it blank if no specific column should be highlighted.'
       },
       {
         q: 'What goes in Key Features and Public Comments?',
-        a: '<strong>Key Features</strong> is shown as a bullet list inside the listing popup. Enter one feature per line - for example: Solar panels, HOA includes landscaping, Energy Star appliances. <strong>Public Comments</strong> is a short note shown at the bottom of the popup, like any important context you want visitors to know.'
+        a: '<strong>Key Features</strong> appears as a bullet list inside the listing popup only. Enter one feature per line, for example: Solar panels, HOA includes landscaping, Energy Star appliances. <strong>Public Comments</strong> is a short note shown at the bottom of both the card and the popup - use it for anything important you want visitors to notice, like lottery status or move-in timing.'
+      },
+      {
+        q: 'What is Public Status (Available vs. Coming Soon)?',
+        a: 'The <strong>Public Status</strong> dropdown in Site Display sets the status badge shown on the public card. <strong>Available</strong> means the listing is open for interest. <strong>Coming Soon</strong> signals that it is not yet ready but will be. Both are shown on the public site - this field is purely for visitor communication and does not affect the matching engine.'
       },
       {
         q: 'Which eligibility fields are checked during matching?',
-        a: 'Only fields where you have entered a value are checked. If a field is blank, the engine skips that check entirely and does not penalize applicants for it. Each listing can have its own combination of requirements - just fill in what applies.'
+        a: 'Only fields where you have entered a value are checked. If a field is blank, the engine skips that check entirely and does not penalize applicants for it. Matching uses the AMI table in the Eligibility section for income limits, plus any combination of credit score, household size, DTI, monthly debt, residency, first-time buyer, foreclosure, bankruptcy, citizenship, and asset requirements you have filled in.'
       },
       {
         q: 'How do I add a new listing?',
-        a: 'Click the <strong>+ Add Listing</strong> button in the toolbar. Fill in the details in the modal and click Save. Toggle <strong>In Matching</strong> on when the listing is ready to match applicants against it. Toggle <strong>Show on Public Site</strong> on when you are ready to display it on the website.'
+        a: 'Click <strong>+ Add Listing</strong> in the toolbar. Fill in the details across all sections of the modal and click Save. Use the three controls at the top of the modal to set whether it is in matching, visible on the site, and whether it is MLS-listed.'
       },
       {
         q: 'How do I delete a listing?',
-        a: 'Click the <strong>trash icon</strong> on a listing card and confirm. Once deleted, the listing is immediately removed from the matching engine and from the public website.'
+        a: 'Click the trash icon on the listing card and confirm. The listing is immediately removed from the matching engine and from the public website.'
       },
       {
         q: 'What do the filter buttons do?',
         a: `<ul>
-          <li><strong>In Matching</strong> (default): shows only active listings currently in the matching engine.</li>
-          <li><strong>All</strong>: shows every listing regardless of status.</li>
+          <li><strong>In Matching</strong> (default): shows only listings currently active in the matching engine.</li>
           <li><strong>Not Matching</strong>: shows only paused listings.</li>
-          <li><strong>On Site</strong>: shows only listings currently displayed on the public website.</li>
-          <li><strong>Not On Site</strong>: shows only listings not yet shown publicly.</li>
+          <li><strong>On Site</strong>: shows only listings currently shown on the public website.</li>
+          <li><strong>Not On Site</strong>: shows only listings not yet displayed publicly.</li>
+          <li><strong>All</strong>: shows every listing regardless of status.</li>
         </ul>`
       }
     ]
@@ -2939,143 +2961,189 @@ const HELP_CONTENT = {
 
   'interest-list': {
     title: 'Interest List',
-    intro: 'The Interest List contains every applicant who has submitted the contact form on the website. This is the pool of people the matching engine runs against each day. Click any row to open the applicant detail where you can review automated flags, add private notes, update their status, export a CSV, or print a full profile PDF.',
+    intro: 'The Interest List is the pool of every applicant in the system - both people who submitted the online questionnaire and manual entries you added yourself. The matching engine runs against this list every Monday. Click any row to open the full applicant detail where you can review flags, add notes, change status, export, or print.',
     faq: [
       {
         q: 'What are all the status options and what do they mean?',
         a: `<ul>
-          <li><strong>New</strong>: submitted the form and has not been reviewed yet. Included in daily matching.</li>
-          <li><strong>Reviewing</strong>: you are actively evaluating this applicant. Included in daily matching.</li>
-          <li><strong>Active</strong>: qualified and actively waiting for a match. Included in daily matching. Subject to 12-month automatic expiry.</li>
+          <li><strong>New</strong>: submitted the questionnaire and has not been reviewed yet. Included in weekly matching.</li>
+          <li><strong>Reviewing</strong>: you are actively evaluating this applicant. Included in weekly matching. This is also the default status for all manually added entries.</li>
+          <li><strong>Active</strong>: qualified and actively waiting for a match. Included in weekly matching. Subject to 12-month automatic expiry.</li>
           <li><strong>Matched</strong>: successfully placed in a home. Excluded from matching.</li>
-          <li><strong>Expired</strong>: 12 months have passed without a match. Excluded from matching. If they re-submit the form, they are automatically re-enrolled.</li>
+          <li><strong>Expired</strong>: 12 months passed without a match. Excluded from matching. If they re-submit the form, they are automatically re-enrolled.</li>
         </ul>`
       },
       {
         q: 'How do I change an applicant\'s status?',
-        a: 'Click any row to open the applicant detail modal. The <strong>Status</strong> selector is at the top of the modal. Choose the new status and click <strong>Save Status</strong>. Changes take effect immediately for the next matching run.'
+        a: 'Click any row to open the applicant detail modal. The <strong>Status</strong> selector is at the top of the modal. Choose the new status and click <strong>Save Status</strong>. The change takes effect for the next matching run.'
       },
       {
         q: 'What do the filter buttons do?',
         a: `<ul>
-          <li><strong>Status filters</strong> (All, New, Reviewing, Active, Matched, Expired): narrow the list to applicants in that specific status.</li>
-          <li><strong>Manual</strong>: shows only entries you added manually through the Add Manual Entry button, as opposed to people who submitted the online form.</li>
-          <li><strong>Has Flags</strong>: shows only applicants with at least one active (non-dismissed) automated review flag. Use this after new submissions arrive to quickly find records that need your attention.</li>
+          <li><strong>Status filters</strong> (All, New, Reviewing, Active, Matched, Expired): show only applicants in that status.</li>
+          <li><strong>Manual</strong>: shows only entries you added yourself through the Add Manual Entry button, as opposed to people who submitted the online questionnaire.</li>
+          <li><strong>Has Flags</strong>: shows only applicants with at least one active automated review flag. Use this after new submissions to quickly find records that need attention.</li>
         </ul>
-        The search box at the top right lets you find a specific applicant by name or email at any time.`
-      },
-      {
-        q: 'How do I delete an applicant?',
-        a: 'Click any row to open the applicant detail modal. At the bottom of the modal is a red <strong>Delete Applicant</strong> button. You will be asked to confirm before the record is permanently removed. This also removes all their match results.'
-      },
-      {
-        q: 'What happens when someone re-submits the form?',
-        a: 'If their email already exists in the system and their status is <strong>Expired</strong>, they are automatically re-enrolled: their status is reset, the 12-month clock restarts, and their data is updated. If their status is anything other than Expired, their data is updated in place but their status and submission date are preserved.'
-      },
-      {
-        q: 'What are Review Flags and what do the colors mean?',
-        a: `Review Flags are automated checks that run on each applicant's submitted data every time you open their detail. They highlight common issues that may need follow-up before you refer someone to a lender. Flags are color-coded by severity:
-          <ul>
-            <li><strong>Red (Error)</strong>: something that would likely disqualify the applicant - for example a credit score below 580 or a debt-to-income ratio above 45%. Reach out before referring to a lender.</li>
-            <li><strong>Amber (Warning)</strong>: something that needs verification - for example a borderline credit score, a past foreclosure or bankruptcy disclosure, or an income inconsistency between sections.</li>
-            <li><strong>Blue (Info)</strong>: a note to be aware of - for example the applicant is not a first-time buyer or no phone number was provided.</li>
-          </ul>
-          Flags are calculated live each time you open a record. They are not stored permanently - only your dismissed flag list is saved.`
-      },
-      {
-        q: 'How do I dismiss a flag?',
-        a: 'Click the <strong>Dismiss</strong> button on any active flag. The flag is immediately hidden and your dismissal is saved to the database. Dismissed flags are still accessible under a "Show dismissed flags" link at the bottom of the flags panel in case you need to reference or restore them. Dismissal is per-applicant and does not affect any other record.'
-      },
-      {
-        q: 'How do I add private notes about an applicant?',
-        a: 'Open the applicant detail by clicking any row. At the top of the detail modal, below the flags panel, is an <strong>Admin Notes</strong> text area. Type any notes you want to record - follow-up reminders, context from a phone call, eligibility observations - then click <strong>Save Notes</strong>. Notes are private and are never shared with the applicant. They are also included when you export the Interest List to CSV.'
-      },
-      {
-        q: 'How do I export the Interest List to CSV?',
-        a: 'Click the <strong>Export CSV</strong> button in the toolbar at the top of the Interest List tab. The export respects whatever filter and search are currently active - so you can export only flagged applicants, only a specific status group, or a search result. The file includes name, contact info, household size, credit score, monthly debt, area preference, active flag descriptions, and your admin notes. Open it in Excel or Google Sheets.'
-      },
-      {
-        q: 'How do I print or save a PDF of an applicant profile?',
-        a: 'Open the applicant detail by clicking any row. In the footer of the detail modal, click <strong>Print Profile</strong>. Your browser print dialog will open showing only the applicant profile. To save a PDF instead of printing, select "Save as PDF" (Chrome/Edge) or "Microsoft Print to PDF" in the printer dropdown. The printed view hides all buttons and controls so only the data is visible on the page.'
+        The search box lets you find any applicant by name or email at any time, regardless of the active filter.`
       },
       {
         q: 'What is a Manual Entry and how do I add one?',
-        a: 'A <strong>Manual Entry</strong> is an Interest List record you create yourself for someone who contacted you directly - by phone, email, referral, or at an event - rather than through the online questionnaire. Click <strong>Add Manual Entry</strong> in the toolbar and fill in the basic details: name, email, household size, area of interest, and any notes. Manual entries default to <strong>Reviewing</strong> status and are included in the daily matching engine just like form submissions. No automated emails are sent for manual entries. They appear with a "Manual" badge in the Interest List and can be filtered using the <strong>Manual</strong> filter button.'
+        a: 'A <strong>Manual Entry</strong> is a record you create for someone who contacted you directly - by phone, email, referral, or at an event - rather than through the online questionnaire. Click <strong>Add Manual Entry</strong> in the toolbar and enter their name, email, household size, area of interest, and any notes. Manual entries start in <strong>Reviewing</strong> status and are included in the weekly matching run. No automated emails are sent. They appear with a "Manual" badge in the list and show as "Manual Review" in the Matches tab.'
+      },
+      {
+        q: 'How are manual entries handled in matching and flags?',
+        a: 'Manual entries only capture basic contact info - they do not go through the full questionnaire, so there is no credit score, income data, or disclosure answers on file. The automated flag checks that require questionnaire data are skipped entirely for manual entries. Instead, a single blue info note appears: "Manual entry - screening data was not collected." In the Matches tab, manual entries show a blue <strong>Manual Review</strong> badge and a note that they require direct review before being referred to any listing.'
       },
       {
         q: 'What if the email I enter for a manual entry already exists?',
-        a: 'If the email already exists in the Interest List, the record is updated in place rather than creating a duplicate. The existing data is overwritten with what you entered in the manual form. This is useful for updating a record when someone follows up with you after submitting the form.'
+        a: 'If the email already exists in the Interest List, the record is updated in place rather than creating a duplicate. This is useful when someone who already submitted a form follows up with you directly.'
+      },
+      {
+        q: 'What are Review Flags and what do the colors mean?',
+        a: `Review Flags are automated checks that run on each applicant's submitted data whenever you open their detail. They highlight issues that may need follow-up before referring someone to a lender:
+          <ul>
+            <li><strong>Red (Error)</strong>: likely disqualifying - for example a credit score below 580 or a DTI above 45%.</li>
+            <li><strong>Amber (Warning)</strong>: needs verification - for example a borderline credit score, a past foreclosure or bankruptcy, or an income inconsistency.</li>
+            <li><strong>Blue (Info)</strong>: a note to be aware of - for example the applicant is not a first-time buyer, or this is a manual entry with incomplete data.</li>
+          </ul>
+          Flags are calculated live when you open a record. Only your dismissed flag list is saved to the database.`
+      },
+      {
+        q: 'How do I dismiss a flag?',
+        a: 'Click <strong>Dismiss</strong> on any active flag. The flag is hidden immediately and the dismissal is saved. You can view dismissed flags under the "Show dismissed flags" link at the bottom of the flags panel and restore any of them if needed.'
+      },
+      {
+        q: 'How do I add private notes about an applicant?',
+        a: 'Open the applicant detail modal, find the <strong>Admin Notes</strong> area, type your notes, and click <strong>Save Notes</strong>. Notes are private and never visible to the applicant. They are included in CSV exports.'
+      },
+      {
+        q: 'How do I export the Interest List to CSV?',
+        a: 'Click <strong>Export CSV</strong> in the toolbar. The export respects your current filter and search - so you can export only manual entries, only flagged applicants, or a specific status group. The file includes name, contact info, household size, credit score, monthly debt, area preference, active flag descriptions, and admin notes.'
+      },
+      {
+        q: 'How do I print or save a PDF of an applicant profile?',
+        a: 'Open the applicant detail modal and click <strong>Print Profile</strong> in the footer. Your browser print dialog will open. To save as a PDF instead of printing, choose "Save as PDF" or "Microsoft Print to PDF" in the printer dropdown. Buttons and controls are hidden in the printed view so only the data shows.'
+      },
+      {
+        q: 'How do I delete an applicant?',
+        a: 'Open the applicant detail modal and click the red <strong>Delete Applicant</strong> button at the bottom. Confirm the prompt. This permanently removes the record and all associated match results.'
+      },
+      {
+        q: 'What happens when someone re-submits the form?',
+        a: 'If their email exists and their status is <strong>Expired</strong>, they are automatically re-enrolled: status resets, the 12-month clock restarts, and data updates. If their status is anything else, their data updates in place but status and submission date are preserved.'
       }
     ]
   },
 
   matches: {
     title: 'Matches',
-    intro: 'The Matches tab shows the results of the matching engine. For each active listing, you can see which applicants passed all requirements and which came close. Fail results are not displayed - only Pass and Close candidates are shown here for your review.',
+    intro: 'The Matches tab shows the results of the weekly matching engine run. For each active listing you can see which applicants passed all requirements, which came close, and which were added manually and need direct review. Applicants who fail 3 or more checks are excluded from this view entirely.',
     faq: [
       {
         q: 'How does the matching engine work?',
-        a: 'The engine compares every applicant with status New, Reviewing, or Active against every In Matching listing. For each listing, only the fields you have filled in are checked - if a field is blank on a listing, it is skipped entirely for that listing. This means each listing enforces only the requirements you have entered for it. Results are saved to the database and this tab is refreshed after each run.'
+        a: 'Every Monday morning the engine automatically compares every applicant with status New, Reviewing, or Active against every In Matching listing. Only fields you have filled in on a listing are checked - blank fields are skipped. So each listing enforces exactly the requirements you entered for it and no more. You can also trigger an immediate run using <strong>Run Matching Now</strong>.'
       },
       {
-        q: 'What do Pass and Close mean?',
+        q: 'What do Pass, Close, and Manual Review mean?',
         a: `<ul>
-          <li><strong>Pass</strong>: the applicant meets all requirements you have entered for this listing. These are your top candidates to contact.</li>
-          <li><strong>Close</strong>: the applicant failed 1 or 2 of the checks for this listing. They may still be worth reaching out to depending on the situation.</li>
+          <li><strong>Pass</strong>: the applicant meets every requirement you entered for this listing. These are your top candidates to contact.</li>
+          <li><strong>Close</strong>: the applicant failed 1 or 2 checks. They may still be worth reaching out to depending on the situation - the failed fields are listed so you can see what did not meet the threshold.</li>
+          <li><strong>Manual Review</strong>: a manually added applicant. Full eligibility checks cannot run because questionnaire data was not collected. Review their basic info and area preference directly before deciding whether to refer them to this listing.</li>
         </ul>
-        Applicants who fail 3 or more checks are excluded from this view entirely.`
+        Applicants who fail 3 or more checks are not shown.`
       },
       {
         q: 'What is the star icon next to a candidate?',
-        a: 'The star marks the <strong>top-ranked</strong> Pass or Close candidate for a listing. Ranking is first come, first served based on submission date. The star moves to the next eligible person if the top-ranked candidate opts out or is moved to Matched status.'
+        a: 'The star marks the top-ranked Pass or Close candidate for a listing, based on submission date (first come, first served). Manual Review entries do not receive the star since they have not been fully screened. The star moves to the next eligible person if the top-ranked candidate opts out or is moved to Matched.'
       },
       {
         q: 'What does "Opt Out" do?',
-        a: 'Clicking <strong>Opt Out</strong> records that this applicant has decided they are not interested in this specific property. They remain on the Interest List and stay eligible for other listings. Their place in line for other listings is unaffected. The star moves to the next eligible person for this listing. Opt Out is available at any stage - including while In Review.'
+        a: 'Opt Out records that this applicant is not interested in this specific property. They remain on the Interest List and stay eligible for other listings. Their position in line for other listings is unaffected. The star moves to the next person for this listing.'
       },
       {
         q: 'What does "Opt Back In" do?',
-        a: 'If an applicant opted out of a listing but changes their mind, clicking <strong>Opt Back In</strong> restores them to their original position in line for that listing. Their rank is based on their original submission date.'
+        a: 'If an applicant opted out but changes their mind, Opt Back In restores their position in line based on their original submission date.'
       },
       {
         q: 'How do I approve a match and log a success?',
-        a: 'First click <strong>Start Review</strong> on the candidate. This marks them as In Review - a signal that you are actively working with them on this listing. Once you are ready to confirm the placement, click <strong>Approve</strong>. This sets the applicant\'s status to Matched (removing them from future matching runs) and logs the placement in the Successes tab. The Approve button only appears after Start Review has been clicked.'
+        a: 'Click <strong>Start Review</strong> on a candidate to signal you are actively working with them. Then click <strong>Approve</strong> to confirm the placement. Approve sets the applicant\'s Interest List status to Matched, removes them from future matching runs, and creates a record in the Successes tab. The Approve button is only available after Start Review.'
       },
       {
         q: 'Can I run the matching engine manually?',
-        a: 'Yes. Click the <strong>Run Matching Now</strong> button at the top left of this tab. The engine will run immediately and results will refresh automatically when it completes. The engine also runs automatically every morning.'
+        a: 'Yes. Click <strong>Run Matching Now</strong> at the top of the Matches tab. Results refresh automatically when the run completes. The engine also runs automatically every Monday morning.'
       },
       {
         q: 'Why does a listing show no candidates?',
-        a: 'Either no applicants have passed or come close to the requirements for that listing, or the matching engine has not run yet. You can trigger a run manually using the <strong>Run Matching Now</strong> button.'
+        a: 'No applicants currently meet enough of the listing\'s requirements to qualify as Pass or Close, or the matching engine has not run since the listing was created. Click <strong>Run Matching Now</strong> to trigger an immediate run.'
       }
     ]
   },
 
   successes: {
     title: 'Successes',
-    intro: 'The Successes tab is a permanent record of every applicant who has been matched and placed in a home. Click any row to open the full detail view showing the applicant profile, property info, pipeline timeline, and notes.',
+    intro: 'The Successes tab is a permanent log of every placement - applicants who were matched to a property and approved. Click any row to open the full detail showing the applicant profile, property info, pipeline timeline, and your notes.',
     faq: [
       {
         q: 'How does a record get added here?',
-        a: 'A success record is created automatically when you click <strong>Approve</strong> on a candidate in the Matches tab. The applicant\'s status is set to Matched and a log entry is created here with the date, name, and listing.'
+        a: 'A success record is created automatically when you click <strong>Approve</strong> on a candidate in the Matches tab. The applicant\'s status is set to Matched and a log entry is created here with the placement date, name, and listing.'
       },
       {
         q: 'What is in the detail popup when I click a row?',
         a: `<ul>
-          <li><strong>Pipeline Timeline</strong>: a chronological log showing when the applicant submitted, every status change made in the admin, and when they were approved.</li>
-          <li><strong>Applicant section</strong>: key info from their Interest List record, including any notes they submitted.</li>
+          <li><strong>Pipeline Timeline</strong>: a chronological log of every status change from submission through approval.</li>
+          <li><strong>Applicant section</strong>: key info from their Interest List record and any notes they submitted.</li>
           <li><strong>Property section</strong>: details about the listing they were matched to.</li>
-          <li><strong>Final Notes</strong>: a text field where you can record the outcome, any follow-up needed, or other closing context.</li>
+          <li><strong>Final Notes</strong>: a private text field to record the outcome, follow-up needed, or other closing context.</li>
         </ul>`
       },
       {
         q: 'How do I add final notes to a success record?',
-        a: 'Click the row to open the detail popup. Type in the <strong>Final Notes</strong> field at the bottom and click <strong>Save Notes</strong>. Final notes appear in the table so you can see them at a glance.'
+        a: 'Open the detail popup, type in the <strong>Final Notes</strong> field, and click <strong>Save Notes</strong>. Notes appear in the summary table so you can see them at a glance without opening the record.'
       },
       {
         q: 'Can I delete a success record?',
-        a: 'Yes. Open the detail popup by clicking the row, then click <strong>Delete Record</strong> at the bottom left. You will be asked to confirm. This permanently removes the success record from the admin portal but does not change the applicant\'s Matched status on the Interest List.'
+        a: 'Yes. Open the detail popup and click <strong>Delete Record</strong> at the bottom left. Confirm the prompt. This removes the success entry from the admin portal but does not change the applicant\'s Matched status on the Interest List.'
+      }
+    ]
+  },
+
+  settings: {
+    title: 'AMI Limits',
+    intro: 'This page lets you update the Area Median Income (AMI) income limit tables that appear inside every listing popup on the public website. HUD typically releases updated limits each April for San Diego County. When you save here, the new numbers go live on the website immediately.',
+    faq: [
+      {
+        q: 'What are these numbers and where do they come from?',
+        a: 'The numbers are annual household income limits published by HUD (the U.S. Department of Housing and Urban Development) each spring for San Diego County. They define the maximum income a household can earn and still qualify at a given AMI percentage. The public website displays these in a table inside every listing popup so visitors can see where their household income falls.'
+      },
+      {
+        q: 'When should I update these?',
+        a: 'HUD typically releases updated limits in April each year. When the new limits come out, open this page, update all the cells with the new figures, update the <strong>Last Updated Label</strong> and <strong>Median Income</strong> fields to match the new release, then click Save. The public site will reflect the new numbers on its next page load.'
+      },
+      {
+        q: 'What is the Last Updated Label?',
+        a: 'This text appears below the income limits table on the public website to tell visitors when the data was last updated - for example: "Effective April 1, 2025 (Revised April 16, 2025)". Copy the effective date language directly from the HUD release document and paste it here.'
+      },
+      {
+        q: 'What is the Median Family Income field?',
+        a: 'This is the San Diego County Area Median Family Income figure published by HUD for the year. It appears in the table disclaimer on the public site. For 2025, the figure is $130,800. Update this whenever HUD publishes a new limit.'
+      },
+      {
+        q: 'What are the three tables?',
+        a: `The income limits are split across three AMI ranges to keep each table readable:
+          <ul>
+            <li><strong>Extremely Low / Very Low Income (30% - 50% AMI)</strong>: columns for 30%, 35%, 40%, and 50% AMI</li>
+            <li><strong>Low Income (60% - 80% AMI)</strong>: columns for 60%, 65%, 70%, and 80% AMI</li>
+            <li><strong>Moderate Income (90% - 120% AMI)</strong>: columns for 90%, 100%, 110%, and 120% AMI</li>
+          </ul>
+          Each table has 8 rows for household sizes 1 through 8. Enter the maximum annual income (in whole dollars, no commas or dollar signs) for each cell.`
+      },
+      {
+        q: 'What happens when I click Save?',
+        a: 'All 96 income values plus the updated label and median income are saved to the database as a single record. The public website fetches this data fresh on every page load, so visitors will see the new numbers the next time they open the Listings page. No redeployment or code change is needed.'
+      },
+      {
+        q: 'What if I make a mistake?',
+        a: 'Simply correct the cell and click Save again. Each save overwrites the previous data entirely. If you need to refer to the original values, check the HUD San Diego County income limits PDF from the relevant year.'
       }
     ]
   }
