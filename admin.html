@@ -211,16 +211,11 @@
     </div>
     <div class="modal-body" style="padding:0;">
 
-      <!-- ── 1. IDENTITY ─────────────────────────────────────── -->
-      <div class="lst-section lst-section-green">
-        <div class="form-section-label"><i class="fa-solid fa-fingerprint" style="margin-right:.35rem;"></i>Identity</div>
-        <div class="form-row2">
-          <div class="form-group"><label for="lf-id">Property ID *</label><input id="lf-id" class="form-input" placeholder="e.g. VILLA-001"></div>
-          <div class="form-group"><label for="lf-name">Internal Name <span style="font-size:.78rem;font-weight:400;color:#888;">(admin only)</span></label><input id="lf-name" class="form-input" placeholder="Villa Rosa Unit 4B"></div>
-        </div>
-        <div class="form-row3">
-          <div class="form-group">
-            <label style="display:block;font-size:.8rem;font-weight:500;margin-bottom:.5rem;">In Matching</label>
+      <!-- ── 0. CONTROLS (hero row) ─────────────────────────── -->
+      <div class="lst-section lst-section-controls">
+        <div class="lst-controls-row">
+          <div class="lst-control-item">
+            <div class="lst-control-label">In Matching</div>
             <div class="toggle-row">
               <span class="toggle-side-label toggle-no">No</span>
               <label class="toggle-switch" for="lf-active">
@@ -229,7 +224,49 @@
               </label>
               <span class="toggle-side-label toggle-yes">Yes</span>
             </div>
+            <div class="lst-control-sub">Included in matching engine</div>
           </div>
+          <div class="lst-control-divider"></div>
+          <div class="lst-control-item">
+            <div class="lst-control-label">Show on Public Site</div>
+            <div class="toggle-row">
+              <span class="toggle-side-label toggle-no">No</span>
+              <label class="toggle-switch" for="lf-show-on-site">
+                <input type="checkbox" id="lf-show-on-site" class="toggle-input">
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              </label>
+              <span class="toggle-side-label toggle-yes">Yes</span>
+            </div>
+            <div class="lst-control-sub">Visible on listings page</div>
+          </div>
+          <div class="lst-control-divider"></div>
+          <div class="lst-control-item">
+            <div class="lst-control-label">Listed on MLS</div>
+            <div class="toggle-row">
+              <span class="toggle-side-label toggle-no">No</span>
+              <label class="toggle-switch" for="lf-mls-listed">
+                <input type="checkbox" id="lf-mls-listed" class="toggle-input">
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              </label>
+              <span class="toggle-side-label toggle-yes">Yes</span>
+            </div>
+            <div class="lst-control-sub">Shows full address publicly</div>
+          </div>
+        </div>
+        <div id="lf-sync-warning" class="lf-sync-warning" style="display:none;">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <span>Note: "Show on Site" and "In Matching" are out of sync. Both are typically toggled together.</span>
+        </div>
+      </div>
+
+      <!-- ── 1. IDENTITY ─────────────────────────────────────── -->
+      <div class="lst-section lst-section-green">
+        <div class="form-section-label"><i class="fa-solid fa-fingerprint" style="margin-right:.35rem;"></i>Identity</div>
+        <div class="form-row2">
+          <div class="form-group"><label for="lf-id">Property ID *</label><input id="lf-id" class="form-input" placeholder="e.g. VILLA-001"></div>
+          <div class="form-group"><label for="lf-name">Internal Name <span style="font-size:.78rem;font-weight:400;color:#888;">(admin only)</span></label><input id="lf-name" class="form-input" placeholder="Villa Rosa Unit 4B"></div>
+        </div>
+        <div class="form-row2">
           <div class="form-group"><label for="lf-units">Units Available</label><input id="lf-units" class="form-input" type="number" min="0" placeholder="e.g. 4"></div>
           <div class="form-group"><label for="lf-type">Listing Type</label>
             <select id="lf-type" class="form-input"><option value="affordable">Affordable</option><option value="mls">MLS</option></select>
@@ -274,34 +311,6 @@
       <!-- ── 3. SITE DISPLAY ────────────────────────────────── -->
       <div class="lst-section lst-section-green">
         <div class="form-section-label"><i class="fa-solid fa-globe" style="margin-right:.35rem;"></i>Site Display</div>
-        <div class="form-row2">
-          <div class="form-group">
-            <label style="display:block;font-size:.8rem;font-weight:500;margin-bottom:.5rem;">Show on Public Site</label>
-            <div class="toggle-row">
-              <span class="toggle-side-label toggle-no">No</span>
-              <label class="toggle-switch" for="lf-show-on-site">
-                <input type="checkbox" id="lf-show-on-site" class="toggle-input">
-                <span class="toggle-track"><span class="toggle-thumb"></span></span>
-              </label>
-              <span class="toggle-side-label toggle-yes">Yes</span>
-            </div>
-          </div>
-          <div class="form-group">
-            <label style="display:block;font-size:.8rem;font-weight:500;margin-bottom:.5rem;">Listed on MLS <span style="font-size:.78rem;font-weight:400;color:#888;">(shows address publicly)</span></label>
-            <div class="toggle-row">
-              <span class="toggle-side-label toggle-no">No</span>
-              <label class="toggle-switch" for="lf-mls-listed">
-                <input type="checkbox" id="lf-mls-listed" class="toggle-input">
-                <span class="toggle-track"><span class="toggle-thumb"></span></span>
-              </label>
-              <span class="toggle-side-label toggle-yes">Yes</span>
-            </div>
-          </div>
-        </div>
-        <div id="lf-sync-warning" class="lf-sync-warning" style="display:none;">
-          <i class="fa-solid fa-triangle-exclamation"></i>
-          <span>Note: "Show on Site" and "In Matching" are out of sync. Both are typically toggled together.</span>
-        </div>
         <div class="form-row3">
           <div class="form-group"><label for="lf-community-name">Community / Development Name <span style="font-size:.78rem;font-weight:400;color:#888;">(shown as card title)</span></label><input id="lf-community-name" class="form-input" placeholder="e.g. Vista Del Mar"></div>
           <div class="form-group"><label for="lf-ami-pct">AMI % <span style="font-size:.78rem;font-weight:400;color:#888;">(highlights income table column)</span></label><input id="lf-ami-pct" class="form-input" type="number" placeholder="e.g. 80"></div>

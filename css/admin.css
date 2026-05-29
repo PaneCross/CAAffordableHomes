@@ -299,6 +299,12 @@ textarea.form-input { resize: vertical; }
 .lst-section:last-child { border-bottom: none; }
 .lst-section-white { background: var(--white); }
 .lst-section-green { background: #f3faf6; }
+.lst-section-controls { background: #e4f0ea; border-bottom: 2px solid #c2d9cc; padding: .85rem 1.25rem .75rem; }
+.lst-controls-row { display: flex; align-items: stretch; }
+.lst-control-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: .35rem; padding: .4rem .5rem; text-align: center; }
+.lst-control-label { font-size: .82rem; font-weight: 600; color: var(--text); line-height: 1.2; }
+.lst-control-sub { font-size: .7rem; color: var(--muted); }
+.lst-control-divider { width: 1px; background: #c2d9cc; margin: .25rem 0; flex-shrink: 0; }
 .lst-prog-link-row {
   display: flex; gap: .5rem; align-items: center;
 }
