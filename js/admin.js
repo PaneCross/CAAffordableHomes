@@ -3109,41 +3109,23 @@ const HELP_CONTENT = {
 
   settings: {
     title: 'AMI Limits',
-    intro: 'This page lets you update the Area Median Income (AMI) income limit tables that appear inside every listing popup on the public website. HUD typically releases updated limits each April for San Diego County. When you save here, the new numbers go live on the website immediately.',
+    intro: 'Update the income limit tables shown inside every listing popup on the public website. Changes go live immediately after saving - no code change or redeployment needed.',
     faq: [
       {
-        q: 'What are these numbers and where do they come from?',
-        a: 'The numbers are annual household income limits published by HUD (the U.S. Department of Housing and Urban Development) each spring for San Diego County. They define the maximum income a household can earn and still qualify at a given AMI percentage. The public website displays these in a table inside every listing popup so visitors can see where their household income falls.'
+        q: 'How do I update the limits for a new year?',
+        a: 'When HUD releases updated limits (typically each April), fill in the new dollar figures across all three tables, update the <strong>Last Updated Label</strong> to match the effective date from the HUD release document, update the <strong>Median Family Income</strong> to the new figure, then click <strong>Save AMI Data</strong>. The public site picks up the new numbers on its next page load.'
       },
       {
-        q: 'When should I update these?',
-        a: 'HUD typically releases updated limits in April each year. When the new limits come out, open this page, update all the cells with the new figures, update the <strong>Last Updated Label</strong> and <strong>Median Income</strong> fields to match the new release, then click Save. The public site will reflect the new numbers on its next page load.'
+        q: 'How do I fill in the cells?',
+        a: 'Enter whole dollar amounts only - no commas, dollar signs, or decimals. Each table has 8 rows (household sizes 1 through 8) and 4 columns (the AMI percentages shown in the column header). Work across the row for each household size and down each column for each AMI tier.'
       },
       {
-        q: 'What is the Last Updated Label?',
-        a: 'This text appears below the income limits table on the public website to tell visitors when the data was last updated - for example: "Effective April 1, 2025 (Revised April 16, 2025)". Copy the effective date language directly from the HUD release document and paste it here.'
+        q: 'What format should the Last Updated Label be?',
+        a: 'Copy the effective date language directly from the HUD release document and paste it into this field - for example: <em>Effective April 1, 2025 (Revised April 16, 2025)</em>. This text appears below the income table on the public site.'
       },
       {
-        q: 'What is the Median Family Income field?',
-        a: 'This is the San Diego County Area Median Family Income figure published by HUD for the year. It appears in the table disclaimer on the public site. For 2025, the figure is $130,800. Update this whenever HUD publishes a new limit.'
-      },
-      {
-        q: 'What are the three tables?',
-        a: `The income limits are split across three AMI ranges to keep each table readable:
-          <ul>
-            <li><strong>Extremely Low / Very Low Income (30% - 50% AMI)</strong>: columns for 30%, 35%, 40%, and 50% AMI</li>
-            <li><strong>Low Income (60% - 80% AMI)</strong>: columns for 60%, 65%, 70%, and 80% AMI</li>
-            <li><strong>Moderate Income (90% - 120% AMI)</strong>: columns for 90%, 100%, 110%, and 120% AMI</li>
-          </ul>
-          Each table has 8 rows for household sizes 1 through 8. Enter the maximum annual income (in whole dollars, no commas or dollar signs) for each cell.`
-      },
-      {
-        q: 'What happens when I click Save?',
-        a: 'All 96 income values plus the updated label and median income are saved to the database as a single record. The public website fetches this data fresh on every page load, so visitors will see the new numbers the next time they open the Listings page. No redeployment or code change is needed.'
-      },
-      {
-        q: 'What if I make a mistake?',
-        a: 'Simply correct the cell and click Save again. Each save overwrites the previous data entirely. If you need to refer to the original values, check the HUD San Diego County income limits PDF from the relevant year.'
+        q: 'What if I save incorrect numbers?',
+        a: 'Just correct the cells and click Save again. Each save completely overwrites the previous data. Cross-reference the HUD San Diego County income limits PDF to verify your entries.'
       }
     ]
   }
