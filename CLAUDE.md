@@ -279,7 +279,7 @@ CLOSE_THRESHOLD = 2  // max failed fields to score "Close" (vs "Fail")
 - 016_site_settings.sql — creates site_settings key/value table; seeds ami_pdf_url key; anon read + authenticated write RLS — confirmed applied
 - 017_il_entry_type.sql — adds entry_type TEXT DEFAULT 'form' to interest_list ('form' = questionnaire, 'manual' = admin-added) — confirmed applied
 - 018_listings_area.sql — adds `area TEXT` to listings (general geographic area for non-MLS public cards, e.g. "South Bay") — confirmed applied
-- 019_ami_table_data.sql — seeds `ami_table_data` JSON (all 96 2025 HUD San Diego County values) and `ami_updated_date` into site_settings — **PENDING RUN**
+- 019_ami_table_data.sql — seeds `ami_table_data` JSON (all 96 2025 HUD San Diego County values) and `ami_updated_date` into site_settings — confirmed applied
 
 ### Ongoing / go-live
 3. **Repeating block header renumbering bug** — income/employment block numbers go wrong when removing and re-adding. Needs `renumberIncomeBlocks()` / `renumberEmpBlocks()` in `contact.html`.
