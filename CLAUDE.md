@@ -12,6 +12,7 @@
 - **Phase 14 complete** — Content refinements (redundancy reduction, footer updates, about page image, listings page header); Edge Functions redeployed; SQL migration 012 run
 - **Phase 15 complete** — Kacee content round: index "income-qualified buyers" addition; about h3 "Buyers"; FAQ 7 + 10 wording; questionnaire overhaul (SDHC removed, W2 Yes/No, citizenship merged, 401k required, areas simplified to 5, all dollar fields text+inputmode, buildPayload updated)
 - **Phase 16 complete** — Employment income type split (W-2/1099 + Annual Salary Yes/No); cents-first dollar formatting (MutationObserver); auto-slash date inputs (MM/DD/YYYY + MM/YYYY); buildPayload ISO conversion + salaried field clearing; migration 013 (emp_N_salaried columns)
+- **Phase 19 complete** — Admin-editable AMI income limits: Settings tab in admin portal (editable 8x4 grids for all 3 tiers + effective date + median income), stored in site_settings as JSON, public site fetches from DB at load with hardcoded fallback; disclaimer uses dynamic label + median income; section title "2025" removed. SQL migration 019 created (PENDING RUN).
 - **Phase 18 complete** — Programs tab retired; listings table now feeds public site directly. Questionnaire cleanup (co-borrower label, rent subsidized removed, annual income label, 2 tax years, employment block restructure, debt label, US citizen, other assets). Public listings page rewrite (filter bar, card grid, expanded popup with AMI tables). SQL migrations 015/016/017. Admin: Site Display section on listing modal (show_on_site, mls_listed, community_name, home_type, ami_percent, public_status, features, comments + sync warning), Programs btn removed, IL manual entry button + modal + Manual filter. Help FAQ rewritten.
 - **Phase 17 complete** — Admin review capabilities: computeFlags engine (9 automated checks, 3 severity levels), buildFlagsPanelHtml with dismiss/restore, Admin Notes field with save, Has Flags filter, Flags column in IL table, Export CSV, Print Profile, print CSS; migration 014 (admin_notes + flags_dismissed); Help FAQ updated with 5 new entries
 - **Next up** — Go-live prep
@@ -278,6 +279,7 @@ CLOSE_THRESHOLD = 2  // max failed fields to score "Close" (vs "Fail")
 - 016_site_settings.sql — creates site_settings key/value table; seeds ami_pdf_url key; anon read + authenticated write RLS — confirmed applied
 - 017_il_entry_type.sql — adds entry_type TEXT DEFAULT 'form' to interest_list ('form' = questionnaire, 'manual' = admin-added) — confirmed applied
 - 018_listings_area.sql — adds `area TEXT` to listings (general geographic area for non-MLS public cards, e.g. "South Bay") — confirmed applied
+- 019_ami_table_data.sql — seeds `ami_table_data` JSON (all 96 2025 HUD San Diego County values) and `ami_updated_date` into site_settings — **PENDING RUN**
 
 ### Ongoing / go-live
 3. **Repeating block header renumbering bug** — income/employment block numbers go wrong when removing and re-adding. Needs `renumberIncomeBlocks()` / `renumberEmpBlocks()` in `contact.html`.

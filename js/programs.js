@@ -69,15 +69,51 @@ var HH_LABELS = ['1 Person','2 People','3 People','4 People','5 People','6 Peopl
 var allListings = []
 var activeFilter = { area: '', beds: '', ami: '' }
 var expandedPopupOpen = false
+var amiUpdatedLabel = 'Effective April 1, 2025 (Revised April 16, 2025)'
+var amiMedianIncome = 130800
 
 /* ---------------------------------------------------------
    Init
    --------------------------------------------------------- */
 var programsGrid = document.getElementById('programs-grid')
-if (programsGrid) loadListings()
+if (programsGrid) loadAMIDataThenListings()
 
 /* Build popup overlay once */
 buildPopupOverlay()
+
+/* ---------------------------------------------------------
+   Load AMI data from site_settings, then fetch listings
+   Falls back silently to hardcoded values if DB unavailable
+   --------------------------------------------------------- */
+function loadAMIDataThenListings() {
+  fetch(
+    SUPABASE_URL + '/rest/v1/site_settings?key=eq.ami_table_data&select=value',
+    { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY } }
+  )
+    .then(function (r) { return r.ok ? r.json() : [] })
+    .then(function (rows) {
+      if (rows && rows[0] && rows[0].value) {
+        try {
+          var d = JSON.parse(rows[0].value)
+          if (d.t1_rows && d.t2_rows && d.t3_rows) {
+            AMI_TABLES.t1.rows = d.t1_rows
+            AMI_TABLES.t2.rows = d.t2_rows
+            AMI_TABLES.t3.rows = d.t3_rows
+          }
+          if (d.updated)        amiUpdatedLabel = d.updated
+          if (d.median_income)  amiMedianIncome = d.median_income
+        } catch (e) {
+          console.warn('[CA Affordable Homes] AMI data parse error, using hardcoded fallback')
+        }
+      }
+    })
+    .catch(function () {
+      console.warn('[CA Affordable Homes] AMI data unavailable, using hardcoded fallback')
+    })
+    .finally(function () {
+      loadListings()
+    })
+}
 
 /* ---------------------------------------------------------
    Fetch
@@ -490,10 +526,10 @@ function buildAMITablesHTML(highlightPct) {
   }).join('')
 
   return '<div class="lst-popup-section lst-popup-ami">'
-    + '<div class="lst-popup-section-title">2025 San Diego County Income Limits'
+    + '<div class="lst-popup-section-title">San Diego County Income Limits'
     + (highlightPct ? ' <span class="ami-hl-note">(&#9733; = this listing\'s AMI level)</span>' : '')
     + '</div>'
-    + '<p class="ami-disclaimer">Effective 04/1/2025. San Diego County Median Family Income: $130,800. Limits at 80% and below are adjusted for High Housing Cost Area.</p>'
+    + '<p class="ami-disclaimer">' + escHTML(amiUpdatedLabel) + '. San Diego County Median Family Income: $' + amiMedianIncome.toLocaleString('en-US') + '. Limits at 80% and below are adjusted for High Housing Cost Area.</p>'
     + tablesHTML
     + '</div>'
 }

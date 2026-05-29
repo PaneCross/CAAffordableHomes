@@ -1202,6 +1202,10 @@ textarea.form-input { resize: vertical; }
   @page { margin: 1.5cm; size: A4 portrait; }
 }
 
+/* -- Settings tab AMI tables -- */
+.settings-ami-section { margin-bottom: 1.5rem; }
+.settings-ami-title { font-size: .82rem; font-weight: 600; color: var(--text); margin-bottom: .5rem; padding: .4rem .6rem; background: #f3faf6; border-radius: 6px; border-left: 3px solid var(--green); }
+
 /* -- Phase 18: Site Display sync warning + manual IL badge -- */
 .lf-sync-warning {
   display: flex;

@@ -122,6 +122,7 @@ const TAB_TITLES = {
   'interest-list': 'Interest List',
   matches:         'Matches',
   successes:       'Successes',
+  settings:        'Settings',
 }
 
 document.querySelectorAll('.sb-btn[data-tab]').forEach(btn => {
@@ -151,6 +152,7 @@ function loadActiveTab(tab) {
   if (tab === 'interest-list') { if (!ilData.length)   loadInterestList(); else renderIL()           }
   if (tab === 'matches')       loadMatches()
   if (tab === 'successes')     loadSuccesses()
+  if (tab === 'settings')      loadSettings()
 }
 
 function refreshCurrentTab() {
@@ -1925,6 +1927,74 @@ async function saveManualILEntry() {
   ilData = []
   loadInterestList()
 }
+
+// =============================================================
+// SETTINGS — AMI Income Limits
+// =============================================================
+async function loadSettings() {
+  const { data, error } = await sb.from('site_settings').select('*').in('key', ['ami_table_data'])
+  if (error) { toast('Failed to load settings: ' + error.message, true); return }
+  const row = (data || []).find(r => r.key === 'ami_table_data')
+  if (row && row.value) {
+    try { renderSettings(JSON.parse(row.value)) } catch(e) { renderSettings(null) }
+  } else {
+    renderSettings(null)
+  }
+}
+
+function renderSettings(d) {
+  // Populate text fields
+  document.getElementById('sf-updated').value = d?.updated || ''
+  document.getElementById('sf-median').value  = d?.median_income || ''
+
+  // Table 1 cols: 30, 35, 40, 50
+  const T1 = [30, 35, 40, 50]
+  const T2 = [60, 65, 70, 80]
+  const T3 = [90, 100, 110, 120]
+  ;[1,2,3,4,5,6,7,8].forEach((row, ri) => {
+    T1.forEach(col => { const el = document.getElementById(`sf-t1-${row}-${col}`); if (el) el.value = d?.t1_rows?.[ri]?.[T1.indexOf(col)] ?? '' })
+    T2.forEach(col => { const el = document.getElementById(`sf-t2-${row}-${col}`); if (el) el.value = d?.t2_rows?.[ri]?.[T2.indexOf(col)] ?? '' })
+    T3.forEach(col => { const el = document.getElementById(`sf-t3-${row}-${col}`); if (el) el.value = d?.t3_rows?.[ri]?.[T3.indexOf(col)] ?? '' })
+  })
+}
+
+document.getElementById('sf-save-btn').addEventListener('click', async () => {
+  const btn    = document.getElementById('sf-save-btn')
+  const status = document.getElementById('sf-save-status')
+  btn.disabled = true
+  btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Saving...'
+  status.textContent = ''
+
+  const T1 = [30, 35, 40, 50]
+  const T2 = [60, 65, 70, 80]
+  const T3 = [90, 100, 110, 120]
+
+  const readTable = (tKey, cols) =>
+    [1,2,3,4,5,6,7,8].map(row =>
+      cols.map(col => {
+        const v = (document.getElementById(`sf-${tKey}-${row}-${col}`) || {}).value
+        return v !== '' && v !== undefined ? parseInt(v) : 0
+      })
+    )
+
+  const payload = {
+    updated:        document.getElementById('sf-updated').value.trim(),
+    median_income:  parseInt(document.getElementById('sf-median').value) || 0,
+    year:           new Date().getFullYear().toString(),
+    t1_rows:        readTable('t1', T1),
+    t2_rows:        readTable('t2', T2),
+    t3_rows:        readTable('t3', T3),
+  }
+
+  const { error } = await sb.from('site_settings')
+    .upsert({ key: 'ami_table_data', value: JSON.stringify(payload), updated_at: new Date().toISOString() }, { onConflict: 'key' })
+
+  btn.disabled = false
+  btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save AMI Data'
+  if (error) { toast('Save failed: ' + error.message, true); return }
+  status.textContent = 'Saved at ' + new Date().toLocaleTimeString()
+  toast('AMI data saved. Changes will appear on the public site immediately.')
+})
 
 // ─────────────────────────────────────────────────────────────
 // UTILITIES
