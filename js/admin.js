@@ -320,6 +320,12 @@ function renderDashboard() {
         </div>
       </div>
     </div>
+
+    <div id="ga4-panel" class="ga4-loading-wrap">
+      <div class="ga4-card" style="display:flex;align-items:center;gap:.6rem;color:var(--muted);font-size:.85rem">
+        <i class="fa-solid fa-circle-notch fa-spin"></i> Loading analytics...
+      </div>
+    </div>
   `)
 
   // ── Wire nav clicks ──
@@ -408,6 +414,139 @@ function renderDashboard() {
       }
     }
   })
+
+  // ── GA4 analytics panel – loads async after charts render ──
+  loadGA4Stats()
+}
+
+// ─────────────────────────────────────────────────────────────
+// GA4 ANALYTICS PANEL
+// ─────────────────────────────────────────────────────────────
+async function loadGA4Stats() {
+  const panel = document.getElementById('ga4-panel')
+  if (!panel) return
+  try {
+    const { data: { session } } = await sb.auth.getSession()
+    if (!session) return
+
+    const res  = await fetch(`${SUPABASE_URL}/functions/v1/ga4-stats`, {
+      headers: {
+        'Authorization': `Bearer ${session.access_token}`,
+        'apikey': SUPABASE_KEY,
+      },
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
+    renderGA4Panel(panel, data)
+  } catch (err) {
+    panel.innerHTML = `<div class="ga4-card ga4-error">
+      <i class="fa-solid fa-triangle-exclamation" style="margin-right:.4rem"></i>
+      Analytics unavailable: ${esc(String(err))}
+    </div>`
+  }
+}
+
+function renderGA4Panel(panel, data) {
+  if (!data.configured) {
+    panel.innerHTML = `
+      <div class="ga4-card ga4-unconfigured">
+        <i class="fa-brands fa-google"></i>
+        <div>
+          <strong>Google Analytics not configured yet.</strong>
+          <div class="ga4-uncfg-sub">
+            Create a GA4 property, swap the <code>G-XXXXXXXXXX</code> placeholder in the site HTML,
+            then set <code>GA4_SERVICE_ACCOUNT_JSON</code> and <code>GA4_PROPERTY_ID</code>
+            as Supabase secrets and deploy the <code>ga4-stats</code> edge function.
+          </div>
+        </div>
+      </div>`
+    return
+  }
+
+  const { summary, daily, topPages } = data
+
+  // Format YYYYMMDD → "May 22"
+  function fmtDate(d) {
+    const s  = String(d)
+    const dt = new Date(`${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}`)
+    return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }
+
+  const maxViews = topPages.length ? Math.max(...topPages.map(p => p.views)) : 1
+
+  panel.innerHTML = `
+    <div class="ga4-card">
+      <div class="ga4-header">
+        <span><i class="fa-brands fa-google" style="margin-right:.4rem;opacity:.7"></i>Website Analytics</span>
+        <span class="ga4-period">Last 7 days</span>
+      </div>
+      <div class="ga4-stats-row">
+        <div class="ga4-stat">
+          <div class="ga4-stat-num">${summary.sessions.toLocaleString()}</div>
+          <div class="ga4-stat-label">Sessions</div>
+        </div>
+        <div class="ga4-stat">
+          <div class="ga4-stat-num">${summary.users.toLocaleString()}</div>
+          <div class="ga4-stat-label">Users</div>
+        </div>
+        <div class="ga4-stat">
+          <div class="ga4-stat-num">${summary.pageViews.toLocaleString()}</div>
+          <div class="ga4-stat-label">Page Views</div>
+        </div>
+        <div class="ga4-stat">
+          <div class="ga4-stat-num">${summary.newUsers.toLocaleString()}</div>
+          <div class="ga4-stat-label">New Users</div>
+        </div>
+      </div>
+      <div class="ga4-body">
+        <div class="ga4-sparkline-wrap">
+          <div class="ga4-section-label">Daily Sessions</div>
+          <div style="position:relative;height:90px">
+            <canvas id="ga4-sparkline"></canvas>
+          </div>
+        </div>
+        <div class="ga4-pages-wrap">
+          <div class="ga4-section-label">Top Pages</div>
+          ${topPages.map(p => `
+            <div class="ga4-page-row">
+              <span class="ga4-page-path">${esc(p.path)}</span>
+              <div class="ga4-page-bar-wrap">
+                <div class="ga4-page-bar" style="width:${Math.round(p.views / maxViews * 100)}%"></div>
+              </div>
+              <span class="ga4-page-views">${p.views}</span>
+            </div>`).join('')}
+          ${!topPages.length ? '<div class="dash-no-data" style="padding-top:.75rem">No page data yet</div>' : ''}
+        </div>
+      </div>
+    </div>`
+
+  // Sparkline line chart (uses Chart.js already loaded on page)
+  if (daily.length > 0) {
+    new Chart(document.getElementById('ga4-sparkline'), {
+      type: 'line',
+      data: {
+        labels: daily.map(d => fmtDate(d.date)),
+        datasets: [{
+          data: daily.map(d => d.sessions),
+          borderColor: '#2c5545',
+          backgroundColor: 'rgba(44,85,69,.08)',
+          fill: true, tension: 0.35,
+          pointRadius: 3, pointBackgroundColor: '#2c5545', borderWidth: 2,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.raw} sessions` } }
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+          y: { beginAtZero: true, ticks: { precision: 0, font: { size: 10 } }, grid: { color: '#f0f0ec' } }
+        }
+      }
+    })
+  }
 }
 
 // =============================================================

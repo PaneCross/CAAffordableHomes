@@ -83,7 +83,8 @@ California MLS Clear Cooperation Policy (adopted by NAR and all major CA MLSs): 
 │   └── functions/
 │       ├── submit-interest/ — Form submission handler + welcome/notification emails
 │       ├── daily-match/     — Matching engine (13 checks) + digest email
-│       └── check-expiry/    — 11-month reminder + 12-month expiry
+│       ├── check-expiry/    — 11-month reminder + 12-month expiry
+│       └── ga4-stats/       — Proxies GA4 Data API; returns 7-day sessions/users/pages for admin dashboard
 └── .github/
     └── workflows/
         └── scheduled-triggers.yml — Cron: 6 AM daily-match, 7 AM check-expiry
@@ -112,6 +113,7 @@ California MLS Clear Cooperation Policy (adopted by NAR and all major CA MLSs): 
 supabase functions deploy submit-interest --project-ref monybdfujogcyseyjgfx
 supabase functions deploy daily-match     --project-ref monybdfujogcyseyjgfx
 supabase functions deploy check-expiry    --project-ref monybdfujogcyseyjgfx
+supabase functions deploy ga4-stats       --project-ref monybdfujogcyseyjgfx
 ```
 
 ### Edge Function Secrets (set in Supabase dashboard → Edge Functions → Manage secrets)
@@ -121,6 +123,56 @@ supabase functions deploy check-expiry    --project-ref monybdfujogcyseyjgfx
 | `SUPABASE_SERVICE_ROLE_KEY` | from Supabase dashboard |
 | `RESEND_API_KEY` | `re_UfJNumMf_Nxn2RBWMrNPZtivszS6Lgt9B` |
 | `NOTIFY_EMAIL` | `tj@nostos.tech` (switch to Kacee's at go-live) |
+| `GA4_SERVICE_ACCOUNT_JSON` | full JSON key contents from Google Cloud service account (see GA4 Setup below) |
+| `GA4_PROPERTY_ID` | numeric GA4 property ID, e.g. `123456789` (see GA4 Setup below) |
+
+---
+
+## Google Analytics Setup
+
+GA4 tracking scripts are in all 8 public HTML pages (`index.html`, `homes.html`, `services.html`, `about.html`, `faq.html`, `contact.html`, `programs.html`, `thankyou.html`) — **NOT admin.html**. The Measurement ID placeholder `G-XXXXXXXXXX` must be replaced in each file once the GA4 property is created.
+
+The admin dashboard pulls live 7-day stats via the `ga4-stats` edge function (sessions, users, page views, new users, daily sparkline, top 5 pages).
+
+### One-time setup steps
+
+**Step 1 — Create GA4 property**
+1. Go to https://analytics.google.com → Admin (gear icon) → + Create Property
+2. Name it "CA Affordable Homes", set timezone Pacific, currency USD
+3. Select "Web" platform, enter the production URL (`https://caaffordablehomes.com`)
+4. Copy the **Measurement ID** (format: `G-XXXXXXXXXX`)
+5. In each of the 8 public HTML files, replace both occurrences of `G-XXXXXXXXXX` with your Measurement ID
+
+**Step 2 — Create Google Cloud service account**
+1. Go to https://console.cloud.google.com → create or select a project
+2. APIs & Services → Enable APIs → search "Google Analytics Data API" → Enable
+3. IAM & Admin → Service Accounts → + Create Service Account
+   - Name: "CA Homes Analytics Reader" → Create and Continue → Done
+4. Click the service account → Keys tab → Add Key → Create new key → JSON → Download the file
+
+**Step 3 — Grant the service account access to GA4**
+1. In GA4: Admin → Property → Property Access Management → + → Add users
+2. Enter the service account email (looks like `name@project.iam.gserviceaccount.com`) → Role: Viewer → Add
+
+**Step 4 — Get the GA4 property ID**
+1. In GA4: Admin → Property Settings → Property ID (numeric, e.g. `123456789`)
+
+**Step 5 — Set Supabase secrets**
+```bash
+# Paste the full contents of the downloaded JSON key file as one value:
+supabase secrets set GA4_SERVICE_ACCOUNT_JSON='{"type":"service_account",...}' --project-ref monybdfujogcyseyjgfx
+supabase secrets set GA4_PROPERTY_ID=123456789 --project-ref monybdfujogcyseyjgfx
+```
+Or set them in the Supabase dashboard: Edge Functions → Manage secrets.
+
+**Step 6 — Deploy the edge function**
+```bash
+supabase functions deploy ga4-stats --project-ref monybdfujogcyseyjgfx
+```
+
+Once these steps are complete, the analytics panel will appear on the admin dashboard showing live data.
+
+---
 
 ### GitHub Actions Secret (repo Settings → Secrets → Actions)
 | Secret | Value |
@@ -318,3 +370,5 @@ CLOSE_THRESHOLD = 2  // max failed fields to score "Close" (vs "Fail")
 | 16 | Employment income type split + form UX — "Income type" W-2/1099 radio + "Annual Salary?" Yes/No radio (was single W2 Yes/No); cents-first dollar formatter (MutationObserver picks up dynamic emp blocks); auto-slash date inputs replacing type=date/month; buildPayload converts MM/DD/YYYY and MM/YYYY to ISO before submit; migration 013 adds emp_1-4_salaried TEXT columns |
 | 17 | Admin review capabilities — computeFlags engine (9 checks: credit low/borderline, DTI high/elevated, income mismatch, income members vs HH size, foreclosure, bankruptcy, judgment, first-time buyer, citizenship); buildFlagsPanelHtml with dismiss/restore/show-dismissed; Admin Notes textarea with Save; Flags column in IL table; Has Flags filter button; Export CSV (respects current filter+search, includes flag descriptions + admin notes); Print Profile (window.print + @media print CSS isolating modal); migration 014 adds admin_notes + flags_dismissed JSONB; Help FAQ updated with 5 new entries |
 | 18 | Programs tab retired; listings table drives public site. Questionnaire: co-borrower label, rent subsidized removed, annual income label, 2 tax years (removed year 3), employment restructure (start+end dates, no current/previous/breaks), debt label, US citizen, other assets. programs.js rewritten: fetches listings (show_on_site=true), filter bar (area/city/beds/AMI), card grid, popup with AMI income tables (96 HUD 2025 values, highlighted column). CSS: lst-card, lst-popup-overlay, ami-public-table classes. admin.html: listing modal Site Display section, Programs btn removed from sidebar, IL manual entry btn + modal + Manual filter, sync warning badge. admin.js: save payload updated, manual IL entry modal functions, HELP_CONTENT rewritten. SQL migrations 015/016/017 created (PENDING RUN). |
+| 19 | Admin-editable AMI income limits: Settings tab → AMI Limits (reclassified to Site Content group). Migration 019 seeded 96 HUD 2025 San Diego values into site_settings. Phone formatter unified site-wide (event delegation on document in main.js + admin.js, all tel inputs, placeholder "(555) 000-0000"). Manual IL entries: computeFlags early-returns an info flag; evaluateApplicant early-returns status "Manual"; match display shows blue "Manual Review" badge; weekly digest adds Manual Review section. Help/FAQ full rewrite across all 8 admin tabs. |
+| 20 | Admin dashboard redesign + Google Analytics integration. Dashboard: greeting banner (time-of-day + date + attention summary), 4 color-coded KPI cards (gold/green/blue/teal), Interest List donut chart with center total, Applicant Pipeline horizontal bar chart; Chart.js 4 added via CDN. GA4 integration: tracking snippet added to all 8 public HTML pages (G-XXXXXXXXXX placeholder), ga4-stats edge function (JWT service account auth + GA4 Data API: summary stats + daily sparkline + top pages), analytics panel on dashboard loads async after main stats, shows unconfigured state gracefully until secrets are set. |

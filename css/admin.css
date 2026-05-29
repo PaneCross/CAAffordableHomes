@@ -536,6 +536,49 @@ textarea.form-input { resize: vertical; }
 .dash-legend-dot   { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 .dash-no-data      { text-align: center; color: var(--muted); font-size: .85rem; padding-top: 2.5rem; }
 
+/* ── GA4 Analytics Panel ── */
+.ga4-loading-wrap { margin-top: 1rem; }
+.ga4-card {
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: 10px; padding: 1.1rem 1.25rem; margin-top: 1rem;
+}
+.ga4-unconfigured {
+  display: flex; align-items: flex-start; gap: .75rem;
+  color: var(--muted); font-size: .85rem;
+}
+.ga4-unconfigured i { font-size: 1.1rem; flex-shrink: 0; margin-top: .05rem; }
+.ga4-uncfg-sub  { font-size: .77rem; margin-top: .25rem; line-height: 1.5; }
+.ga4-uncfg-sub code { background: #f0f0ec; padding: .1rem .3rem; border-radius: 3px; font-size: .75rem; }
+.ga4-error { color: var(--red); font-size: .82rem; }
+.ga4-header {
+  display: flex; align-items: center; justify-content: space-between;
+  font-weight: 700; font-size: .85rem; margin-bottom: .9rem;
+}
+.ga4-period { font-size: .76rem; color: var(--muted); font-weight: 400; }
+.ga4-stats-row {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: .75rem;
+  margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border);
+}
+.ga4-stat       { text-align: center; }
+.ga4-stat-num   { font-size: 1.5rem; font-weight: 700; color: var(--green); line-height: 1; }
+.ga4-stat-label { font-size: .72rem; color: var(--muted); margin-top: .2rem; }
+.ga4-body { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-top: .1rem; }
+.ga4-section-label {
+  font-size: .72rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .05em; color: var(--muted); margin-bottom: .55rem;
+}
+.ga4-page-row {
+  display: flex; align-items: center; gap: .5rem;
+  font-size: .78rem; margin-bottom: .38rem;
+}
+.ga4-page-path {
+  flex-shrink: 0; color: #555; min-width: 60px; max-width: 110px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ga4-page-bar-wrap { flex: 1; height: 7px; background: var(--border); border-radius: 4px; overflow: hidden; }
+.ga4-page-bar    { height: 100%; background: var(--green-light); border-radius: 4px; }
+.ga4-page-views  { flex-shrink: 0; color: var(--muted); min-width: 28px; text-align: right; font-size: .74rem; }
+
 /* ── States ── */
 .loading-state, .empty-state, .error-state {
   display: flex; flex-direction: column; align-items: center;
@@ -934,6 +977,8 @@ textarea.form-input { resize: vertical; }
   .dash-kpi-row { grid-template-columns: 1fr 1fr; gap: .65rem; }
   .dash-kpi-num { font-size: 1.5rem; }
   .dash-charts-row { grid-template-columns: 1fr; }
+  .ga4-stats-row { grid-template-columns: 1fr 1fr; }
+  .ga4-body { grid-template-columns: 1fr; }
 
   /* ── Programs grid: single column ── */
   .prog-grid { grid-template-columns: 1fr; }
