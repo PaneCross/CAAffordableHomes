@@ -130,7 +130,7 @@ supabase functions deploy ga4-stats       --project-ref monybdfujogcyseyjgfx
 
 ## Google Analytics Setup
 
-GA4 tracking scripts are in all 8 public HTML pages (`index.html`, `homes.html`, `services.html`, `about.html`, `faq.html`, `contact.html`, `programs.html`, `thankyou.html`) — **NOT admin.html**. The Measurement ID placeholder `G-XXXXXXXXXX` must be replaced in each file once the GA4 property is created.
+GA4 tracking scripts are in all 8 public HTML pages (`index.html`, `homes.html`, `services.html`, `about.html`, `faq.html`, `contact.html`, `programs.html`, `thankyou.html`) — **NOT admin.html**. The Measurement ID placeholder `G-C5E00M6CGT` must be replaced in each file once the GA4 property is created.
 
 The admin dashboard pulls live 7-day stats via the `ga4-stats` edge function (sessions, users, page views, new users, daily sparkline, top 5 pages).
 
@@ -140,8 +140,8 @@ The admin dashboard pulls live 7-day stats via the `ga4-stats` edge function (se
 1. Go to https://analytics.google.com → Admin (gear icon) → + Create Property
 2. Name it "CA Affordable Homes", set timezone Pacific, currency USD
 3. Select "Web" platform, enter the production URL (`https://caaffordablehomes.com`)
-4. Copy the **Measurement ID** (format: `G-XXXXXXXXXX`)
-5. In each of the 8 public HTML files, replace both occurrences of `G-XXXXXXXXXX` with your Measurement ID
+4. Copy the **Measurement ID** (format: `G-C5E00M6CGT`)
+5. In each of the 8 public HTML files, replace both occurrences of `G-C5E00M6CGT` with your Measurement ID
 
 **Step 2 — Create Google Cloud service account**
 1. Go to https://console.cloud.google.com → create or select a project
@@ -371,4 +371,4 @@ CLOSE_THRESHOLD = 2  // max failed fields to score "Close" (vs "Fail")
 | 17 | Admin review capabilities — computeFlags engine (9 checks: credit low/borderline, DTI high/elevated, income mismatch, income members vs HH size, foreclosure, bankruptcy, judgment, first-time buyer, citizenship); buildFlagsPanelHtml with dismiss/restore/show-dismissed; Admin Notes textarea with Save; Flags column in IL table; Has Flags filter button; Export CSV (respects current filter+search, includes flag descriptions + admin notes); Print Profile (window.print + @media print CSS isolating modal); migration 014 adds admin_notes + flags_dismissed JSONB; Help FAQ updated with 5 new entries |
 | 18 | Programs tab retired; listings table drives public site. Questionnaire: co-borrower label, rent subsidized removed, annual income label, 2 tax years (removed year 3), employment restructure (start+end dates, no current/previous/breaks), debt label, US citizen, other assets. programs.js rewritten: fetches listings (show_on_site=true), filter bar (area/city/beds/AMI), card grid, popup with AMI income tables (96 HUD 2025 values, highlighted column). CSS: lst-card, lst-popup-overlay, ami-public-table classes. admin.html: listing modal Site Display section, Programs btn removed from sidebar, IL manual entry btn + modal + Manual filter, sync warning badge. admin.js: save payload updated, manual IL entry modal functions, HELP_CONTENT rewritten. SQL migrations 015/016/017 created (PENDING RUN). |
 | 19 | Admin-editable AMI income limits: Settings tab → AMI Limits (reclassified to Site Content group). Migration 019 seeded 96 HUD 2025 San Diego values into site_settings. Phone formatter unified site-wide (event delegation on document in main.js + admin.js, all tel inputs, placeholder "(555) 000-0000"). Manual IL entries: computeFlags early-returns an info flag; evaluateApplicant early-returns status "Manual"; match display shows blue "Manual Review" badge; weekly digest adds Manual Review section. Help/FAQ full rewrite across all 8 admin tabs. |
-| 20 | Admin dashboard redesign + Google Analytics integration. Dashboard: greeting banner (time-of-day + date + attention summary), 4 color-coded KPI cards (gold/green/blue/teal), Interest List donut chart with center total, Applicant Pipeline horizontal bar chart; Chart.js 4 added via CDN. GA4 integration: tracking snippet added to all 8 public HTML pages (G-XXXXXXXXXX placeholder), ga4-stats edge function (JWT service account auth + GA4 Data API: summary stats + daily sparkline + top pages), analytics panel on dashboard loads async after main stats, shows unconfigured state gracefully until secrets are set. |
+| 20 | Admin dashboard redesign + Google Analytics integration. Dashboard: greeting banner (time-of-day + date + attention summary), 4 color-coded KPI cards (gold/green/blue/teal), Interest List donut chart with center total, Applicant Pipeline horizontal bar chart; Chart.js 4 added via CDN. GA4 integration: tracking snippet added to all 8 public HTML pages (G-C5E00M6CGT placeholder), ga4-stats edge function (JWT service account auth + GA4 Data API: summary stats + daily sparkline + top pages), analytics panel on dashboard loads async after main stats, shows unconfigured state gracefully until secrets are set. |
