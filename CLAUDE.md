@@ -168,6 +168,13 @@ G  Sqft             N  (reserved)          U  description_5 (Additional Info)
 
 **No em dashes anywhere on the site.** This applies to all HTML files, visible text, attributes (aria-labels, titles, meta descriptions), and form content. Do not use `—` (em dash character) or `&mdash;` (HTML entity) in any user-visible content when building or editing this site. Use a comma, a period, a colon, or a regular hyphen (` - `) as appropriate for the sentence structure.
 
+**Phone number format: `(xxx) xxx-xxxx` everywhere.** Every phone input across the public site and admin portal must:
+- Use `type="tel"` — this is what triggers the auto-formatter
+- Use `placeholder="(555) 000-0000"` — consistent hint text
+- The formatter in `main.js` (public site) and `admin.js` (admin portal) both use event delegation on `document`, so dynamically-injected fields are covered automatically — no extra wiring needed
+- The formatter auto-formats as the user types and caps input at 10 digits
+- Do not use `maxlength` on tel inputs — the digit cap is enforced by the JS formatter
+
 ---
 
 ## Commit Protocol

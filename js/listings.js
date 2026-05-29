@@ -368,7 +368,7 @@ function buildMLSContent(l) {
         '</div>' +
         '<div class="form-group">' +
           '<label class="form-label" for="lm-mls-phone">Phone</label>' +
-          '<input id="lm-mls-phone" name="phone" type="tel" class="form-control" autocomplete="tel">' +
+          '<input id="lm-mls-phone" name="phone" type="tel" class="form-control" placeholder="(555) 000-0000" autocomplete="tel">' +
         '</div>' +
         '<div class="form-group">' +
           '<label class="form-label" for="lm-mls-msg">Message</label>' +

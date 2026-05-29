@@ -110,6 +110,47 @@ document.getElementById('google-login-btn').addEventListener('click', async () =
 document.getElementById('logout-btn').addEventListener('click', () => sb.auth.signOut())
 
 // ─────────────────────────────────────────────────────────────
+// PHONE FORMATTER
+// Formats all type="tel" inputs to (xxx) xxx-xxxx as user types,
+// capped at 10 digits. Uses event delegation so modal-injected
+// fields are covered automatically. All phone inputs must use
+// type="tel" with placeholder="(555) 000-0000".
+// ─────────────────────────────────────────────────────────────
+;(function () {
+  function formatPhone(value) {
+    var digits = value.replace(/\D/g, '').slice(0, 10)
+    if (digits.length === 0) return ''
+    if (digits.length <= 3) return '(' + digits
+    if (digits.length <= 6) return '(' + digits.slice(0, 3) + ') ' + digits.slice(3)
+    return '(' + digits.slice(0, 3) + ') ' + digits.slice(3, 6) + '-' + digits.slice(6)
+  }
+
+  document.addEventListener('input', function (e) {
+    if (e.target.type !== 'tel') return
+    var input = e.target
+    var cursor = input.selectionStart
+    var prevLen = input.value.length
+    input.value = formatPhone(input.value)
+    var diff = input.value.length - prevLen
+    input.setSelectionRange(cursor + diff, cursor + diff)
+  })
+
+  document.addEventListener('keydown', function (e) {
+    if (e.target.type !== 'tel') return
+    var allowed = [8, 9, 27, 46, 35, 36, 37, 38, 39, 40]
+    if (allowed.indexOf(e.keyCode) !== -1) return
+    if ((e.ctrlKey || e.metaKey) && [65, 67, 86, 88].indexOf(e.keyCode) !== -1) return
+    var input = e.target
+    var digits = input.value.replace(/\D/g, '')
+    if (digits.length >= 10) {
+      var start = input.selectionStart
+      var end = input.selectionEnd
+      if (start === end) e.preventDefault()
+    }
+  })
+})()
+
+// ─────────────────────────────────────────────────────────────
 // NAVIGATION
 // ─────────────────────────────────────────────────────────────
 const TAB_TITLES = {
