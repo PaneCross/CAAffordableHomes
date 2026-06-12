@@ -130,29 +130,26 @@ supabase functions deploy ga4-stats       --project-ref monybdfujogcyseyjgfx
 
 ## Google Analytics Setup
 
-GA4 tracking scripts are in all 8 public HTML pages (`index.html`, `homes.html`, `services.html`, `about.html`, `faq.html`, `contact.html`, `programs.html`, `thankyou.html`) — **NOT admin.html**. The Measurement ID placeholder `G-C5E00M6CGT` must be replaced in each file once the GA4 property is created.
+GA4 tracking scripts are in all 8 public HTML pages (`index.html`, `homes.html`, `services.html`, `about.html`, `faq.html`, `contact.html`, `programs.html`, `thankyou.html`) — **NOT admin.html**. Current Measurement ID: **`G-YKJBH603X5`** (property created under the correct Gmail account June 2026).
 
 The admin dashboard pulls live 7-day stats via the `ga4-stats` edge function (sessions, users, page views, new users, daily sparkline, top 5 pages).
 
 ### One-time setup steps
 
-**Step 1 — Create GA4 property**
-1. Go to https://analytics.google.com → Admin (gear icon) → + Create Property
-2. Name it "CA Affordable Homes", set timezone Pacific, currency USD
-3. Select "Web" platform, enter the production URL (`https://caaffordablehomes.com`)
-4. Copy the **Measurement ID** (format: `G-C5E00M6CGT`)
-5. In each of the 8 public HTML files, replace both occurrences of `G-C5E00M6CGT` with your Measurement ID
+**Step 1 — Create GA4 property** ✅ Done
+- Measurement ID: `G-YKJBH603X5`
+- All 8 public HTML files updated with this ID
 
 **Step 2 — Create Google Cloud service account**
-1. Go to https://console.cloud.google.com → create or select a project
+1. Go to https://console.cloud.google.com → create or select a project (must be same Google account as GA4)
 2. APIs & Services → Enable APIs → search "Google Analytics Data API" → Enable
 3. IAM & Admin → Service Accounts → + Create Service Account
    - Name: "CA Homes Analytics Reader" → Create and Continue → Done
 4. Click the service account → Keys tab → Add Key → Create new key → JSON → Download the file
 
 **Step 3 — Grant the service account access to GA4**
-1. In GA4: Admin → Property → Property Access Management → + → Add users
-2. Enter the service account email (looks like `name@project.iam.gserviceaccount.com`) → Role: Viewer → Add
+- Option A (preferred): GA4 → Admin → Property → Property Access Management → + → Add users → enter service account email → Role: Viewer
+- Option B (fallback if GA4 rejects the email): Google Cloud Console → IAM & Admin → IAM → Grant Access → add service account email → Role: Viewer
 
 **Step 4 — Get the GA4 property ID**
 1. In GA4: Admin → Property Settings → Property ID (numeric, e.g. `123456789`)
