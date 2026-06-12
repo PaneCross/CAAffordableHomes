@@ -972,13 +972,24 @@ textarea.form-input { resize: vertical; }
   #matches-area .data-table { min-width: 560px; }
 
   /* ── Dashboard: responsive ── */
-  .dash-greeting { flex-direction: column; align-items: flex-start; }
+  .dash-greeting     { flex-direction: column; align-items: flex-start; padding: .9rem 1rem; gap: .5rem; }
+  .dash-greeting-hi  { font-size: 1rem; }
   .dash-greeting-msg { max-width: 100%; text-align: left; }
-  .dash-kpi-row { grid-template-columns: 1fr 1fr; gap: .65rem; }
-  .dash-kpi-num { font-size: 1.5rem; }
-  .dash-charts-row { grid-template-columns: 1fr; }
-  .ga4-stats-row { grid-template-columns: 1fr 1fr; }
-  .ga4-body { grid-template-columns: 1fr; }
+  .dash-kpi-row      { grid-template-columns: 1fr 1fr; gap: .55rem; }
+  .dash-kpi-card     { padding: .7rem .75rem; gap: .45rem; }
+  .dash-kpi-icon     { display: none; }          /* hidden — saves width for number+label */
+  .dash-kpi-num      { font-size: 1.35rem; }
+  .dash-kpi-label    { font-size: .73rem; }
+  .dash-kpi-sub      { font-size: .67rem; }
+  .dash-charts-row   { grid-template-columns: 1fr; }
+  .dash-chart-wrap   { height: 145px; }
+  .dash-donut-wrap   { height: 125px; }
+  .ga4-card          { padding: .9rem 1rem; }
+  .ga4-stats-row     { grid-template-columns: 1fr 1fr; }
+  .ga4-stat-num      { font-size: 1.25rem; }
+  .ga4-body          { grid-template-columns: 1fr; }
+  .ga4-page-path     { max-width: 160px; }       /* more room on full-width layout */
+  .admin-page-title  { font-size: 1.1rem; }
 
   /* ── Programs grid: single column ── */
   .prog-grid { grid-template-columns: 1fr; }
