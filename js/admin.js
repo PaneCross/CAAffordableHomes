@@ -307,17 +307,29 @@ function renderDashboard() {
 
     <div class="dash-charts-row">
       <div class="dash-chart-card">
-        <div class="dash-chart-title"><i class="fa-solid fa-chart-pie" style="margin-right:.4rem;opacity:.6"></i>Interest List Breakdown</div>
+        <div class="dash-chart-title"><i class="fa-solid fa-chart-pie" style="margin-right:.4rem;opacity:.6"></i>Active Applicants</div>
         <div class="dash-chart-wrap dash-donut-wrap">
           <canvas id="il-donut-chart"></canvas>
         </div>
         <div class="dash-chart-legend" id="il-donut-legend"></div>
       </div>
       <div class="dash-chart-card">
-        <div class="dash-chart-title"><i class="fa-solid fa-bars-progress" style="margin-right:.4rem;opacity:.6"></i>Active Pipeline <span style="font-size:.72rem;font-weight:400;color:var(--color-text-muted);margin-left:.3rem;">${ilMatched} matched &bull; ${ilExpired} expired</span></div>
+        <div class="dash-chart-title"><i class="fa-solid fa-bars-progress" style="margin-right:.4rem;opacity:.6"></i>Active Pipeline</div>
         <div class="dash-chart-wrap">
           <canvas id="pipeline-bar-chart"></canvas>
         </div>
+      </div>
+    </div>
+
+    <div class="dash-chart-card" style="margin-top:.75rem;">
+      <div class="dash-chart-title">
+        <i class="fa-solid fa-trophy" style="margin-right:.4rem;opacity:.6"></i>Outcomes
+        <span style="font-size:.72rem;font-weight:400;color:var(--color-text-muted);margin-left:.3rem;">
+          ${ilMatched + ilExpired > 0 ? Math.round(ilMatched / (ilMatched + ilExpired) * 100) : 0}% success rate
+        </span>
+      </div>
+      <div class="dash-chart-wrap" style="height:100px;">
+        <canvas id="outcomes-bar-chart"></canvas>
       </div>
     </div>
 
@@ -333,10 +345,10 @@ function renderDashboard() {
     el.addEventListener('click', () => switchTab(el.dataset.nav))
   })
 
-  // ── Chart: Interest List Donut ──
-  const donutAllLabels = ['New', 'Reviewing', 'Active', 'Matched', 'Expired']
-  const donutAllValues = [ilNew, ilReviewing, ilActive, ilMatched, ilExpired]
-  const donutAllColors = ['#3b82f6', '#f59e0b', '#2c5545', '#10b981', '#94a3b8']
+  // ── Chart: Active Applicants Donut (active stages only — Matched/Expired in Outcomes chart) ──
+  const donutAllLabels = ['New', 'Reviewing', 'Active']
+  const donutAllValues = [ilNew, ilReviewing, ilActive]
+  const donutAllColors = ['#3b82f6', '#f59e0b', '#2c7c8a']
   const dLabels = [], dValues = [], dColors = []
   donutAllLabels.forEach((l, i) => {
     if (donutAllValues[i] > 0) { dLabels.push(l); dValues.push(donutAllValues[i]); dColors.push(donutAllColors[i]) }
@@ -357,7 +369,7 @@ function renderDashboard() {
         ctx.font = 'bold 20px Inter, sans-serif'; ctx.fillStyle = '#2a2a2a'
         ctx.fillText(total, cx, cy - 9)
         ctx.font = '11px Inter, sans-serif'; ctx.fillStyle = '#888'
-        ctx.fillText('total', cx, cy + 9)
+        ctx.fillText('active', cx, cy + 9)
         ctx.restore()
       }
     }
@@ -394,6 +406,35 @@ function renderDashboard() {
       datasets: [{
         data: [ilNew, ilReviewing, ilActive],
         backgroundColor: ['#f59e0b', '#3b82f6', '#2c7c8a'],
+        borderRadius: 5, borderWidth: 0,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => `  ${ctx.raw} applicant${ctx.raw !== 1 ? 's' : ''}` } }
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          ticks: { precision: 0, stepSize: 1, font: { size: 11 } },
+          grid: { color: '#f0f0ec' }
+        },
+        y: { grid: { display: false }, ticks: { font: { size: 12 } } }
+      }
+    }
+  })
+
+  // ── Chart: Outcomes (Matched vs Expired) ──
+  new Chart(document.getElementById('outcomes-bar-chart'), {
+    type: 'bar',
+    data: {
+      labels: ['Matched', 'Expired'],
+      datasets: [{
+        data: [ilMatched, ilExpired],
+        backgroundColor: ['#10b981', '#94a3b8'],
         borderRadius: 5, borderWidth: 0,
       }]
     },
