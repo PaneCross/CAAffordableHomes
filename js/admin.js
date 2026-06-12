@@ -314,22 +314,15 @@ function renderDashboard() {
         <div class="dash-chart-legend" id="il-donut-legend"></div>
       </div>
       <div class="dash-chart-card">
-        <div class="dash-chart-title"><i class="fa-solid fa-bars-progress" style="margin-right:.4rem;opacity:.6"></i>Active Pipeline</div>
-        <div class="dash-chart-wrap">
-          <canvas id="pipeline-bar-chart"></canvas>
+        <div class="dash-chart-title">
+          <i class="fa-solid fa-trophy" style="margin-right:.4rem;opacity:.6"></i>Outcomes
+          <span style="font-size:.72rem;font-weight:400;color:var(--color-text-muted);margin-left:.3rem;">
+            ${ilMatched + ilExpired > 0 ? Math.round(ilMatched / (ilMatched + ilExpired) * 100) : 0}% success rate
+          </span>
         </div>
-      </div>
-    </div>
-
-    <div class="dash-chart-card" style="margin-top:.75rem;">
-      <div class="dash-chart-title">
-        <i class="fa-solid fa-trophy" style="margin-right:.4rem;opacity:.6"></i>Outcomes
-        <span style="font-size:.72rem;font-weight:400;color:var(--color-text-muted);margin-left:.3rem;">
-          ${ilMatched + ilExpired > 0 ? Math.round(ilMatched / (ilMatched + ilExpired) * 100) : 0}% success rate
-        </span>
-      </div>
-      <div class="dash-chart-wrap" style="height:100px;">
-        <canvas id="outcomes-bar-chart"></canvas>
+        <div class="dash-chart-wrap" style="height:175px;">
+          <canvas id="outcomes-bar-chart"></canvas>
+        </div>
       </div>
     </div>
 
@@ -397,35 +390,6 @@ function renderDashboard() {
   } else {
     donutCanvas.closest('.dash-chart-wrap').innerHTML = '<p class="dash-no-data">No applicants yet</p>'
   }
-
-  // ── Chart: Pipeline Horizontal Bar (active stages only — Matched/Expired excluded) ──
-  new Chart(document.getElementById('pipeline-bar-chart'), {
-    type: 'bar',
-    data: {
-      labels: ['New', 'Reviewing', 'Active'],
-      datasets: [{
-        data: [ilNew, ilReviewing, ilActive],
-        backgroundColor: ['#f59e0b', '#3b82f6', '#2c7c8a'],
-        borderRadius: 5, borderWidth: 0,
-      }]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { label: ctx => `  ${ctx.raw} applicant${ctx.raw !== 1 ? 's' : ''}` } }
-      },
-      scales: {
-        x: {
-          beginAtZero: true,
-          ticks: { precision: 0, stepSize: 1, font: { size: 11 } },
-          grid: { color: '#f0f0ec' }
-        },
-        y: { grid: { display: false }, ticks: { font: { size: 12 } } }
-      }
-    }
-  })
 
   // ── Chart: Outcomes (Matched vs Expired) ──
   new Chart(document.getElementById('outcomes-bar-chart'), {
