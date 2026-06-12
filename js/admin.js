@@ -314,7 +314,7 @@ function renderDashboard() {
         <div class="dash-chart-legend" id="il-donut-legend"></div>
       </div>
       <div class="dash-chart-card">
-        <div class="dash-chart-title"><i class="fa-solid fa-bars-progress" style="margin-right:.4rem;opacity:.6"></i>Applicant Pipeline</div>
+        <div class="dash-chart-title"><i class="fa-solid fa-bars-progress" style="margin-right:.4rem;opacity:.6"></i>Active Pipeline <span style="font-size:.72rem;font-weight:400;color:var(--color-text-muted);margin-left:.3rem;">${ilMatched} matched &bull; ${ilExpired} expired</span></div>
         <div class="dash-chart-wrap">
           <canvas id="pipeline-bar-chart"></canvas>
         </div>
@@ -386,14 +386,14 @@ function renderDashboard() {
     donutCanvas.closest('.dash-chart-wrap').innerHTML = '<p class="dash-no-data">No applicants yet</p>'
   }
 
-  // ── Chart: Pipeline Horizontal Bar ──
+  // ── Chart: Pipeline Horizontal Bar (active stages only — Matched/Expired excluded) ──
   new Chart(document.getElementById('pipeline-bar-chart'), {
     type: 'bar',
     data: {
-      labels: ['Submitted', 'Active Listings', 'Applicants', 'Matched'],
+      labels: ['New', 'Reviewing', 'Active'],
       datasets: [{
-        data: [psData.length, lstActive, ilData.length, ilMatched],
-        backgroundColor: ['#b8860b', '#2c5545', '#3b82f6', '#10b981'],
+        data: [ilNew, ilReviewing, ilActive],
+        backgroundColor: ['#f59e0b', '#3b82f6', '#2c7c8a'],
         borderRadius: 5, borderWidth: 0,
       }]
     },
@@ -402,7 +402,7 @@ function renderDashboard() {
       responsive: true, maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: ctx => `  ${ctx.raw}` } }
+        tooltip: { callbacks: { label: ctx => `  ${ctx.raw} applicant${ctx.raw !== 1 ? 's' : ''}` } }
       },
       scales: {
         x: {
