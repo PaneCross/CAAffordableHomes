@@ -3207,8 +3207,8 @@ const HELP_CONTENT = {
         a: '<strong>Key Features</strong> appears as a bullet list inside the listing popup only. Enter one feature per line, for example: Solar panels, HOA includes landscaping, Energy Star appliances. <strong>Public Comments</strong> is a short note shown at the bottom of both the card and the popup - use it for anything important you want visitors to notice, like lottery status or move-in timing.'
       },
       {
-        q: 'What is Public Status (Available vs. Coming Soon)?',
-        a: 'The <strong>Public Status</strong> dropdown in Site Display sets the status badge shown on the public card. <strong>Available</strong> means the listing is open for interest. <strong>Coming Soon</strong> signals that it is not yet ready but will be. Both are shown on the public site - this field is purely for visitor communication and does not affect the matching engine.'
+        q: 'What do the Public Status options mean?',
+        a: 'The <strong>Public Status</strong> dropdown in Site Display sets the status badge shown on the public card. <strong>Available</strong> means the listing is open for interest. <strong>Coming Soon</strong> signals that it is not yet ready but will be. <strong>Pending</strong> indicates an offer or contract is in progress. All three are shown on the public site - this field is purely for visitor communication and does not affect the matching engine.'
       },
       {
         q: 'Which eligibility fields are checked during matching?',
