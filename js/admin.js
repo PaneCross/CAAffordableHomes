@@ -913,8 +913,7 @@ function renderOrgInquiries() {
 
   const html = `<div class="oi-list">
     ${rows.map(r => {
-      const d = r.submitted_at ? new Date(r.submitted_at) : null
-      const dateStr = d ? d.toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' }) : ''
+      const dateStr = fmtDate(r.submitted_at)
       const isNew = r.status === 'new'
       return `<div class="oi-card${isNew ? ' oi-card--new' : ''}">
         <div class="oi-card-header">
@@ -2130,7 +2129,7 @@ function exportCSV() {
       r.full_name || '',
       r.email || '',
       r.phone || '',
-      r.submitted_at ? new Date(r.submitted_at).toLocaleDateString('en-US') : '',
+      fmtDate(r.submitted_at),
       r.status || '',
       r.household_size || '',
       r.credit_score_self || '',
@@ -2347,7 +2346,14 @@ function esc(s) {
 
 function fmtDate(d) {
   if (!d) return ''
-  return new Date(d).toLocaleDateString('en-US', { year:'2-digit', month:'numeric', day:'numeric' })
+  const s = String(d)
+  // Date-only strings (YYYY-MM-DD) are parsed as UTC midnight by new Date(),
+  // which shifts the displayed date one day back in western timezones — use local constructor instead.
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const [y, m, day] = s.split('-').map(Number)
+    return new Date(y, m - 1, day).toLocaleDateString('en-US', { year:'2-digit', month:'numeric', day:'numeric' })
+  }
+  return new Date(s).toLocaleDateString('en-US', { year:'2-digit', month:'numeric', day:'numeric' })
 }
 
 function countBy(arr, key) {
