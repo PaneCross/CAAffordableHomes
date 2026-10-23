@@ -67,7 +67,6 @@ var HH_LABELS = ['1 Person','2 People','3 People','4 People','5 People','6 Peopl
    State
    --------------------------------------------------------- */
 var allListings = []
-var activeFilter = { area: '', beds: '', ami: '' }
 var expandedPopupOpen = false
 var amiUpdatedLabel = 'Effective April 1, 2025 (Revised April 16, 2025)'
 var amiMedianIncome = 130800
@@ -127,7 +126,6 @@ function loadListings() {
     .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json() })
     .then(function (rows) {
       allListings = rows || []
-      buildFilterOptions()
       renderListings()
     })
     .catch(function (err) {
@@ -136,79 +134,15 @@ function loadListings() {
     })
 }
 
-/* ---------------------------------------------------------
-   Filters
-   --------------------------------------------------------- */
-function buildFilterOptions() {
-  /* Area / City */
-  var areas = []
-  allListings.forEach(function (r) {
-    var a = (r.city || '').trim()
-    if (a && areas.indexOf(a) === -1) areas.push(a)
-  })
-  areas.sort()
-  var areaEl = document.getElementById('lst-filter-area')
-  if (areaEl) {
-    areaEl.innerHTML = '<option value="">All Areas</option>'
-      + areas.map(function (a) { return '<option value="' + escHTMLAttr(a) + '">' + escHTML(a) + '</option>' }).join('')
-  }
-
-  /* Populate bedrooms options dynamically */
-  var beds = []
-  allListings.forEach(function (r) {
-    var b = parseInt(r.bedrooms) || 0
-    if (b && beds.indexOf(b) === -1) beds.push(b)
-  })
-  beds.sort(function (a, b) { return a - b })
-  var bedEl = document.getElementById('lst-filter-beds')
-  if (bedEl) {
-    bedEl.innerHTML = '<option value="">Any Beds</option>'
-      + beds.map(function (b) {
-          return '<option value="' + b + '">' + b + (b >= 4 ? '+ BR' : ' BR') + '</option>'
-        }).join('')
-  }
-}
-
-function applyFilters() {
-  activeFilter.area = (document.getElementById('lst-filter-area') || {}).value || ''
-  activeFilter.beds = (document.getElementById('lst-filter-beds') || {}).value || ''
-  activeFilter.ami  = (document.getElementById('lst-filter-ami')  || {}).value || ''
-  renderListings()
-}
-
-function filteredListings() {
-  return allListings.filter(function (r) {
-    if (activeFilter.area && (r.city || '').trim() !== activeFilter.area) return false
-    if (activeFilter.beds) {
-      var b = parseInt(r.bedrooms) || 0
-      if (activeFilter.beds === '4') { if (b < 4) return false }
-      else { if (b !== parseInt(activeFilter.beds)) return false }
-    }
-    if (activeFilter.ami) {
-      var ap = r.ami_percent ? parseInt(r.ami_percent) : null
-      if (activeFilter.ami === 'low')  { if (!ap || ap > 50)  return false }
-      if (activeFilter.ami === 'mid')  { if (!ap || ap < 51 || ap > 80)  return false }
-      if (activeFilter.ami === 'mod')  { if (!ap || ap < 81)  return false }
-    }
-    return true
-  })
-}
 
 /* ---------------------------------------------------------
    Render cards
    --------------------------------------------------------- */
 function renderListings() {
-  var rows = filteredListings()
+  var rows = allListings
 
   if (!allListings.length) { showEmpty(); return }
-  if (!rows.length) {
-    programsGrid.innerHTML =
-      '<div class="programs-status" role="status">' +
-        '<i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>' +
-        '<p>No listings match your filters. <button class="lst-clear-link" onclick="clearFilters()">Clear all filters</button></p>' +
-      '</div>'
-    return
-  }
+
 
   var cards = rows.map(function (row, i) {
     return buildListingCard(row, i)
@@ -532,20 +466,6 @@ function buildAMITablesHTML(highlightPct) {
     + '<p class="ami-disclaimer">' + escHTML(amiUpdatedLabel) + '. San Diego County Median Family Income: $' + amiMedianIncome.toLocaleString('en-US') + '. Limits at 80% and below are adjusted for High Housing Cost Area.</p>'
     + tablesHTML
     + '</div>'
-}
-
-/* ---------------------------------------------------------
-   Filter controls wiring (called from programs.html inline)
-   --------------------------------------------------------- */
-function clearFilters() {
-  var areaEl = document.getElementById('lst-filter-area')
-  var bedEl  = document.getElementById('lst-filter-beds')
-  var amiEl  = document.getElementById('lst-filter-ami')
-  if (areaEl) areaEl.value = ''
-  if (bedEl)  bedEl.value  = ''
-  if (amiEl)  amiEl.value  = ''
-  activeFilter = { area: '', beds: '', ami: '' }
-  renderListings()
 }
 
 /* ---------------------------------------------------------
