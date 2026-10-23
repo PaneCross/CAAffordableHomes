@@ -11,7 +11,8 @@ const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!
 const NOTIFY_EMAIL   = Deno.env.get('NOTIFY_EMAIL') ?? 'tj@nostos.tech'
 const REPLY_TO       = 'Info@CAAffordableHomes.com'
 const FROM_NAME      = 'CA Affordable Homes Team'
-const FROM_EMAIL     = 'onboarding@resend.dev' // switch to noreply@caaffordablehomes.com after domain verified
+const FROM_EMAIL     = Deno.env.get('FROM_EMAIL') ?? 'onboarding@resend.dev'
+const SITE_URL       = (Deno.env.get('SITE_URL') ?? 'https://panecross.github.io/CAAffordableHomes').replace(/\/$/, '')
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -87,7 +88,7 @@ async function sendNotification(d: { name: string; org: string; email: string; p
         </div>` : ''}
         <p style="margin-top:20px;font-size:13px;color:#888;">
           This inquiry has been saved to the
-          <a href="https://panecross.github.io/CAAffordableHomes/admin.html#org-inquiries" style="color:#2c5545;">admin portal</a>.
+          <a href="${SITE_URL}/admin.html#org-inquiries" style="color:#2c5545;">admin portal</a>.
         </p>
       </div>
     </div>`

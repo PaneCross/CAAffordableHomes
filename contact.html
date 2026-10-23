@@ -1767,6 +1767,32 @@
         if (el.type === 'checkbox') continue; /* use area_preference hidden field */
         payload[el.name] = el.value;
       }
+      /* Repeating-block field names use a monotonic counter, so remove + re-add leaves
+         gaps (emp_1, emp_3) or indices past the DB column range, which the upsert RPC
+         silently drops. Renumber to DOM order before sending. */
+      [
+        { prefix: 'income', container: 'il-income-members',    idRe: /^il-income-block-(\d+)$/ },
+        { prefix: 'emp',    container: 'il-employment-blocks', idRe: /^il-emp-block-(\d+)$/ },
+        { prefix: 'nontax', container: 'il-nontax-blocks',     idRe: /^il-nontax-block-(\d+)$/ }
+      ].forEach(function (g) {
+        var keyRe = new RegExp('^' + g.prefix + '_(\\d+)_(.+)$');
+        var byIdx = {};
+        Object.keys(payload).forEach(function (k) {
+          var m = k.match(keyRe);
+          if (!m) return;
+          (byIdx[m[1]] = byIdx[m[1]] || {})[m[2]] = payload[k];
+          delete payload[k];
+        });
+        var blocks = document.getElementById(g.container).querySelectorAll('.il-repeating-block');
+        blocks.forEach(function (block, i) {
+          var m = block.id.match(g.idRe);
+          var fields = m && byIdx[m[1]];
+          if (!fields) return;
+          Object.keys(fields).forEach(function (f) {
+            payload[g.prefix + '_' + (i + 1) + '_' + f] = fields[f];
+          });
+        });
+      });
       /* Clear income fields that do not apply (salaried vs hourly) */
       for (var ei = 1; ei <= 4; ei++) {
         var salaried = payload['emp_' + ei + '_salaried'];

@@ -9,7 +9,8 @@ const SUPABASE_URL   = Deno.env.get('SUPABASE_URL')!
 const SERVICE_KEY    = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!
 const NOTIFY_EMAIL   = Deno.env.get('NOTIFY_EMAIL') ?? 'tj@nostos.tech'
-const FROM_EMAIL     = 'onboarding@resend.dev' // switch to noreply@caaffordablehomes.com after domain verified
+const FROM_EMAIL     = Deno.env.get('FROM_EMAIL') ?? 'onboarding@resend.dev'
+const SITE_URL       = (Deno.env.get('SITE_URL') ?? 'https://panecross.github.io/CAAffordableHomes').replace(/\/$/, '')
 const FROM_NAME      = 'CA Affordable Homes Team'
 const CLOSE_THRESHOLD = 2
 
@@ -531,7 +532,7 @@ async function sendWeeklyDigest(payload: DigestPayload) {
 
       <!-- Footer link -->
       <div style="margin-top:36px;padding-top:20px;border-top:1px solid #e5e7eb;font-size:13px;color:#888;text-align:center;">
-        <a href="https://panecross.github.io/CAAffordableHomes/admin.html" style="color:#2c5545;font-weight:600;">Open Admin Portal</a>
+        <a href="${SITE_URL}/admin.html" style="color:#2c5545;font-weight:600;">Open Admin Portal</a>
         &nbsp;&bull;&nbsp;
         CA Affordable Homes - Weekly automated digest
       </div>

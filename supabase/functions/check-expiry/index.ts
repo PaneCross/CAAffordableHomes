@@ -7,7 +7,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const SUPABASE_URL   = Deno.env.get('SUPABASE_URL')!
 const SERVICE_KEY    = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!
-const FROM_EMAIL     = 'onboarding@resend.dev' // switch to noreply@caaffordablehomes.com after domain verified
+const FROM_EMAIL     = Deno.env.get('FROM_EMAIL') ?? 'onboarding@resend.dev'
+const SITE_URL       = (Deno.env.get('SITE_URL') ?? 'https://panecross.github.io/CAAffordableHomes').replace(/\/$/, '')
 const FROM_NAME      = 'CA Affordable Homes Team'
 const REPLY_TO       = 'Info@CAAffordableHomes.com'
 
@@ -66,7 +67,7 @@ async function sendRenewalReminder(email: string, name: string) {
         <p>Dear ${escHtml(name)},</p>
         <p>Your CA Affordable Homes interest list profile will expire in approximately one month.</p>
         <p>To stay on the interest list, please resubmit your information using the same email address
-           at <a href="https://panecross.github.io/CAAffordableHomes/contact.html" style="color:#2c5545;">our interest list form</a>.
+           at <a href="${SITE_URL}/contact.html" style="color:#2c5545;">our interest list form</a>.
            Your profile will be updated and your eligibility clock will reset.</p>
         <p>If you no longer wish to be on the interest list, no action is needed and your profile will
            expire automatically.</p>

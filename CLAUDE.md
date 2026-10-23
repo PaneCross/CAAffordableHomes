@@ -111,6 +111,7 @@ California MLS Clear Cooperation Policy (adopted by NAR and all major CA MLSs): 
 ### Edge Functions (deploy with Supabase CLI)
 ```bash
 supabase functions deploy submit-interest --project-ref monybdfujogcyseyjgfx
+supabase functions deploy submit-inquiry  --project-ref monybdfujogcyseyjgfx
 supabase functions deploy daily-match     --project-ref monybdfujogcyseyjgfx
 supabase functions deploy check-expiry    --project-ref monybdfujogcyseyjgfx
 supabase functions deploy ga4-stats       --project-ref monybdfujogcyseyjgfx
@@ -121,8 +122,10 @@ supabase functions deploy ga4-stats       --project-ref monybdfujogcyseyjgfx
 |--------|-------|
 | `SUPABASE_URL` | `https://monybdfujogcyseyjgfx.supabase.co` |
 | `SUPABASE_SERVICE_ROLE_KEY` | from Supabase dashboard |
-| `RESEND_API_KEY` | `re_UfJNumMf_Nxn2RBWMrNPZtivszS6Lgt9B` |
+| `RESEND_API_KEY` | from Resend dashboard → API Keys. Never commit the value — a prior key was committed here and must be rotated (see go-live checklist). |
 | `NOTIFY_EMAIL` | `tj@nostos.tech` (switch to Kacee's at go-live) |
+| `FROM_EMAIL` | *(unset — falls back to `onboarding@resend.dev`)*. Set to `noreply@caaffordablehomes.com` once Resend domain is verified. |
+| `SITE_URL` | *(unset — falls back to `https://panecross.github.io/CAAffordableHomes`)*. Set to `https://caaffordablehomes.com` at go-live; drives links inside emails from daily-match, submit-inquiry, check-expiry. |
 | `GA4_SERVICE_ACCOUNT_JSON` | full JSON key contents from Google Cloud service account (see GA4 Setup below) |
 | `GA4_PROPERTY_ID` | numeric GA4 property ID, e.g. `123456789` (see GA4 Setup below) |
 
@@ -337,11 +340,23 @@ CLOSE_THRESHOLD = 2  // max failed fields to score "Close" (vs "Fail")
 - 018_listings_area.sql — adds `area TEXT` to listings (general geographic area for non-MLS public cards, e.g. "South Bay") — confirmed applied
 - 019_ami_table_data.sql — seeds `ami_table_data` JSON (all 96 2025 HUD San Diego County values) and `ami_updated_date` into site_settings — confirmed applied
 
-### Ongoing / go-live
-3. **Repeating block header renumbering bug** — income/employment block numbers go wrong when removing and re-adding. Needs `renumberIncomeBlocks()` / `renumberEmpBlocks()` in `contact.html`.
-4. **NOTIFY_EMAIL switch** — change `tj@nostos.tech` → Kacee's email in Supabase Edge Function secrets at go-live. Do NOT do this proactively.
-5. **Social links** — footer Facebook/Instagram hrefs are `#` on all pages.
-6. **Verify Resend domain** — switch FROM_EMAIL from `onboarding@resend.dev` to `noreply@caaffordablehomes.com` after domain verified.
+### Go-live checklist (domain: caaffordablehomes.com, registrar: GoDaddy)
+Waiting on Kacee for GoDaddy delegate access (requested 2026-10-22).
+
+**Do first, no dependency on Kacee:**
+- **Rotate the Resend API key** — the old key (`re_UfJN…`) sat in this file in pushed git history from 2026-04-11 until 2026-10-22. Create a new key in Resend, update the `RESEND_API_KEY` Supabase secret, then delete the old key in Resend.
+- **Deploy the 4 email edge functions** (`supabase login` first) — the SITE_URL / FROM_EMAIL env refactor is committed but not yet deployed.
+
+Then, in order once GoDaddy access lands:
+1. **DNS at GoDaddy** — add GitHub Pages apex A records (`185.199.108.153`, `.109.153`, `.110.153`, `.111.153`) and `www` CNAME → `panecross.github.io`. Remove GoDaddy's parked A record / forwarding. Do NOT touch MX or other mail records if `Info@CAAffordableHomes.com` is a live inbox.
+2. **GitHub Pages custom domain** — repo Settings → Pages → Custom domain `caaffordablehomes.com`, wait for DNS check, enable Enforce HTTPS. Only after DNS points — setting it earlier makes the github.io test URL redirect to a dead domain.
+3. **Resend domain** — add `caaffordablehomes.com` in Resend, add its DKIM/SPF records at GoDaddy, verify. Then set secret `FROM_EMAIL=noreply@caaffordablehomes.com`.
+4. **SITE_URL secret** — set `SITE_URL=https://caaffordablehomes.com` so email links stop pointing at the test URL. No redeploy needed.
+5. **Supabase Auth URLs** — dashboard → Authentication → URL Configuration: set Site URL to the custom domain and add `https://caaffordablehomes.com/admin.html` to Redirect URLs (keep the github.io entry until the test URL is retired).
+6. **NOTIFY_EMAIL switch** — change `tj@nostos.tech` → Kacee's email. Do NOT do this proactively; only on Kacee's explicit go-live confirmation.
+7. **Form cooldown** — `contact.html` `COOLDOWN_MS` is the DEV value (2 min). Set to `30 * 24 * 60 * 60 * 1000` (30 days).
+8. **Social links** — footer Facebook/Instagram hrefs are `#` on all pages; need URLs from Kacee.
+9. Update **Production domain** line above and the GitHub Pages test-URL references in this file.
 
 ---
 

@@ -10,7 +10,7 @@ const RESEND_API_KEY   = Deno.env.get('RESEND_API_KEY')!
 const NOTIFY_EMAIL     = Deno.env.get('NOTIFY_EMAIL') ?? 'tj@nostos.tech'
 const REPLY_TO         = 'Info@CAAffordableHomes.com'
 const FROM_NAME        = 'CA Affordable Homes Team'
-const FROM_EMAIL       = 'onboarding@resend.dev' // switch to noreply@caaffordablehomes.com after domain verified
+const FROM_EMAIL       = Deno.env.get('FROM_EMAIL') ?? 'onboarding@resend.dev'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
