@@ -344,8 +344,8 @@ CLOSE_THRESHOLD = 2  // max failed fields to score "Close" (vs "Fail")
 Waiting on Kacee for GoDaddy delegate access (requested 2026-10-22).
 
 **Do first, no dependency on Kacee:**
-- **Rotate the Resend API key** — the old key (`re_UfJN…`) sat in this file in pushed git history from 2026-04-11 until 2026-10-22. Create a new key in Resend, update the `RESEND_API_KEY` Supabase secret, then delete the old key in Resend.
-- **Deploy the 4 email edge functions** (`supabase login` first) — the SITE_URL / FROM_EMAIL env refactor is committed but not yet deployed.
+- **Decide on a cron host.** GitHub auto-disables scheduled workflows on public repos after 60 days without a commit, and a new push does NOT re-enable them. This silently stopped `Scheduled Triggers` (weekly digest + daily expiry check) from 2026-10-21 to 2026-11-01; re-enabled manually via `gh workflow enable`. Post-launch the repo will be quiet for months, so this WILL recur. Options: move both crons to Supabase pg_cron + pg_net (recommended, no inactivity rule), or add a keepalive commit step. Until decided, check `gh workflow list` state after any quiet stretch.
+- ~~Rotate the Resend API key~~ — done 2026-11-01 (new key in Supabase, verified by test inquiry + digest). Confirm the old `re_UfJN…` key was deleted in Resend.
 
 Then, in order once GoDaddy access lands:
 1. **DNS at GoDaddy** — add GitHub Pages apex A records (`185.199.108.153`, `.109.153`, `.110.153`, `.111.153`) and `www` CNAME → `panecross.github.io`. Remove GoDaddy's parked A record / forwarding. Do NOT touch MX or other mail records if `Info@CAAffordableHomes.com` is a live inbox.
