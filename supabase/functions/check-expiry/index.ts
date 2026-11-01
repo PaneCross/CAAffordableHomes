@@ -12,6 +12,15 @@ const SITE_URL       = (Deno.env.get('SITE_URL') ?? 'https://panecross.github.io
 const FROM_NAME      = 'CA Affordable Homes Team'
 const REPLY_TO       = 'Info@CAAffordableHomes.com'
 
+// Healthchecks.io dead-man's switch: ping on full success, /fail on error. No-op if unset.
+const HEALTHCHECK_URL = (Deno.env.get('HEALTHCHECK_URL_CHECK_EXPIRY') ?? '').replace(/\/$/, '')
+async function pingHealthcheck(ok: boolean, detail = '') {
+  if (!HEALTHCHECK_URL) return
+  try {
+    await fetch(HEALTHCHECK_URL + (ok ? '' : '/fail'), { method: 'POST', body: detail.slice(0, 2000) })
+  } catch (e) { console.warn('healthcheck ping failed:', e) }
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -31,6 +40,7 @@ Deno.serve(async (req) => {
     if (error) throw error
 
     let expired = 0, reminded = 0
+    const failures: string[] = []
 
     for (const row of activeRows || []) {
       const submitted = new Date(row.submitted_at)
@@ -40,17 +50,27 @@ Deno.serve(async (req) => {
         await supabase.from('interest_list').update({ status: 'expired', updated_at: now }).eq('id', row.id)
         expired++
       } else if (monthsElapsed >= 11 && !row.renewal_reminder_sent) {
-        await sendRenewalReminder(row.email, row.full_name || 'Applicant')
-        await supabase.from('interest_list').update({ renewal_reminder_sent: true, updated_at: now }).eq('id', row.id)
-        reminded++
+        // Only mark as sent after Resend accepts it, so a failed send is retried next run.
+        try {
+          await sendRenewalReminder(row.email, row.full_name || 'Applicant')
+          await supabase.from('interest_list').update({ renewal_reminder_sent: true, updated_at: now }).eq('id', row.id)
+          reminded++
+        } catch (e) {
+          failures.push(`${row.id}: ${e?.message ?? e}`)
+        }
       }
     }
+
+    if (failures.length) throw new Error(`${failures.length} renewal reminder(s) failed: ${failures.join(' | ')}`)
+
+    await pingHealthcheck(true, `expired=${expired} reminded=${reminded}`)
 
     return new Response(JSON.stringify({ ok: true, expired, reminded }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   } catch (err) {
     console.error('check-expiry error:', err)
+    await pingHealthcheck(false, String(err?.message ?? err))
     return new Response(JSON.stringify({ ok: false, error: err.message }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
@@ -81,9 +101,9 @@ async function sendRenewalReminder(email: string, name: string) {
       </div>
     </div>`
 
-  await fetch('https://api.resend.com/emails', {
+  const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
-    headers: { 'Authorization': `Bearer ${Deno.env.get('RESEND_API_KEY')}`, 'Content-Type': 'application/json' },
+    headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       from: `${FROM_NAME} <${FROM_EMAIL}>`,
       to: [email],
@@ -92,6 +112,7 @@ async function sendRenewalReminder(email: string, name: string) {
       html,
     }),
   })
+  if (!res.ok) throw new Error(`Resend ${res.status}: ${(await res.text()).slice(0, 300)}`)
 }
 
 function escHtml(s: string) {

@@ -14,6 +14,15 @@ const SITE_URL       = (Deno.env.get('SITE_URL') ?? 'https://panecross.github.io
 const FROM_NAME      = 'CA Affordable Homes Team'
 const CLOSE_THRESHOLD = 2
 
+// Healthchecks.io dead-man's switch: ping on full success, /fail on error. No-op if unset.
+const HEALTHCHECK_URL = (Deno.env.get('HEALTHCHECK_URL_DAILY_MATCH') ?? '').replace(/\/$/, '')
+async function pingHealthcheck(ok: boolean, detail = '') {
+  if (!HEALTHCHECK_URL) return
+  try {
+    await fetch(HEALTHCHECK_URL + (ok ? '' : '/fail'), { method: 'POST', body: detail.slice(0, 2000) })
+  } catch (e) { console.warn('healthcheck ping failed:', e) }
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -119,6 +128,8 @@ Deno.serve(async (req) => {
       activeListingsCount,
     })
 
+    await pingHealthcheck(true, `pass=${passCount} close=${closeCount} results=${results.length}`)
+
     return new Response(JSON.stringify({
       ok: true,
       listings: activeListingsCount,
@@ -130,6 +141,7 @@ Deno.serve(async (req) => {
 
   } catch (err) {
     console.error('daily-match error:', err)
+    await pingHealthcheck(false, String(err?.message ?? err))
     return new Response(JSON.stringify({ ok: false, error: err.message }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
@@ -540,7 +552,7 @@ async function sendWeeklyDigest(payload: DigestPayload) {
     </div>
   </div>`
 
-  await fetch('https://api.resend.com/emails', {
+  const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -550,6 +562,7 @@ async function sendWeeklyDigest(payload: DigestPayload) {
       html,
     }),
   })
+  if (!res.ok) throw new Error(`Resend ${res.status} sending weekly digest: ${(await res.text()).slice(0, 300)}`)
 }
 
 function escHtml(s: string) {
