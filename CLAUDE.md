@@ -125,6 +125,7 @@ supabase functions deploy ga4-stats       --project-ref monybdfujogcyseyjgfx
 | `RESEND_API_KEY` | from Resend dashboard → API Keys. Never commit the value — a prior key was committed here and must be rotated (see go-live checklist). |
 | `NOTIFY_EMAIL` | `tj@nostos.tech` (switch to Kacee's at go-live) |
 | `FROM_EMAIL` | *(unset — falls back to `onboarding@resend.dev`)*. Set to `noreply@caaffordablehomes.com` once Resend domain is verified. |
+| `HEALTHCHECK_URL_CHECK_EXPIRY` / `HEALTHCHECK_URL_DAILY_MATCH` | Healthchecks.io ping URLs (set 2026-11-01). Function pings on full success, `/fail` on error. Unset = no-op. |
 | `SITE_URL` | *(unset — falls back to `https://panecross.github.io/CAAffordableHomes`)*. Set to `https://caaffordablehomes.com` at go-live; drives links inside emails from daily-match, submit-inquiry, check-expiry. |
 | `GA4_SERVICE_ACCOUNT_JSON` | full JSON key contents from Google Cloud service account (see GA4 Setup below) |
 | `GA4_PROPERTY_ID` | numeric GA4 property ID, e.g. `123456789` (see GA4 Setup below) |
@@ -183,6 +184,12 @@ select jobname, status, start_time from cron.job_run_details d join cron.job j u
 select id, status_code, left(content::text,120), error_msg from net._http_response order by id desc limit 5;
 ```
 Why not GitHub cron: public repos lose scheduled workflows after 60 days without a commit (bit us 2026-10-21 → 11-01).
+
+### Monitoring (set up 2026-11-01)
+- **Healthchecks.io** (dead-man's switch) — two checks, `daily expiry check` (cron `0 15 * * *` UTC, 1 h grace) and `weekly match digest` (cron `0 14 * * 1` UTC, 2 h grace). Emails when a ping is missed or a `/fail` ping arrives. A run counts as success only if matching finished AND Resend accepted the email. Add Kacee as an email integration at handoff.
+- **UptimeRobot** — HTTP monitors on the public site URL and the Supabase REST endpoint (`/rest/v1/listings?select=id&limit=1&apikey=<publishable>`), 5-min interval. The REST probe also keeps a Free-plan project from auto-pausing. Swap the site monitor to the custom domain at go-live.
+- **Failure behavior in functions:** non-2xx from Resend throws → run returns 500 → `/fail` ping. `check-expiry` marks `renewal_reminder_sent` only after Resend accepts, continues past per-row failures, fails the run at the end if any.
+- Not covered by automation: GoDaddy domain renewal / payment card expiry — yearly human task.
 
 ### Applying migrations
 Remote migration history is empty — every file in `supabase/migrations/` has been applied by hand. **Never run `supabase db push`** (it would replay all of them). Apply a new file with `supabase db query --linked -f supabase/migrations/NNN_name.sql`.
