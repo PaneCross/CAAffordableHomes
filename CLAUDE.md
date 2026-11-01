@@ -46,7 +46,7 @@ California MLS Clear Cooperation Policy (adopted by NAR and all major CA MLSs): 
 - **Backend/automation:** Supabase Edge Functions (Deno/TypeScript) — replacing Apps Script
 - **Admin portal:** `admin.html` + `js/admin.js` on GitHub Pages — replacing Apps Script HtmlService
 - **Email:** Resend API (called from Edge Functions)
-- **Cron:** GitHub Actions scheduled workflows — replacing Apps Script time triggers
+- **Cron:** Supabase pg_cron + pg_net (since 2026-11-01) — jobs `weekly-match-digest` (Mon 14:00 UTC) and `daily-expiry-check` (daily 15:00 UTC) call the edge functions directly. GitHub Actions workflow kept as manual "run now" button only.
 - **Fonts:** Cormorant Garamond + Inter (Google Fonts)
 - **Icons:** Font Awesome 6 Free (CDN)
 - **CSS:** `css/styles.css` (public site) + `css/admin.css` (admin)
@@ -174,10 +174,23 @@ Once these steps are complete, the analytics panel will appear on the admin dash
 
 ---
 
+### Scheduled jobs (pg_cron)
+Defined in `supabase/migrations/020_pg_cron_schedules.sql`. Auth header comes from Vault secret `service_role_key` (dashboard → Integrations → Vault; never commit the value).
+```sql
+-- list jobs / recent runs / HTTP results (run via: supabase db query --linked "<sql>" -o table)
+select jobid, jobname, schedule, active from cron.job;
+select jobname, status, start_time from cron.job_run_details d join cron.job j using (jobid) order by start_time desc limit 10;
+select id, status_code, left(content::text,120), error_msg from net._http_response order by id desc limit 5;
+```
+Why not GitHub cron: public repos lose scheduled workflows after 60 days without a commit (bit us 2026-10-21 → 11-01).
+
+### Applying migrations
+Remote migration history is empty — every file in `supabase/migrations/` has been applied by hand. **Never run `supabase db push`** (it would replay all of them). Apply a new file with `supabase db query --linked -f supabase/migrations/NNN_name.sql`.
+
 ### GitHub Actions Secret (repo Settings → Secrets → Actions)
 | Secret | Value |
 |--------|-------|
-| `SUPABASE_SERVICE_KEY` | service role key from Supabase dashboard |
+| `SUPABASE_SERVICE_KEY` | service role key — used only by the manual-dispatch `Scheduled Triggers` workflow |
 
 ---
 
@@ -339,12 +352,13 @@ CLOSE_THRESHOLD = 2  // max failed fields to score "Close" (vs "Fail")
 - 017_il_entry_type.sql — adds entry_type TEXT DEFAULT 'form' to interest_list ('form' = questionnaire, 'manual' = admin-added) — confirmed applied
 - 018_listings_area.sql — adds `area TEXT` to listings (general geographic area for non-MLS public cards, e.g. "South Bay") — confirmed applied
 - 019_ami_table_data.sql — seeds `ami_table_data` JSON (all 96 2025 HUD San Diego County values) and `ami_updated_date` into site_settings — confirmed applied
+- 020_pg_cron_schedules.sql — enables pg_cron + pg_net, schedules weekly-match-digest + daily-expiry-check calling the edge functions with Vault `service_role_key` — confirmed applied 2026-11-01
 
 ### Go-live checklist (domain: caaffordablehomes.com, registrar: GoDaddy)
 Waiting on Kacee for GoDaddy delegate access (requested 2026-10-22).
 
 **Do first, no dependency on Kacee:**
-- **Decide on a cron host.** GitHub auto-disables scheduled workflows on public repos after 60 days without a commit, and a new push does NOT re-enable them. This silently stopped `Scheduled Triggers` (weekly digest + daily expiry check) from 2026-10-21 to 2026-11-01; re-enabled manually via `gh workflow enable`. Post-launch the repo will be quiet for months, so this WILL recur. Options: move both crons to Supabase pg_cron + pg_net (recommended, no inactivity rule), or add a keepalive commit step. Until decided, check `gh workflow list` state after any quiet stretch.
+- ~~Cron host~~ — done 2026-11-01: both jobs moved to pg_cron (see Scheduled jobs section). Verified end-to-end (HTTP 200 via pg_net). First real scheduled run: daily-expiry-check 2026-11-02 15:00 UTC.
 - ~~Rotate the Resend API key~~ — done 2026-11-01 (new key in Supabase, verified by test inquiry + digest). Confirm the old `re_UfJN…` key was deleted in Resend.
 
 Then, in order once GoDaddy access lands:

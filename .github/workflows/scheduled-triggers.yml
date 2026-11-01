@@ -1,18 +1,23 @@
-# Triggers Supabase Edge Functions on a scheduled basis
-# Replaces the Apps Script time-driven triggers
+# Manual trigger for the Supabase Edge Function jobs.
+# Scheduling moved to pg_cron (supabase/migrations/020_pg_cron_schedules.sql) because GitHub
+# auto-disables scheduled workflows on public repos after 60 days without a commit.
+# This workflow is kept only as a "run now" button for catch-up or testing.
 
 name: Scheduled Triggers
 
 on:
-  schedule:
-    - cron: '0 14 * * 1'   # 6 AM PST (UTC-8) = 14:00 UTC, Mondays only — weekly digest + matching
-    - cron: '0 15 * * *'   # 7 AM PST (UTC-8) = 15:00 UTC, daily — expiry check
-  workflow_dispatch:        # allow manual run from GitHub Actions UI
+  workflow_dispatch:
+    inputs:
+      job:
+        description: Which job to run
+        type: choice
+        default: both
+        options: [both, daily-match, check-expiry]
 
 jobs:
   daily-match:
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 14 * * 1'
+    if: inputs.job == 'both' || inputs.job == 'daily-match'
     steps:
       - name: Run weekly match engine and digest
         run: |
@@ -24,7 +29,7 @@ jobs:
 
   check-expiry:
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 15 * * *'
+    if: inputs.job == 'both' || inputs.job == 'check-expiry'
     steps:
       - name: Run expiry checker
         run: |
