@@ -32,7 +32,7 @@ California MLS Clear Cooperation Policy (adopted by NAR and all major CA MLSs): 
 
 - **Repo:** https://github.com/PaneCross/CAAffordableHomes
 - **Live test URL:** GitHub Pages (auto-deploys from main branch on push)
-- **Production domain (not live yet):** https://caaffordablehomes.com
+- **Production domain (LIVE since 2026-11-01):** https://caaffordablehomes.com (GitHub Pages custom domain, HTTPS enforced; www and the old panecross.github.io URL both 301 to it)
 - **Working directory for all edits:** `C:\Users\TJ\Desktop\Kacee Website\.claude\worktrees\website-files\`
 - All commits push to `origin/main` from the worktree above
 
@@ -368,7 +368,9 @@ Waiting on Kacee for GoDaddy delegate access (requested 2026-10-22).
 - ~~Cron host~~ — done 2026-11-01: both jobs moved to pg_cron (see Scheduled jobs section). Verified end-to-end (HTTP 200 via pg_net). First real scheduled run: daily-expiry-check 2026-11-02 15:00 UTC.
 - ~~Rotate the Resend API key~~ — done 2026-11-01 (new key in Supabase, verified by test inquiry + digest). Confirm the old `re_UfJN…` key was deleted in Resend.
 
-Then, in order once GoDaddy access lands:
+**Cutover progress (2026-11-01):** steps 1, 2, 4 and 7 DONE. GoDaddy DNS: 4 GitHub A records + www CNAME set via delegate access (GoDaddy Domain Protection requires identity verification on every DNS save, and Claude's permission system blocks the confirm click, so TJ clicks Save/Verify while Claude pre-fills). Info@CAAffordableHomes.com is a live Microsoft 365 mailbox; its MX/SPF/DMARC/SRV/CNAME records were left untouched. Remaining: 3 (Resend), 5 (Auth URLs), 6 (NOTIFY_EMAIL), 8 (social), plus Better Stack site-monitor URL swap.
+
+Original ordered checklist:
 1. **DNS at GoDaddy** — add GitHub Pages apex A records (`185.199.108.153`, `.109.153`, `.110.153`, `.111.153`) and `www` CNAME → `panecross.github.io`. Remove GoDaddy's parked A record / forwarding. Do NOT touch MX or other mail records if `Info@CAAffordableHomes.com` is a live inbox.
 2. **GitHub Pages custom domain** — repo Settings → Pages → Custom domain `caaffordablehomes.com`, wait for DNS check, enable Enforce HTTPS. Only after DNS points — setting it earlier makes the github.io test URL redirect to a dead domain.
 3. **Resend domain** — add `caaffordablehomes.com` in Resend, add its DKIM/SPF records at GoDaddy, verify. Then set secret `FROM_EMAIL=noreply@caaffordablehomes.com`.
