@@ -368,7 +368,9 @@ Waiting on Kacee for GoDaddy delegate access (requested 2026-10-22).
 - ~~Cron host~~ — done 2026-11-01: both jobs moved to pg_cron (see Scheduled jobs section). Verified end-to-end (HTTP 200 via pg_net). First real scheduled run: daily-expiry-check 2026-11-02 15:00 UTC.
 - ~~Rotate the Resend API key~~ — done 2026-11-01 (new key in Supabase, verified by test inquiry + digest). Confirm the old `re_UfJN…` key was deleted in Resend.
 
-**Cutover progress (2026-11-01):** steps 1, 2, 4 and 7 DONE. GoDaddy DNS: 4 GitHub A records + www CNAME set via delegate access (GoDaddy Domain Protection requires identity verification on every DNS save, and Claude's permission system blocks the confirm click, so TJ clicks Save/Verify while Claude pre-fills). Info@CAAffordableHomes.com is a live Microsoft 365 mailbox; its MX/SPF/DMARC/SRV/CNAME records were left untouched. Step 5 (Auth URLs) DONE: Site URL = https://caaffordablehomes.com/admin.html, redirect allowlist has new + old admin URLs. Remaining: 3 (Resend), 6 (NOTIFY_EMAIL), 8 (social), plus Better Stack site-monitor URL swap.
+**Cutover progress (2026-11-01):** steps 1, 2, 4 and 7 DONE. GoDaddy DNS: 4 GitHub A records + www CNAME set via delegate access (GoDaddy Domain Protection requires identity verification on every DNS save, and Claude's permission system blocks the confirm click, so TJ clicks Save/Verify while Claude pre-fills). Info@CAAffordableHomes.com is a live Microsoft 365 mailbox; its MX/SPF/DMARC/SRV/CNAME records were left untouched. Steps 3 (Resend verified, FROM_EMAIL=noreply@caaffordablehomes.com set 2026-11-01), 5 (Auth URLs), 8 (social icons REMOVED from all 8 footers; Kacee has no accounts) DONE. **Remaining: 6 (NOTIFY_EMAIL)** and Better Stack site-monitor URL swap.
+
+**Email blocker found 2026-11-01:** Kacee has NO working mailboxes on the domain yet. The site publishes Info@CAAffordableHomes.com and every automated email uses it as reply-to, so inbound mail currently bounces. Her GoDaddy account already includes a Microsoft 365 plan with 4 seats (1 created but never used: kathleen@caaffordablehomes.com, expired temp password; 3 unused) and all M365 DNS is in place. Plan: Kacee creates kacee@caaffordablehomes.com in GoDaddy Email & Office, adds info@ as an alias on it, logs in and confirms receipt. Only then switch NOTIFY_EMAIL to kacee@caaffordablehomes.com (she requested that address in writing 2026-11-01).
 
 Original ordered checklist:
 1. **DNS at GoDaddy** — add GitHub Pages apex A records (`185.199.108.153`, `.109.153`, `.110.153`, `.111.153`) and `www` CNAME → `panecross.github.io`. Remove GoDaddy's parked A record / forwarding. Do NOT touch MX or other mail records if `Info@CAAffordableHomes.com` is a live inbox.
@@ -378,7 +380,7 @@ Original ordered checklist:
 5. **Supabase Auth URLs** — dashboard → Authentication → URL Configuration: set Site URL to the custom domain and add `https://caaffordablehomes.com/admin.html` to Redirect URLs (keep the github.io entry until the test URL is retired).
 6. **NOTIFY_EMAIL switch** — change `tj@nostos.tech` → Kacee's email. Do NOT do this proactively; only on Kacee's explicit go-live confirmation.
 7. **Form cooldown** — `contact.html` `COOLDOWN_MS` is the DEV value (2 min). Set to `30 * 24 * 60 * 60 * 1000` (30 days).
-8. **Social links** — footer Facebook/Instagram hrefs are `#` on all pages; need URLs from Kacee.
+8. ~~Social links~~ removed from footers 2026-11-01; re-add if Kacee creates accounts (markup in git history, commit 26796a8).
 9. Update **Production domain** line above and the GitHub Pages test-URL references in this file.
 
 ---
