@@ -187,7 +187,7 @@ Why not GitHub cron: public repos lose scheduled workflows after 60 days without
 
 ### Monitoring (set up 2026-11-01)
 - **Healthchecks.io** (dead-man's switch) — two checks, `daily expiry check` (cron `0 15 * * *` UTC, 1 h grace) and `weekly match digest` (cron `0 14 * * 1` UTC, 2 h grace). Emails when a ping is missed or a `/fail` ping arrives. A run counts as success only if matching finished AND Resend accepted the email. Add Kacee as an email integration at handoff.
-- **UptimeRobot** — HTTP monitors on the public site URL and the Supabase REST endpoint (`/rest/v1/listings?select=id&limit=1&apikey=<publishable>`), 5-min interval. The REST probe also keeps a Free-plan project from auto-pausing. Swap the site monitor to the custom domain at go-live.
+- **Better Stack Uptime** (betterstack.com, account tj@nostos.tech, magic-link login) — HTTP monitors on the public site URL and the Supabase REST endpoint (`/rest/v1/listings?select=id&limit=1&apikey=<publishable>`), 3-min interval, email alerts. The REST probe also keeps a Free-plan project from auto-pausing. Swap the site monitor to the custom domain at go-live. (UptimeRobot was tried first; its new-account onboarding wizard was broken for this account's A/B bucket on 2026-11-01 — the UptimeRobot account exists but is empty.)
 - **Failure behavior in functions:** non-2xx from Resend throws → run returns 500 → `/fail` ping. `check-expiry` marks `renewal_reminder_sent` only after Resend accepts, continues past per-row failures, fails the run at the end if any.
 - Not covered by automation: GoDaddy domain renewal / payment card expiry — yearly human task.
 
