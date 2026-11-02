@@ -62,7 +62,6 @@ California MLS Clear Cooperation Policy (adopted by NAR and all major CA MLSs): 
 /
 ├── index.html          — Home page
 ├── about.html          — About page
-├── services.html       — Services page (buyers + organizations)
 ├── faq.html            — FAQ (accordion, buyers + partners)
 ├── contact.html        — Interest List form (POSTs to submit-interest Edge Function)
 ├── thankyou.html       — Post-submission confirmation page
@@ -134,7 +133,7 @@ supabase functions deploy ga4-stats       --project-ref monybdfujogcyseyjgfx
 
 ## Google Analytics Setup
 
-GA4 tracking scripts are in all 8 public HTML pages (`index.html`, `homes.html`, `services.html`, `about.html`, `faq.html`, `contact.html`, `programs.html`, `thankyou.html`) — **NOT admin.html**. Current Measurement ID: **`G-YKJBH603X5`** (property created under the correct Gmail account June 2026).
+GA4 tracking scripts are in all 7 public HTML pages (`index.html`, `homes.html`, `about.html`, `faq.html`, `contact.html`, `programs.html`, `thankyou.html`; services.html retired 2026-11-01) — **NOT admin.html**. Current Measurement ID: **`G-YKJBH603X5`** (property created under the correct Gmail account June 2026).
 
 The admin dashboard pulls live 7-day stats via the `ga4-stats` edge function (sessions, users, page views, new users, daily sparkline, top 5 pages).
 
